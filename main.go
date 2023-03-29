@@ -17,12 +17,13 @@ func main() {
 	log.SetLevel(log.DebugLevel)
 	log.SetReportCaller(true)
 
-	token := os.Getenv("OPENAI_TOKEN")
+	token := os.Getenv("OPENAI_API_KEY")
 	if token == "" {
-		log.Fatal("Error: OPENAI_TOKEN environment variable is required")
+		log.Fatal("Error: OPENAI_API_KEY environment variable is required")
 	}
 
 	prefixFlag := flag.String("p", "", "PREFIX flag to prepend to the standard input content.")
+	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag. Defaults to `gpt-4`.")
 	flag.Parse()
 
 	reader := bufio.NewReader(os.Stdin)
@@ -40,7 +41,7 @@ func main() {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model: openai.GPT4,
+			Model: *modelVersionFlag,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleUser,
@@ -51,8 +52,7 @@ func main() {
 	)
 
 	if err != nil {
-		fmt.Printf("ChatCompletion error: %v\n", err)
-		return
+		log.Fatal("ChatCompletion error: %v\n", err)
 	}
 
 	fmt.Println(resp.Choices[0].Message.Content)
