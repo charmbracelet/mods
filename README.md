@@ -1,16 +1,21 @@
 # Mods
 
-GPT for the command line.
+GPT for the command line, built for pipelines.
 
 ## Usage
 
-`mods` will read from standard in and use the content as the prompt for GPT-4. If you provide an optional `-p "PREFIX"` flag, PREFIX will get appended to the content before sending the prompt to GPT-4.
+`mods` will read from standard in and use the content as the prompt for GPT-4.
+If you provide an optional `-p "PREFIX"` flag, PREFIX will get appended to the
+content before sending the prompt to GPT-4.
 
 ## Requirements
 
-You need to set the `OPENAI_API_KEY` environment variable to a valid OpenAI key, which you can get [from here](https://platform.openai.com/account/api-keys).
+You need to set the `OPENAI_API_KEY` environment variable to a valid OpenAI
+key, which you can get [from
+here](https://platform.openai.com/account/api-keys).
 
-By default `mods` uses the GPT-4 model which is currently invite only. If you'd like to use GPT-3.5 you can specify it with the `-m gpt-3.5-turbo` flag.
+By default `mods` uses the GPT-4 model which is currently invite only. If you'd
+like to use GPT-3.5 you can specify it with the `-m gpt-3.5-turbo` flag.
 
 ## Examples
 
