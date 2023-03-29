@@ -8,9 +8,9 @@ GPT for the command line.
 
 ## Requirements
 
-You need to set the `OPENAI_API_KEY` environment variable which you can get [from here](https://platform.openai.com/account/api-keys).
+You need to set the `OPENAI_API_KEY` environment variable to a valid OpenAI key, which you can get [from here](https://platform.openai.com/account/api-keys).
 
-By default, `mods` uses the GPT-4 model which is currently invite only. If you'd like to use GPT-3.5 you can specify it with the `-m gpt-3.5-turbo` flag.
+By default `mods` uses the GPT-4 model which is currently invite only. If you'd like to use GPT-3.5 you can specify it with the `-m gpt-3.5-turbo` flag.
 
 ## Examples
 
