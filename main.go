@@ -13,28 +13,34 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
+func usage() {
+	fmt.Printf("Usage: %s [OPTIONS] [PREFIX TERM]\n", os.Args[0])
+	flag.PrintDefaults()
+}
+
 func main() {
-	log.SetLevel(log.DebugLevel)
-	log.SetReportCaller(true)
+	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag.")
+	formatFlag := flag.Bool("f", false, "Ask GPT to format the output as Markdown.")
+	flag.Usage = usage
+	flag.Parse()
 
 	token := os.Getenv("OPENAI_API_KEY")
 	if token == "" {
 		log.Fatal("Error: OPENAI_API_KEY environment variable is required")
 	}
 
-	prefixFlag := flag.String("p", "", "PREFIX flag to prepend to the standard input content.")
-	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag. Defaults to `gpt-4`.")
-	flag.Parse()
-
+	prefix := strings.Join(flag.Args(), " ")
 	reader := bufio.NewReader(os.Stdin)
 	stdinBytes, err := ioutil.ReadAll(reader)
 	if err != nil {
-		log.Fatalf("Error reading standard input: %v\n", err)
+		log.Fatal("Error reading standard input: ", err)
 	}
-
 	content := string(stdinBytes)
-	if *prefixFlag != "" {
-		content = strings.TrimSpace(*prefixFlag) + "\n\n" + content
+	if *formatFlag {
+		prefix = fmt.Sprintf("%s Format output as Markdown.", prefix)
+	}
+	if prefix != "" {
+		content = strings.TrimSpace(prefix) + "\n\n" + content
 	}
 
 	client := openai.NewClient(token)
@@ -52,7 +58,7 @@ func main() {
 	)
 
 	if err != nil {
-		log.Fatal("ChatCompletion error: %v\n", err)
+		log.Fatal("ChatCompletion error: ", err)
 	}
 
 	fmt.Println(resp.Choices[0].Message.Content)
