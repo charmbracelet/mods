@@ -16,7 +16,7 @@ gpt-3.5-turbo`.
 ### Write new sections for a README
 
 ```bash
-cat README.md | mods "write a new section to this README documenting a new pdf sharing feature"
+cat README.md | mods "write a new section to this README documenting a pdf sharing feature"
 ```
 
 ### Editorialize your video files
@@ -29,7 +29,7 @@ ls | mods -f "summarize each of these titles, group them by decade" | glow
 ### Let GPT choose something for you to watch
 
 ```bash
-ls | mods "I'm want to watch something action packed, pick 5 shows from this list" | gum choose | xargs vlc
+ls | mods "Pick 5 action packed shows from the 80s from this list" | gum choose | xargs vlc
 
 ```
 
