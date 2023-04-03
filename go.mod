@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/charmbracelet/log v0.2.1
 	github.com/mattn/go-isatty v0.0.18
-	github.com/sashabaranov/go-openai v1.5.7
+	github.com/sashabaranov/go-openai v1.5.8
 )
 
 require (
@@ -16,6 +16,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.1 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 )
