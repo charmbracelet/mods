@@ -61,6 +61,7 @@ func main() {
 	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag (gpt-4, gpt-3.5-turbo).")
 	formatFlag := flag.Bool("f", false, "Ask GPT to format the output as Markdown.")
 	outputFileFlag := flag.String("o", "", "Output file to save response. If not specified, prints to console.")
+	showSpinnerFlag := flag.Bool("s", true, "Whether to show the spinner while loading.")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -79,39 +80,56 @@ func main() {
 		content = strings.TrimSpace(prefix + "\n\n" + content)
 	}
 
-	lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
-	p := tea.NewProgram(Model{
-		spinner: spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle)),
-	}, tea.WithOutput(os.Stderr))
+	var p *tea.Program
+	if *showSpinnerFlag {
+		lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
+		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
+		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
+	}
 
-	go func() {
-		resp, err := client.CreateChatCompletion(
-			context.Background(),
-			openai.ChatCompletionRequest{
-				Model: *modelVersionFlag,
-				Messages: []openai.ChatCompletionMessage{
-					{
-						Role:    openai.ChatMessageRoleUser,
-						Content: content,
-					},
+	if *showSpinnerFlag {
+		go func() {
+			output := startChatCompletion(*client, *modelVersionFlag, content)
+			p.Quit()
+			if *outputFileFlag != "" {
+				writeOutput(output, *outputFileFlag)
+			} else {
+				fmt.Println(output)
+			}
+		}()
+	} else {
+		output := startChatCompletion(*client, *modelVersionFlag, content)
+		if *outputFileFlag != "" {
+			writeOutput(output, *outputFileFlag)
+		} else {
+			fmt.Println(output)
+		}
+	}
+
+	if *showSpinnerFlag {
+		_, err := p.Run()
+		if err != nil {
+			log.Fatalf("Bubbletea error: %s", err)
+		}
+	}
+}
+
+func startChatCompletion(client openai.Client, modelVersion string, content string) string {
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: modelVersion,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: content,
 				},
 			},
-		)
-		if err != nil {
-			log.Fatalf("ChatCompletion error: %s", err)
-		}
-		p.Quit()
-
-		gptContent := resp.Choices[0].Message.Content
-		if *outputFileFlag != "" {
-			writeOutput(gptContent, *outputFileFlag)
-		} else {
-			fmt.Println(gptContent)
-		}
-	}()
-
-	_, err := p.Run()
+		},
+	)
 	if err != nil {
-		log.Fatalf("Bubbletea error: %s", err)
+		log.Fatalf("ChatCompletion error: %s", err)
 	}
+	return resp.Choices[0].Message.Content
+
 }
