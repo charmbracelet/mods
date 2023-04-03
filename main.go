@@ -100,8 +100,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("ChatCompletion error: %s", err)
 		}
-
-		p.Send(quitMsg{})
+		p.Quit()
 
 		gptContent := resp.Choices[0].Message.Content
 		if *outputFileFlag != "" {
