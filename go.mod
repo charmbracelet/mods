@@ -1,6 +1,6 @@
-module mods
+module github.com/charmbracelet/mods
 
-go 1.20
+go 1.18
 
 require (
 	github.com/charmbracelet/bubbles v0.15.0
