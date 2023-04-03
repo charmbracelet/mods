@@ -79,7 +79,7 @@ func main() {
 		content = strings.TrimSpace(prefix + "\n\n" + content)
 	}
 
-	lipgloss.SetColorProfile(termenv.ANSI256)
+	lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
 	p := tea.NewProgram(Model{
 		spinner: spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle)),
 	}, tea.WithOutput(os.Stderr))
