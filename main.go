@@ -5,7 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 
@@ -22,7 +22,7 @@ func printUsage() {
 func readStdinContent() string {
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		reader := bufio.NewReader(os.Stdin)
-		stdinBytes, err := ioutil.ReadAll(reader)
+		stdinBytes, err := io.ReadAll(reader)
 		if err != nil {
 			log.Fatal("Error reading standard input: ", err)
 		}
@@ -48,13 +48,13 @@ func writeOutput(output, fileName string) {
 
 func createClient(apiKey string) *openai.Client {
 	if apiKey == "" {
-		log.Fatal("Error: OPENAI_API_KEY environment variable is required")
+		log.Fatal("Error: OPENAI_API_KEY environment variable is required. You can grab one at https://platform.openai.com/account/api-keys.")
 	}
 	return openai.NewClient(apiKey)
 }
 
 func main() {
-	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag.")
+	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag (gpt-4, gpt-3.5-turbo).")
 	formatFlag := flag.Bool("f", false, "Ask GPT to format the output as Markdown.")
 	outputFileFlag := flag.String("o", "", "Output file to save response. If not specified, prints to console.")
 	flag.Usage = printUsage
@@ -87,7 +87,6 @@ func main() {
 			},
 		},
 	)
-
 	if err != nil {
 		log.Fatalf("ChatCompletion error: %s", err)
 	}
