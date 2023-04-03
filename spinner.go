@@ -9,8 +9,6 @@ import (
 var spinnerStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("212"))
 
-type quitMsg struct{}
-
 type Model struct {
 	spinner  spinner.Model
 	quitting bool
@@ -22,9 +20,6 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case quitMsg:
-		m.quitting = true
-		return m, tea.Quit
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -38,8 +33,5 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	if m.quitting {
-		return ""
-	}
 	return m.spinner.View() + " Loading..."
 }
