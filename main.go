@@ -41,7 +41,7 @@ func writeOutput(output, fileName string) {
 	writer := bufio.NewWriter(file)
 	_, err = writer.WriteString(output)
 	if err != nil {
-		log.Fatal("Error writing to output file: ", err)
+		log.Fatalf("Error writing to output file: %s", err)
 	}
 	writer.Flush()
 }
@@ -89,7 +89,7 @@ func main() {
 	)
 
 	if err != nil {
-		log.Fatal("ChatCompletion error: ", err)
+		log.Fatalf("ChatCompletion error: %s", err)
 	}
 
 	gptContent := resp.Choices[0].Message.Content
