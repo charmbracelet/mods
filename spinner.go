@@ -33,5 +33,5 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	return m.spinner.View() + " Loading..."
+	return m.spinner.View() + " Generating..."
 }
