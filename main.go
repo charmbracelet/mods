@@ -61,7 +61,7 @@ func main() {
 	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag (gpt-4, gpt-3.5-turbo).")
 	formatFlag := flag.Bool("f", false, "Ask GPT to format the output as Markdown.")
 	outputFileFlag := flag.String("o", "", "Output file to save response. If not specified, prints to console.")
-	showSpinnerFlag := flag.Bool("s", true, "Whether to show the spinner while loading.")
+	hideSpinnerFlag := flag.Bool("no-spinner", false, "Whether to show the spinner while loading.")
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -81,13 +81,13 @@ func main() {
 	}
 
 	var p *tea.Program
-	if *showSpinnerFlag {
+	if !*hideSpinnerFlag {
 		lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
 		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
 		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
 	}
 
-	if *showSpinnerFlag {
+	if !*hideSpinnerFlag {
 		go func() {
 			output := startChatCompletion(*client, *modelVersionFlag, content)
 			p.Quit()
@@ -106,7 +106,7 @@ func main() {
 		}
 	}
 
-	if *showSpinnerFlag {
+	if !*hideSpinnerFlag {
 		_, err := p.Run()
 		if err != nil {
 			log.Fatalf("Bubbletea error: %s", err)
