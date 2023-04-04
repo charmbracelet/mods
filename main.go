@@ -90,7 +90,7 @@ func main() {
 	if !*hideSpinnerFlag {
 		go func() {
 			output := startChatCompletion(*client, *modelVersionFlag, content)
-			p.Quit()
+			p.Send(quitMsg{})
 			if *outputFileFlag != "" {
 				writeOutput(output, *outputFileFlag)
 			} else {
