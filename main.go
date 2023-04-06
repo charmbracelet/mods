@@ -72,6 +72,26 @@ func createClient(apiKey string) *openai.Client {
 	return openai.NewClient(apiKey)
 }
 
+func startChatCompletion(client openai.Client, modelVersion string, content string) string {
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: modelVersion,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: content,
+				},
+			},
+		},
+	)
+	if err != nil {
+		log.Fatalf("ChatCompletion error: %s", err)
+	}
+	return resp.Choices[0].Message.Content
+
+}
+
 func main() {
 	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag (gpt-4, gpt-3.5-turbo).")
 	formatFlag := flag.Bool("f", false, "Ask GPT to format the output as Markdown.")
@@ -127,24 +147,4 @@ func main() {
 			log.Fatalf("Bubbletea error: %s", err)
 		}
 	}
-}
-
-func startChatCompletion(client openai.Client, modelVersion string, content string) string {
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: modelVersion,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: content,
-				},
-			},
-		},
-	)
-	if err != nil {
-		log.Fatalf("ChatCompletion error: %s", err)
-	}
-	return resp.Choices[0].Message.Content
-
 }
