@@ -19,8 +19,23 @@ import (
 )
 
 func printUsage() {
-	fmt.Printf("Usage: %s [OPTIONS] [PREFIX TERM]\n", os.Args[0])
-	flag.PrintDefaults()
+	lipgloss.SetColorProfile(termenv.ColorProfile())
+	appNameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("208")).
+		Bold(true)
+	flagStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#41ffef")).
+		Bold(true)
+	descriptionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("244"))
+
+	fmt.Printf("Usage: %s [OPTIONS] [PREFIX TERM]\n", appNameStyle.Render(os.Args[0]))
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Printf("  %s  %s\n", flagStyle.Render("-m"), descriptionStyle.Render("OpenAI model flag (gpt-3.5-turbo, gpt-4)"))
+	fmt.Printf("  %s  %s\n", flagStyle.Render("-f"), descriptionStyle.Render("Ask GPT to format the output as Markdown"))
+	fmt.Printf("  %s  %s\n", flagStyle.Render("-o"), descriptionStyle.Render("Output file to save response. If not specified, prints to console"))
+	fmt.Printf("  %s  %s\n", flagStyle.Render("-no-spinner"), descriptionStyle.Render("Whether to show the spinner while loading"))
 }
 
 func readStdinContent() string {
