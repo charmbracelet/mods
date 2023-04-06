@@ -1,15 +1,22 @@
 package main
 
 import (
+	"os"
+
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 )
 
 type quitMsg struct{}
 
-var spinnerStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("212"))
+var (
+	modelRenderer = lipgloss.NewRenderer(os.Stderr,
+		termenv.WithColorCache(true))
+	spinnerStyle = modelRenderer.NewStyle().
+			Foreground(lipgloss.Color("212"))
+)
 
 type Model struct {
 	spinner  spinner.Model

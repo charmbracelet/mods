@@ -14,12 +14,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/mattn/go-isatty"
-	"github.com/muesli/termenv"
 	openai "github.com/sashabaranov/go-openai"
 )
 
 func printUsage() {
-	lipgloss.SetColorProfile(termenv.ColorProfile())
 	appNameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("208")).
 		Bold(true)
@@ -72,7 +70,7 @@ func createClient(apiKey string) *openai.Client {
 	return openai.NewClient(apiKey)
 }
 
-func startChatCompletion(client openai.Client, modelVersion string, content string) string {
+func startChatCompletion(client openai.Client, modelVersion string, content string) (string, error) {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
@@ -86,9 +84,9 @@ func startChatCompletion(client openai.Client, modelVersion string, content stri
 		},
 	)
 	if err != nil {
-		log.Fatalf("ChatCompletion error: %s", err)
+		return "", err
 	}
-	return resp.Choices[0].Message.Content
+	return resp.Choices[0].Message.Content, nil
 
 }
 
@@ -117,34 +115,40 @@ func main() {
 
 	var p *tea.Program
 	if !*hideSpinnerFlag {
-		lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
 		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
+		// TODO: use termenv output instead of os.Stderr (modelRenderer.Output())
 		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
 	}
 
-	if !*hideSpinnerFlag {
-		go func() {
-			output := startChatCompletion(*client, *modelVersionFlag, content)
-			p.Send(quitMsg{})
-			if *outputFileFlag != "" {
-				writeOutput(output, *outputFileFlag)
-			} else {
-				fmt.Println(output)
+	errc := make(chan error, 1)
+	go func() {
+		defer func() {
+			if !*hideSpinnerFlag {
+				p.Send(quitMsg{})
 			}
 		}()
-	} else {
-		output := startChatCompletion(*client, *modelVersionFlag, content)
+		output, err := startChatCompletion(*client, *modelVersionFlag, content)
+		if err != nil {
+			errc <- fmt.Errorf("ChatCompletion error: %s", err)
+			return
+		}
 		if *outputFileFlag != "" {
 			writeOutput(output, *outputFileFlag)
 		} else {
 			fmt.Println(output)
 		}
-	}
+
+		errc <- nil
+	}()
 
 	if !*hideSpinnerFlag {
 		_, err := p.Run()
 		if err != nil {
 			log.Fatalf("Bubbletea error: %s", err)
 		}
+	}
+
+	if err := <-errc; err != nil {
+		log.Fatal(err)
 	}
 }
