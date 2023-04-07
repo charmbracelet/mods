@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -122,29 +123,32 @@ func main() {
 		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
 	}
 
-	if !*hideSpinnerFlag {
-		go func() {
-			output := startChatCompletion(*client, *modelVersionFlag, content)
-			p.Send(quitMsg{})
-			if *outputFileFlag != "" {
-				writeOutput(output, *outputFileFlag)
-			} else {
-				fmt.Println(output)
-			}
-		}()
-	} else {
-		output := startChatCompletion(*client, *modelVersionFlag, content)
-		if *outputFileFlag != "" {
-			writeOutput(output, *outputFileFlag)
-		} else {
-			fmt.Println(output)
-		}
-	}
+	var wg sync.WaitGroup
+	var output string
 
 	if !*hideSpinnerFlag {
-		_, err := p.Run()
-		if err != nil {
-			log.Fatalf("Bubbletea error: %s", err)
-		}
+		wg.Add(1)
+		go func() {
+			_, err := p.Run()
+			if err != nil {
+				log.Warn("Bubble Tea error: %s", err)
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Add(1)
+	go func() {
+		output = startChatCompletion(*client, *modelVersionFlag, content)
+		p.Send(quitMsg{})
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	if *outputFileFlag != "" {
+		writeOutput(output, *outputFileFlag)
+	} else {
+		fmt.Println(output)
 	}
 }
