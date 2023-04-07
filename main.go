@@ -141,7 +141,7 @@ func main() {
 	if !*hideSpinnerFlag {
 		_, err := p.Run()
 		if err != nil {
-			log.Fatalf("Bubbletea error: %s", err)
+			log.Fatalf("Bubble Tea error: %s", err)
 		}
 	}
 
