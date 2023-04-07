@@ -41,5 +41,5 @@ func (m Model) View() string {
 	if m.quitting {
 		return ""
 	}
-	return m.spinner.View() + " Generating..."
+	return m.spinner.View() + "Generating..."
 }
