@@ -116,10 +116,10 @@ func main() {
 	var p *tea.Program
 	if !*hideSpinnerFlag {
 		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
-		// TODO: use termenv output instead of os.Stderr (modelRenderer.Output())
 		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
 	}
 
+	var output string
 	errc := make(chan error, 1)
 	go func() {
 		defer func() {
@@ -127,15 +127,12 @@ func main() {
 				p.Send(quitMsg{})
 			}
 		}()
-		output, err := startChatCompletion(*client, *modelVersionFlag, content)
+
+		var err error
+		output, err = startChatCompletion(*client, *modelVersionFlag, content)
 		if err != nil {
 			errc <- fmt.Errorf("ChatCompletion error: %s", err)
 			return
-		}
-		if *outputFileFlag != "" {
-			writeOutput(output, *outputFileFlag)
-		} else {
-			fmt.Println(output)
 		}
 
 		errc <- nil
@@ -150,5 +147,11 @@ func main() {
 
 	if err := <-errc; err != nil {
 		log.Fatal(err)
+	}
+
+	if *outputFileFlag != "" {
+		writeOutput(output, *outputFileFlag)
+	} else {
+		fmt.Println(output)
 	}
 }
