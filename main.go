@@ -53,14 +53,14 @@ func writeOutput(output, fileName string) {
 	if err != nil {
 		log.Fatal("Error creating output file: ", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	writer := bufio.NewWriter(file)
 	_, err = writer.WriteString(output)
 	if err != nil {
 		log.Fatalf("Error writing to output file: %s", err)
 	}
-	writer.Flush()
+	_ = writer.Flush()
 }
 
 func createClient(apiKey string) *openai.Client {
@@ -86,8 +86,8 @@ func startChatCompletion(client openai.Client, modelVersion string, content stri
 	if err != nil {
 		return "", err
 	}
-	return resp.Choices[0].Message.Content, nil
 
+	return resp.Choices[0].Message.Content, nil
 }
 
 func main() {
