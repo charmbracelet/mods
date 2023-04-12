@@ -12,9 +12,9 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
+	"github.com/pkg/errors"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -26,6 +26,10 @@ const (
 	markdownFlagDescription = "Format response as markdown."
 	quietFlagDescription    = "Quiet mode (hide the spinner while loading)."
 )
+
+var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("0")).Padding(0, 1)
+var linkStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
 
 func printUsage() {
 	lipgloss.SetColorProfile(termenv.ColorProfile())
@@ -51,7 +55,12 @@ func readStdinContent() string {
 		reader := bufio.NewReader(os.Stdin)
 		stdinBytes, err := io.ReadAll(reader)
 		if err != nil {
-			log.Fatal("Error reading standard input: ", err)
+			fmt.Println()
+			fmt.Println(errorStyle.Render("  Unable to read stdin."))
+			fmt.Println()
+			fmt.Println("  " + errorStyle.Render(err.Error()))
+			fmt.Println()
+			os.Exit(1)
 		}
 		return string(stdinBytes)
 	}
@@ -60,12 +69,17 @@ func readStdinContent() string {
 
 func createClient(apiKey string) *openai.Client {
 	if apiKey == "" {
-		log.Fatal("Error: OPENAI_API_KEY environment variable is required. You can grab one at https://platform.openai.com/account/api-keys.")
+		fmt.Println()
+		fmt.Println(errorStyle.Render("  Error: ") + codeStyle.Render("OPENAI_API_KEY") + errorStyle.Render(" environment variabled is required."))
+		fmt.Println()
+		fmt.Println(errorStyle.Render("  You can grab one at ") + linkStyle.Render("https://platform.openai.com/account/api-keys."))
+		fmt.Println()
+		os.Exit(1)
 	}
 	return openai.NewClient(apiKey)
 }
 
-func startChatCompletion(client openai.Client, modelVersion string, content string) string {
+func startChatCompletion(client openai.Client, modelVersion string, content string) (string, error) {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
@@ -79,10 +93,9 @@ func startChatCompletion(client openai.Client, modelVersion string, content stri
 		},
 	)
 	if err != nil {
-		log.Fatalf("ChatCompletion error: %s", err)
+		return "", errors.Wrap(err, "Chat completion error")
 	}
-	return resp.Choices[0].Message.Content
-
+	return resp.Choices[0].Message.Content, nil
 }
 
 func main() {
@@ -115,19 +128,27 @@ func main() {
 
 	if !*quietFlag {
 		go func() {
-			output := startChatCompletion(*client, *modelTypeFlag, content)
+			output, err := startChatCompletion(*client, *modelTypeFlag, content)
 			p.Send(quitMsg{})
+			if err != nil {
+				fmt.Println()
+				fmt.Println(errorStyle.Render("  Error: Unable to generate response."))
+				fmt.Println()
+				fmt.Println("  " + errorStyle.Render(err.Error()))
+				fmt.Println()
+				os.Exit(1)
+			}
 			fmt.Println(output)
 		}()
 	} else {
-		output := startChatCompletion(*client, *modelTypeFlag, content)
+		output, err := startChatCompletion(*client, *modelTypeFlag, content)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 		fmt.Println(output)
 	}
 
 	if !*quietFlag {
-		_, err := p.Run()
-		if err != nil {
-			log.Fatalf("Bubbletea error: %s", err)
-		}
+		_, _ = p.Run()
 	}
 }
