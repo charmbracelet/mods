@@ -14,10 +14,21 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/mattn/go-isatty"
+	"github.com/muesli/termenv"
 	openai "github.com/sashabaranov/go-openai"
 )
 
+const (
+	modelTypeFlagShorthand  = "t"
+	markdownFlagShorthand   = "m"
+	quietFlagShorthand      = "q"
+	typeFlagDescription     = "OpenAI model type (gpt-3.5-turbo, gpt-4)."
+	markdownFlagDescription = "Format response as markdown."
+	quietFlagDescription    = "Quiet mode (hide the spinner while loading)."
+)
+
 func printUsage() {
+	lipgloss.SetColorProfile(termenv.ColorProfile())
 	appNameStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("208")).
 		Bold(true)
@@ -30,10 +41,9 @@ func printUsage() {
 	fmt.Printf("Usage: %s [OPTIONS] [PREFIX TERM]\n", appNameStyle.Render(os.Args[0]))
 	fmt.Println()
 	fmt.Println("Options:")
-	fmt.Printf("  %s  %s\n", flagStyle.Render("-m"), descriptionStyle.Render("OpenAI model flag (gpt-3.5-turbo, gpt-4)"))
-	fmt.Printf("  %s  %s\n", flagStyle.Render("-f"), descriptionStyle.Render("Ask GPT to format the output as Markdown"))
-	fmt.Printf("  %s  %s\n", flagStyle.Render("-o"), descriptionStyle.Render("Output file to save response. If not specified, prints to console"))
-	fmt.Printf("  %s  %s\n", flagStyle.Render("-no-spinner"), descriptionStyle.Render("Whether to show the spinner while loading"))
+	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+modelTypeFlagShorthand), descriptionStyle.Render(typeFlagDescription))
+	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+markdownFlagShorthand), descriptionStyle.Render(markdownFlagDescription))
+	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+quietFlagShorthand), descriptionStyle.Render(quietFlagDescription))
 }
 
 func readStdinContent() string {
@@ -48,21 +58,6 @@ func readStdinContent() string {
 	return ""
 }
 
-func writeOutput(output, fileName string) {
-	file, err := os.Create(fileName)
-	if err != nil {
-		log.Fatal("Error creating output file: ", err)
-	}
-	defer func() { _ = file.Close() }()
-
-	writer := bufio.NewWriter(file)
-	_, err = writer.WriteString(output)
-	if err != nil {
-		log.Fatalf("Error writing to output file: %s", err)
-	}
-	_ = writer.Flush()
-}
-
 func createClient(apiKey string) *openai.Client {
 	if apiKey == "" {
 		log.Fatal("Error: OPENAI_API_KEY environment variable is required. You can grab one at https://platform.openai.com/account/api-keys.")
@@ -70,7 +65,7 @@ func createClient(apiKey string) *openai.Client {
 	return openai.NewClient(apiKey)
 }
 
-func startChatCompletion(client openai.Client, modelVersion string, content string) (string, error) {
+func startChatCompletion(client openai.Client, modelVersion string, content string) string {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
@@ -84,17 +79,16 @@ func startChatCompletion(client openai.Client, modelVersion string, content stri
 		},
 	)
 	if err != nil {
-		return "", err
+		log.Fatalf("ChatCompletion error: %s", err)
 	}
+	return resp.Choices[0].Message.Content
 
-	return resp.Choices[0].Message.Content, nil
 }
 
 func main() {
-	modelVersionFlag := flag.String("m", "gpt-4", "OpenAI model flag (gpt-4, gpt-3.5-turbo).")
-	formatFlag := flag.Bool("f", false, "Ask GPT to format the output as Markdown.")
-	outputFileFlag := flag.String("o", "", "Output file to save response. If not specified, prints to console.")
-	hideSpinnerFlag := flag.Bool("no-spinner", false, "Whether to show the spinner while loading.")
+	modelTypeFlag := flag.String(modelTypeFlagShorthand, "gpt-4", typeFlagDescription)
+	markdownFlag := flag.Bool(markdownFlagShorthand, false, markdownFlagDescription)
+	quietFlag := flag.Bool(quietFlagShorthand, false, quietFlagDescription)
 	flag.Usage = printUsage
 	flag.Parse()
 
@@ -105,53 +99,35 @@ func main() {
 		printUsage()
 		os.Exit(0)
 	}
-	if *formatFlag {
+	if *markdownFlag {
 		prefix = fmt.Sprintf("%s Format output as Markdown.", prefix)
 	}
-
 	if prefix != "" {
 		content = strings.TrimSpace(prefix + "\n\n" + content)
 	}
 
 	var p *tea.Program
-	if !*hideSpinnerFlag {
+	if !*quietFlag {
+		lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
 		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
 		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
 	}
 
-	var output string
-	errc := make(chan error, 1)
-	go func() {
-		defer func() {
-			if !*hideSpinnerFlag {
-				p.Send(quitMsg{})
-			}
+	if !*quietFlag {
+		go func() {
+			output := startChatCompletion(*client, *modelTypeFlag, content)
+			p.Send(quitMsg{})
+			fmt.Println(output)
 		}()
+	} else {
+		output := startChatCompletion(*client, *modelTypeFlag, content)
+		fmt.Println(output)
+	}
 
-		var err error
-		output, err = startChatCompletion(*client, *modelVersionFlag, content)
-		if err != nil {
-			errc <- fmt.Errorf("ChatCompletion error: %s", err)
-			return
-		}
-
-		errc <- nil
-	}()
-
-	if !*hideSpinnerFlag {
+	if !*quietFlag {
 		_, err := p.Run()
 		if err != nil {
-			log.Fatalf("Bubble Tea error: %s", err)
+			log.Fatalf("Bubbletea error: %s", err)
 		}
-	}
-
-	if err := <-errc; err != nil {
-		log.Fatal(err)
-	}
-
-	if *outputFileFlag != "" {
-		writeOutput(output, *outputFileFlag)
-	} else {
-		fmt.Println(output)
 	}
 }
