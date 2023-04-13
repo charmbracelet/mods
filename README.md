@@ -6,7 +6,7 @@ GPT for the command line, built for pipelines.
 
 `mods` lets you add GPT to your command line pipelines. It reads content from
 standard in and combines it with a "command" then returns the results from GPT.
-Adding the `-f` flag asks GPT to format the output as Markdown (useful when
+Adding the `-md` flag asks GPT to format the output as Markdown (useful when
 piping to something like [Glow](https://github.com/charmbracelet/glow)). By
 default `mods` uses the GPT-4 model, to specify a different model use `-m
 gpt-3.5-turbo`.
@@ -22,7 +22,7 @@ cat README.md | mods "write a new section to this README documenting a pdf shari
 ### Editorialize your video files
 
 ```bash
-ls | mods -f "summarize each of these titles, group them by decade" | glow
+ls | mods -md "summarize each of these titles, group them by decade" | glow
 
 ```
 

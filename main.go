@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strings"
 
@@ -19,17 +20,32 @@ import (
 )
 
 const (
-	modelTypeFlagShorthand  = "t"
-	markdownFlagShorthand   = "m"
-	quietFlagShorthand      = "q"
-	typeFlagDescription     = "OpenAI model type (gpt-3.5-turbo, gpt-4)."
-	markdownFlagDescription = "Format response as markdown."
-	quietFlagDescription    = "Quiet mode (hide the spinner while loading)."
+	modelTypeFlagShorthand     = "m"
+	quietFlagShorthand         = "q"
+	markdownFlagShorthand      = "md"
+	temperatureFlagShorthand   = "temp"
+	maxTokensFlagShorthand     = "max"
+	topPFlagShorthand          = "top"
+	typeFlagDescription        = "OpenAI model (gpt-3.5-turbo, gpt-4)."
+	markdownFlagDescription    = "Format response as markdown."
+	quietFlagDescription       = "Quiet mode (hide the spinner while loading)."
+	temperatureFlagDescription = "Temperature (randomness) of results, from 0.0 to 2.0."
+	maxTokensFlagDescription   = "Maximum number of tokens in response."
+	topPFlagDescription        = "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0."
 )
 
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("0")).Padding(0, 1)
 var linkStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
+
+type Config struct {
+	Model       string
+	Markdown    bool
+	Quiet       bool
+	MaxTokens   int
+	Temperature float32
+	TopP        float32
+}
 
 func printUsage() {
 	lipgloss.SetColorProfile(termenv.ColorProfile())
@@ -46,8 +62,11 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+modelTypeFlagShorthand), descriptionStyle.Render(typeFlagDescription))
-	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+markdownFlagShorthand), descriptionStyle.Render(markdownFlagDescription))
 	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+quietFlagShorthand), descriptionStyle.Render(quietFlagDescription))
+	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+markdownFlagShorthand), descriptionStyle.Render(markdownFlagDescription))
+	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+temperatureFlagShorthand), descriptionStyle.Render(temperatureFlagDescription))
+	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+topPFlagShorthand), descriptionStyle.Render(topPFlagDescription))
+	fmt.Printf("  %s\t%s\n", flagStyle.Render("-"+maxTokensFlagShorthand), descriptionStyle.Render(maxTokensFlagDescription))
 }
 
 func readStdinContent() string {
@@ -67,6 +86,19 @@ func readStdinContent() string {
 	return ""
 }
 
+// flagToFloat converts a flag value to a float usable by the OpenAI client
+// library, which currently uses Float32 fields in the request struct with the
+// omitempty tag. This means we need to use math.SmallestNonzeroFloat32 instead
+// of 0.0 so it doesn't get stripped from the request and replaced server side
+// with the default values.
+// Issue: https://github.com/sashabaranov/go-openai/issues/9
+func flagToFloat(f *float64) float32 {
+	if *f == 0.0 {
+		return math.SmallestNonzeroFloat32
+	}
+	return float32(*f)
+}
+
 func createClient(apiKey string) *openai.Client {
 	if apiKey == "" {
 		fmt.Println()
@@ -79,11 +111,14 @@ func createClient(apiKey string) *openai.Client {
 	return openai.NewClient(apiKey)
 }
 
-func startChatCompletion(client openai.Client, modelVersion string, content string) (string, error) {
+func startChatCompletion(client openai.Client, config Config, content string) (string, error) {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model: modelVersion,
+			Model:       config.Model,
+			Temperature: config.Temperature,
+			TopP:        config.TopP,
+			MaxTokens:   config.MaxTokens,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleUser,
@@ -98,13 +133,27 @@ func startChatCompletion(client openai.Client, modelVersion string, content stri
 	return resp.Choices[0].Message.Content, nil
 }
 
-func main() {
+func configFromFlags() Config {
 	modelTypeFlag := flag.String(modelTypeFlagShorthand, "gpt-4", typeFlagDescription)
 	markdownFlag := flag.Bool(markdownFlagShorthand, false, markdownFlagDescription)
 	quietFlag := flag.Bool(quietFlagShorthand, false, quietFlagDescription)
+	temperatureFlag := flag.Float64(temperatureFlagShorthand, 1.0, temperatureFlagDescription)
+	maxTokenFlag := flag.Int(maxTokensFlagShorthand, 0, maxTokensFlagDescription)
+	topPFlag := flag.Float64(topPFlagShorthand, 1.0, topPFlagDescription)
 	flag.Usage = printUsage
 	flag.Parse()
+	return Config{
+		Model:       *modelTypeFlag,
+		Quiet:       *quietFlag,
+		MaxTokens:   *maxTokenFlag,
+		Markdown:    *markdownFlag,
+		Temperature: flagToFloat(temperatureFlag),
+		TopP:        flagToFloat(topPFlag),
+	}
+}
 
+func main() {
+	config := configFromFlags()
 	client := createClient(os.Getenv("OPENAI_API_KEY"))
 	content := readStdinContent()
 	prefix := strings.Join(flag.Args(), " ")
@@ -112,7 +161,7 @@ func main() {
 		printUsage()
 		os.Exit(0)
 	}
-	if *markdownFlag {
+	if config.Markdown {
 		prefix = fmt.Sprintf("%s Format output as Markdown.", prefix)
 	}
 	if prefix != "" {
@@ -120,15 +169,15 @@ func main() {
 	}
 
 	var p *tea.Program
-	if !*quietFlag {
+	if !config.Quiet {
 		lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
 		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
 		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
 	}
 
-	if !*quietFlag {
+	if !config.Quiet {
 		go func() {
-			output, err := startChatCompletion(*client, *modelTypeFlag, content)
+			output, err := startChatCompletion(*client, config, content)
 			p.Send(quitMsg{})
 			if err != nil {
 				fmt.Println()
@@ -141,14 +190,14 @@ func main() {
 			fmt.Println(output)
 		}()
 	} else {
-		output, err := startChatCompletion(*client, *modelTypeFlag, content)
+		output, err := startChatCompletion(*client, config, content)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
 		fmt.Println(output)
 	}
 
-	if !*quietFlag {
+	if !config.Quiet {
 		_, _ = p.Run()
 	}
 }
