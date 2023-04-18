@@ -27,7 +27,7 @@ var helpAppStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("208")).Bold(tr
 var helpFlagStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true)
 var helpDescriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 
-type Config struct {
+type config struct {
 	Model       *string
 	Markdown    *bool
 	Quiet       *bool
@@ -36,8 +36,8 @@ type Config struct {
 	TopP        *float32
 }
 
-func newConfig() Config {
-	return Config{
+func newConfig() config {
+	return config{
 		Model:       flag.StringP("model", "m", "gpt-4", "OpenAI model (gpt-3.5-turbo, gpt-4)."),
 		Markdown:    flag.BoolP("format", "f", false, "Format response as markdown."),
 		Quiet:       flag.BoolP("quiet", "q", false, "Quiet mode (hide the spinner while loading)."),
@@ -112,14 +112,14 @@ func createClient(apiKey string) *openai.Client {
 	return openai.NewClient(apiKey)
 }
 
-func startChatCompletion(client openai.Client, config Config, content string) (string, error) {
+func startChatCompletion(client openai.Client, cfg config, content string) (string, error) {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model:       *config.Model,
-			Temperature: noOmitFloat(*config.Temperature),
-			TopP:        noOmitFloat(*config.TopP),
-			MaxTokens:   *config.MaxTokens,
+			Model:       *cfg.Model,
+			Temperature: noOmitFloat(*cfg.Temperature),
+			TopP:        noOmitFloat(*cfg.TopP),
+			MaxTokens:   *cfg.MaxTokens,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleUser,
