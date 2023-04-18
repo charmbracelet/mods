@@ -76,6 +76,7 @@ func noOmitFloat(f float32) float32 {
 
 func usage() {
 	lipgloss.SetColorProfile(termenv.ColorProfile())
+	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
 	fmt.Printf("Usage:\n  %s [OPTIONS] [PREFIX TERM]\n\n", helpAppStyle.Render(os.Args[0]))
 	fmt.Println("Options:")
 	flag.VisitAll(func(f *flag.Flag) {
