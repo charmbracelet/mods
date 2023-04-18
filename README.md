@@ -38,3 +38,15 @@ ls | mods "Pick 5 action packed shows from the 80s from this list" | gum choose 
 You need to set the `OPENAI_API_KEY` environment variable to a valid OpenAI
 key, which you can get [from
 here](https://platform.openai.com/account/api-keys).
+
+## License
+
+[MIT](https://github.com/charmbracelet/mods/raw/main/LICENSE)
+
+***
+
+Part of [Charm](https://charm.sh).
+
+<a href="https://charm.sh/"><img alt="The Charm logo" width="400" src="https://stuff.charm.sh/charm-badge.jpg" /></a>
+
+Charm热爱开源 • Charm loves open source
