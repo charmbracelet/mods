@@ -19,7 +19,7 @@ import (
 )
 
 var errorStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1"))
-var codeStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("0")).Padding(0, 1)
+var codeStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
 var codeCommentStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 var linkStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
 var helpAppStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
