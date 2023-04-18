@@ -15,6 +15,6 @@ func randomExample() (string, string) {
 	for k := range examples {
 		keys = append(keys, k)
 	}
-	desc := keys[rand.Intn(len(keys))]
+	desc := keys[rand.Intn(len(keys))] //nolint:gosec
 	return desc, examples[desc]
 }
