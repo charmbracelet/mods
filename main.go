@@ -168,28 +168,29 @@ func main() {
 	var p *tea.Program
 	var output string
 	var err error
-	if !*config.Quiet {
-		lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
-		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
-		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
 
+	if !*config.Quiet {
 		go func() {
-			output, err = startChatCompletion(*client, config, content)
-			p.Quit()
-			if err != nil {
-				handleError(err, "There was a problem with the OpenAI API.")
+			lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
+			spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
+			p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
+
+			if _, err := p.Run(); err != nil {
+				handleError(err, "There was a problem while running the spinner.")
 			}
 		}()
-
-		_, err = p.Run()
-		if err != nil {
-			handleError(err, "Can't run the Bubble Tea program.")
-		}
-	} else {
-		output, err = startChatCompletion(*client, config, content)
-		if err != nil {
-			handleError(err, "There was a problem with the OpenAI API.")
-		}
 	}
+
+	output, err = startChatCompletion(*client, config, content)
+	if !*config.Quiet {
+		p.Quit()
+		<-p.Done()
+	}
+
+	if err != nil {
+		handleError(err, "There was a problem with the OpenAI API.")
+		return
+	}
+
 	fmt.Println(output)
 }
