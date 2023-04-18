@@ -76,7 +76,7 @@ func noOmitFloat(f float32) float32 {
 
 func usage() {
 	lipgloss.SetColorProfile(termenv.ColorProfile())
-	fmt.Printf("Usage: %s [OPTIONS] [PREFIX TERM]\n\n", helpAppStyle.Render(os.Args[0]))
+	fmt.Printf("Usage:\n  %s [OPTIONS] [PREFIX TERM]\n\n", helpAppStyle.Render(os.Args[0]))
 	fmt.Println("Options:")
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
@@ -96,7 +96,7 @@ func usage() {
 	})
 	desc, example := randomExample()
 	fmt.Printf(
-		"\nExample:\n  %s\n  %s\n\n",
+		"\nExample:\n  %s\n  %s\n",
 		codeCommentStyle.Render("# "+desc),
 		example,
 	)
