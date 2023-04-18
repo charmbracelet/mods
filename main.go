@@ -21,6 +21,7 @@ import (
 
 var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("0")).Padding(0, 1)
+var codeCommentStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 var linkStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
 var helpAppStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
 var helpFlagStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true)
@@ -73,8 +74,7 @@ func noOmitFloat(f float32) float32 {
 
 func usage() {
 	lipgloss.SetColorProfile(termenv.ColorProfile())
-	fmt.Printf("Usage: %s [OPTIONS] [PREFIX TERM]\n", helpAppStyle.Render(os.Args[0]))
-	fmt.Println()
+	fmt.Printf("Usage: %s [OPTIONS] [PREFIX TERM]\n\n", helpAppStyle.Render(os.Args[0]))
 	fmt.Println("Options:")
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
@@ -92,6 +92,12 @@ func usage() {
 			)
 		}
 	})
+	desc, example := randomExample()
+	fmt.Printf(
+		"\nExample:\n  %s\n  %s\n\n",
+		codeCommentStyle.Render("# "+desc),
+		example,
+	)
 }
 
 func createClient(apiKey string) *openai.Client {
