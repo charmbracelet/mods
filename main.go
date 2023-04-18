@@ -14,13 +14,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
-	"github.com/pkg/errors"
 	openai "github.com/sashabaranov/go-openai"
 	flag "github.com/spf13/pflag"
 )
 
-var errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-var codeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("0")).Padding(0, 1)
+var errorStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1"))
+var codeStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("0")).Padding(0, 1)
 var codeCommentStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 var linkStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
 var helpAppStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
@@ -54,7 +53,7 @@ func readStdinContent() string {
 		reader := bufio.NewReader(os.Stdin)
 		stdinBytes, err := io.ReadAll(reader)
 		if err != nil {
-			handleError(err, "Unable to read stdin.")
+			handleError(prettyError{err, "Unable to read stdin."})
 		}
 		return string(stdinBytes)
 	}
@@ -103,14 +102,14 @@ func usage() {
 	)
 }
 
+var errEmptyKey = prettyError{
+	err:    fmt.Errorf("You can grab one at %s", linkStyle.Render("https://platform.openai.com/account/api-keys.")),
+	reason: codeStyle.Render("OPENAI_API_KEY") + errorStyle.Render(" environment variabled is required."),
+}
+
 func createClient(apiKey string) *openai.Client {
 	if apiKey == "" {
-		fmt.Println()
-		fmt.Println(errorStyle.Render("  Error: ") + codeStyle.Render("OPENAI_API_KEY") + errorStyle.Render(" environment variabled is required."))
-		fmt.Println()
-		fmt.Println(errorStyle.Render("  You can grab one at ") + linkStyle.Render("https://platform.openai.com/account/api-keys."))
-		fmt.Println()
-		os.Exit(1)
+		handleError(errEmptyKey)
 	}
 	return openai.NewClient(apiKey)
 }
@@ -132,17 +131,32 @@ func startChatCompletion(client openai.Client, cfg config, content string) (stri
 		},
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "Chat completion error")
+		return "", fmt.Errorf("Chat completion: %w", err)
 	}
+
 	return resp.Choices[0].Message.Content, nil
 }
 
-func handleError(err error, reason string) {
-	fmt.Println()
-	fmt.Println(errorStyle.Render("  Error: %s", reason))
-	fmt.Println()
-	fmt.Println("  " + errorStyle.Render(err.Error()))
-	fmt.Println()
+// prettyError is a wrapper around an error that adds a reason and a pretty
+// error message using lipgloss.
+type prettyError struct {
+	err    error
+	reason string
+}
+
+func (e prettyError) Error() string {
+	var sb strings.Builder
+	fmt.Fprintln(&sb)
+	fmt.Fprintln(&sb, errorStyle.Render("  Error:", e.reason))
+	fmt.Fprintln(&sb)
+	fmt.Fprintln(&sb, "  "+errorStyle.Render(e.err.Error()))
+	fmt.Fprintln(&sb)
+	return sb.String()
+}
+
+// handleError prints an error to stderr and exits with a non-zero exit code.
+func handleError(err error) {
+	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
 }
 
@@ -167,29 +181,49 @@ func main() {
 
 	var p *tea.Program
 	var output string
-	var err error
+	errc := make(chan error, 1)
+
+	// Initialize program
 	if !*config.Quiet {
-		lipgloss.SetColorProfile(termenv.NewOutput(os.Stderr).ColorProfile())
 		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
 		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
+	}
 
-		go func() {
-			output, err = startChatCompletion(*client, config, content)
-			p.Quit()
-			if err != nil {
-				handleError(err, "There was a problem with the OpenAI API.")
+	// Always run chat completion in a goroutine and wait for it to finish. We
+	// can quit the spinner after the chat returns.
+	//
+	// Don't use os.Exit or handleError here. Error handling is done with errc.
+	go func() {
+		defer func() {
+			if !*config.Quiet {
+				p.Quit()
 			}
 		}()
 
-		_, err = p.Run()
-		if err != nil {
-			handleError(err, "Can't run the Bubble Tea program.")
-		}
-	} else {
+		var err error
 		output, err = startChatCompletion(*client, config, content)
 		if err != nil {
-			handleError(err, "There was a problem with the OpenAI API.")
+			errc <- prettyError{err: err, reason: "There was a problem with the OpenAI API."}
+			return
+		}
+
+		errc <- nil
+	}()
+
+	if !*config.Quiet {
+		// Ensure the program runs and finishes before we exit.
+		_, err := p.Run()
+		if err != nil {
+			handleError(prettyError{err: err, reason: "Can't run the Bubble Tea program."})
 		}
 	}
+
+	err := <-errc
+	if err != nil {
+		// Found error, print it and exit.
+		handleError(err)
+	}
+
+	// Everything went well, print the output.
 	fmt.Println(output)
 }

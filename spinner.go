@@ -9,12 +9,10 @@ import (
 	"github.com/muesli/termenv"
 )
 
-type quitMsg struct{}
-
 var (
-	modelRenderer = lipgloss.NewRenderer(os.Stderr,
+	errRenderer = lipgloss.NewRenderer(os.Stderr,
 		termenv.WithColorCache(true))
-	spinnerStyle = modelRenderer.NewStyle().
+	spinnerStyle = errRenderer.NewStyle().
 			Foreground(lipgloss.Color("212"))
 )
 
@@ -32,9 +30,6 @@ func (m Model) Init() tea.Cmd {
 // Update implements tea.Model.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case quitMsg:
-		m.quitting = true
-		return m, tea.Quit
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
