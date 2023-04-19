@@ -1,19 +1,8 @@
 package main
 
 import (
-	"os"
-
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
-)
-
-var (
-	errRenderer = lipgloss.NewRenderer(os.Stderr,
-		termenv.WithColorCache(true))
-	spinnerStyle = errRenderer.NewStyle().
-			Foreground(lipgloss.Color("212"))
 )
 
 // Model for loading the results.
