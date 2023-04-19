@@ -13,7 +13,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
-	"github.com/muesli/termenv"
 	openai "github.com/sashabaranov/go-openai"
 	flag "github.com/spf13/pflag"
 )
@@ -74,7 +73,6 @@ func noOmitFloat(f float32) float32 {
 }
 
 func usage() {
-	lipgloss.SetColorProfile(termenv.ColorProfile())
 	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
 	fmt.Printf("Usage:\n  %s [OPTIONS] [PREFIX TERM]\n\n", helpAppStyle.Render(os.Args[0]))
 	fmt.Println("Options:")
@@ -186,7 +184,7 @@ func main() {
 	// Initialize program
 	if !*config.Quiet {
 		spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
-		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(os.Stderr))
+		p = tea.NewProgram(Model{spinner: spinner}, tea.WithOutput(errRenderer.Output()))
 	}
 
 	// Always run chat completion in a goroutine and wait for it to finish. We
