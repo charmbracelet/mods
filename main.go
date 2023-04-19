@@ -112,9 +112,9 @@ func createClient(apiKey string) *openai.Client {
 	return openai.NewClient(apiKey)
 }
 
-func startChatCompletion(client openai.Client, cfg config, content string) (string, error) {
+func startChatCompletion(ctx context.Context, client openai.Client, cfg config, content string) (string, error) {
 	resp, err := client.CreateChatCompletion(
-		context.Background(),
+		ctx,
 		openai.ChatCompletionRequest{
 			Model:       *cfg.Model,
 			Temperature: noOmitFloat(*cfg.Temperature),
@@ -178,8 +178,11 @@ func main() {
 	}
 
 	var p *tea.Program
-	var output string
+	outc := make(chan string, 1)
+	done := make(chan struct{}, 1)
 	errc := make(chan error, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Initialize program
 	if !*config.Quiet {
@@ -198,30 +201,46 @@ func main() {
 			}
 		}()
 
-		var err error
-		output, err = startChatCompletion(*client, config, content)
+		output, err := startChatCompletion(ctx, *client, config, content)
 		if err != nil {
 			errc <- prettyError{err: err, reason: "There was a problem with the OpenAI API."}
 			return
 		}
 
-		errc <- nil
+		outc <- output
 	}()
 
 	if !*config.Quiet {
-		// Ensure the program runs and finishes before we exit.
-		_, err := p.Run()
+		go func() {
+			// Ensure the program runs and finishes before we exit.
+			_, err := p.Run()
+			if err != nil {
+				errc <- prettyError{err: err, reason: "Can't run the Bubble Tea program."}
+				return
+			}
+
+			done <- struct{}{}
+		}()
+	}
+
+	select {
+	case output := <-outc:
+		// Wait for the program to finish.
+		// TODO: use bubbletea program.Wait() from #722
+		if !*config.Quiet {
+			<-done
+		}
+		// Everything went well, print the output.
+		fmt.Println(output)
+	case <-done:
+		// Stop OpenAI if it's still running.
+		cancel()
+		os.Exit(1)
+	case err := <-errc:
 		if err != nil {
-			handleError(prettyError{err: err, reason: "Can't run the Bubble Tea program."})
+			cancel()
+			// Found error, print it and exit.
+			handleError(err)
 		}
 	}
-
-	err := <-errc
-	if err != nil {
-		// Found error, print it and exit.
-		handleError(err)
-	}
-
-	// Everything went well, print the output.
-	fmt.Println(output)
 }
