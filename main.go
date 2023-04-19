@@ -13,17 +13,28 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
+	"github.com/muesli/termenv"
 	openai "github.com/sashabaranov/go-openai"
 	flag "github.com/spf13/pflag"
 )
 
-var errorStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1"))
-var codeStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
-var codeCommentStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-var linkStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
-var helpAppStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
-var helpFlagStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true)
-var helpDescriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+// Renderers
+var (
+	outRenderer = lipgloss.DefaultRenderer()
+	errRenderer = lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
+)
+
+// Styles
+var (
+	spinnerStyle         = errRenderer.NewStyle().Foreground(lipgloss.Color("212"))
+	errorStyle           = errRenderer.NewStyle().Foreground(lipgloss.Color("1"))
+	codeStyle            = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
+	codeCommentStyle     = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
+	linkStyle            = outRenderer.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
+	helpAppStyle         = outRenderer.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
+	helpFlagStyle        = outRenderer.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true)
+	helpDescriptionStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
+)
 
 type config struct {
 	Model       *string
