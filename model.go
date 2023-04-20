@@ -162,16 +162,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View implements tea.Model.
 func (m Model) View() string {
-	if *m.config.Quiet {
-		return ""
-	}
-
 	switch m.state {
 	case errorState:
 		return m.error.Error()
 	case completionState:
-		return m.spinner.View() + "Generating..."
-	default:
-		return ""
+		if !*m.config.Quiet {
+			return m.spinner.View() + "Generating..."
+		}
 	}
+	return ""
 }
