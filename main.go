@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -67,24 +66,20 @@ func main() {
 	if *config.Markdown {
 		prefix = fmt.Sprintf("%s Format output as Markdown.", prefix)
 	}
-	spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
-	p := tea.NewProgram(Model{
-		config:  config,
-		prefix:  prefix,
-		spinner: spinner,
-	},
+	p := tea.NewProgram(
+		newMods(config, prefix, spinnerStyle),
 		tea.WithOutput(errRenderer.Output()),
 	)
 	m, err := p.Run()
 	if err != nil {
 		panic(err)
 	}
-	if m.(Model).hadStdin == false && prefix == "" {
+	if m.(mods).hadStdin == false && prefix == "" {
 		flag.Usage()
 		os.Exit(0)
 	}
-	out := m.(Model).output
+	out := m.(mods).output
 	if out != "" {
-		fmt.Println(m.(Model).output)
+		fmt.Println(m.(mods).output)
 	}
 }

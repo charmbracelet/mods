@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -24,16 +25,26 @@ const (
 	errorState
 )
 
-// Model for loading the results.
-type Model struct {
+// mods is the Bubble Tea model that manages reading stdin and querying the
+// OpenAI API.
+type mods struct {
 	state    state
 	config   config
 	prefix   string
 	spinner  spinner.Model
 	output   string
 	hadStdin bool
-	usage    string
 	error    prettyError
+}
+
+func newMods(cfg config, prefix string, spinnerStyle lipgloss.Style) mods {
+	spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
+	return mods{
+		state:   startState,
+		config:  cfg,
+		prefix:  prefix,
+		spinner: spinner,
+	}
 }
 
 // stdinContent is a tea.Msg that wraps the content read from stdin.
@@ -123,12 +134,12 @@ func startCompletionCmd(cfg config, prefix string, content string) tea.Cmd {
 }
 
 // Init implements tea.Model.
-func (m Model) Init() tea.Cmd {
+func (m mods) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, readStdinCmd)
 }
 
 // Update implements tea.Model.
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case stdinContent:
 		if msg.content == "" && m.prefix == "" {
@@ -161,7 +172,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View implements tea.Model.
-func (m Model) View() string {
+func (m mods) View() string {
 	switch m.state {
 	case errorState:
 		return m.error.Error()
