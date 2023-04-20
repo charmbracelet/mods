@@ -16,6 +16,8 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
+const markdownPrefix = "Format the OpenAI response as Markdown."
+
 type state int
 
 const (
@@ -30,19 +32,17 @@ const (
 type mods struct {
 	state    state
 	config   config
-	prefix   string
 	spinner  spinner.Model
 	output   string
 	hadStdin bool
 	error    prettyError
 }
 
-func newMods(cfg config, prefix string, spinnerStyle lipgloss.Style) mods {
+func newMods(cfg config, spinnerStyle lipgloss.Style) mods {
 	spinner := spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle))
 	return mods{
 		state:   startState,
 		config:  cfg,
-		prefix:  prefix,
 		spinner: spinner,
 	}
 }
@@ -95,7 +95,7 @@ func noOmitFloat(f float32) float32 {
 	return f
 }
 
-func startCompletionCmd(cfg config, prefix string, content string) tea.Cmd {
+func startCompletionCmd(cfg config, content string) tea.Cmd {
 	return func() tea.Msg {
 		key := os.Getenv("OPENAI_API_KEY")
 		if key == "" {
@@ -107,6 +107,10 @@ func startCompletionCmd(cfg config, prefix string, content string) tea.Cmd {
 		client := openai.NewClient(key)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
+		prefix := cfg.Prefix
+		if cfg.Markdown {
+			prefix = fmt.Sprintf("%s %s", prefix, markdownPrefix)
+		}
 		if prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
 		}
@@ -114,10 +118,10 @@ func startCompletionCmd(cfg config, prefix string, content string) tea.Cmd {
 		resp, err := client.CreateChatCompletion(
 			ctx,
 			openai.ChatCompletionRequest{
-				Model:       *cfg.Model,
-				Temperature: noOmitFloat(*cfg.Temperature),
-				TopP:        noOmitFloat(*cfg.TopP),
-				MaxTokens:   *cfg.MaxTokens,
+				Model:       cfg.Model,
+				Temperature: noOmitFloat(cfg.Temperature),
+				TopP:        noOmitFloat(cfg.TopP),
+				MaxTokens:   cfg.MaxTokens,
 				Messages: []openai.ChatCompletionMessage{
 					{
 						Role:    openai.ChatMessageRoleUser,
@@ -142,7 +146,7 @@ func (m mods) Init() tea.Cmd {
 func (m mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case stdinContent:
-		if msg.content == "" && m.prefix == "" {
+		if msg.content == "" && m.config.Prefix == "" {
 			m.state = quitState
 			return m, tea.Quit
 		}
@@ -150,7 +154,7 @@ func (m mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.hadStdin = true
 		}
 		m.state = completionState
-		return m, startCompletionCmd(m.config, m.prefix, msg.content)
+		return m, startCompletionCmd(m.config, msg.content)
 	case completionOutput:
 		m.output = msg.output
 		m.state = quitState
@@ -177,7 +181,7 @@ func (m mods) View() string {
 	case errorState:
 		return m.error.Error()
 	case completionState:
-		if !*m.config.Quiet {
+		if !m.config.Quiet {
 			return m.spinner.View() + "Generating..."
 		}
 	}

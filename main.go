@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -88,29 +87,24 @@ func main() {
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
 	config := newConfig()
-	flag.Parse()
-	if *config.Version {
+	if config.Version {
 		fmt.Println(buildVersion())
 		os.Exit(0)
 	}
-	prefix := strings.Join(flag.Args(), " ")
-	if *config.Markdown {
-		prefix = fmt.Sprintf("%s Format output as Markdown.", prefix)
-	}
 	p := tea.NewProgram(
-		newMods(config, prefix, spinnerStyle),
+		newMods(config, spinnerStyle),
 		tea.WithOutput(errRenderer.Output()),
 	)
 	m, err := p.Run()
 	if err != nil {
 		panic(err)
 	}
-	if !m.(mods).hadStdin && prefix == "" {
+	if m.(mods).hadStdin == false && config.Prefix == "" {
 		flag.Usage()
 		os.Exit(0)
 	}
 	out := m.(mods).output
 	if out != "" {
-		fmt.Println(m.(mods).output)
+		fmt.Println(out)
 	}
 }
