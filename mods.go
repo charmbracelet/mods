@@ -16,7 +16,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-const markdownPrefix = "Format the OpenAI response as Markdown."
+const markdownPrefix = "Format the response as Markdown."
 
 type state int
 
