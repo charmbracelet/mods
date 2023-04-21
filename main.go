@@ -44,13 +44,13 @@ func usage() {
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
 			fmt.Printf(
-				"  %-38s %s\n",
+				"  %-42s %s\n",
 				helpFlagStyle.Render("--"+f.Name),
 				helpDescriptionStyle.Render(f.Usage),
 			)
 		} else {
 			fmt.Printf(
-				"  %s, %-34s %s\n",
+				"  %s, %-38s %s\n",
 				helpFlagStyle.Render("-"+f.Shorthand),
 				helpFlagStyle.Render("--"+f.Name),
 				helpDescriptionStyle.Render(f.Usage),
@@ -90,19 +90,15 @@ func main() {
 		fmt.Println(buildVersion())
 		os.Exit(0)
 	}
-	p := tea.NewProgram(
-		newMods(config, config.AltSpinner),
-		tea.WithOutput(errRenderer.Output()),
-	)
+	p := tea.NewProgram(newMods(config), tea.WithOutput(errRenderer.Output()))
 	m, err := p.Run()
 	if err != nil {
 		panic(err)
 	}
-	if !m.(mods).hadStdin && config.Prefix == "" {
+	mods := m.(Mods)
+	if mods.Input == "" && config.Prefix == "" {
 		flag.Usage()
 		os.Exit(0)
 	}
-	if out := m.(mods).output; out != "" {
-		fmt.Println(out)
-	}
+	fmt.Println(mods.FormattedOutput())
 }

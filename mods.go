@@ -25,28 +25,28 @@ const (
 	errorState
 )
 
-// mods is the Bubble Tea model that manages reading stdin and querying the
+// Mods is the Bubble Tea model that manages reading stdin and querying the
 // OpenAI API.
-type mods struct {
-	state    state
-	config   config
-	spinner  tea.Model
-	output   string
-	hadStdin bool
-	error    prettyError
+type Mods struct {
+	Config  config
+	Output  string
+	Input   string
+	state   state
+	error   prettyError
+	spinner tea.Model
 }
 
-func newMods(cfg config, altSpinner bool) mods {
-	var m tea.Model
-	if altSpinner {
-		m = newCyclingChars()
+func newMods(cfg config) Mods {
+	var s tea.Model
+	if cfg.AltSpinner {
+		s = newCyclingChars()
 	} else {
-		m = spinner(0)
+		s = spinner(0)
 	}
-	return mods{
+	return Mods{
+		Config:  cfg,
 		state:   startState,
-		config:  cfg,
-		spinner: m,
+		spinner: s,
 	}
 }
 
@@ -141,25 +141,25 @@ func startCompletionCmd(cfg config, content string) tea.Cmd {
 }
 
 // Init implements tea.Model.
-func (m mods) Init() tea.Cmd {
+func (m Mods) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Init(), readStdinCmd)
 }
 
 // Update implements tea.Model.
-func (m mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case stdinContent:
-		if msg.content == "" && m.config.Prefix == "" {
+		if msg.content == "" && m.Config.Prefix == "" {
 			m.state = quitState
 			return m, tea.Quit
 		}
 		if msg.content != "" {
-			m.hadStdin = true
+			m.Input = msg.content
 		}
 		m.state = completionState
-		return m, startCompletionCmd(m.config, msg.content)
+		return m, startCompletionCmd(m.Config, msg.content)
 	case completionOutput:
-		m.output = msg.output
+		m.Output = msg.output
 		m.state = quitState
 		return m, tea.Quit
 	case prettyError:
@@ -179,15 +179,45 @@ func (m mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View implements tea.Model.
-func (m mods) View() string {
-	// nolint: exhaustive
+func (m Mods) View() string {
 	switch m.state {
 	case errorState:
 		return m.error.Error()
 	case completionState:
-		if !m.config.Quiet {
+		if !m.Config.Quiet {
 			return m.spinner.View()
 		}
 	}
 	return ""
+}
+
+// FormattedOutput returns the response from OpenAI with the user configured
+// prefix and standard in settings.
+func (m Mods) FormattedOutput() string {
+	prefixFormat := "> %s\n\n---\n\n%s"
+	stdinFormat := "```\n%s```\n\n---\n\n%s"
+	out := m.Output
+
+	if m.Config.IncludePrompt != 0 {
+		if m.Config.IncludePrompt < 0 {
+			out = fmt.Sprintf(stdinFormat, m.Input, out)
+		}
+		scanner := bufio.NewScanner(strings.NewReader(m.Input))
+		i := 0
+		in := ""
+		for scanner.Scan() {
+			if i == m.Config.IncludePrompt {
+				break
+			}
+			in += (scanner.Text() + "\n")
+			i++
+		}
+		out = fmt.Sprintf(stdinFormat, in, out)
+	}
+
+	if m.Config.IncludePromptArgs || m.Config.IncludePrompt != 0 {
+		out = fmt.Sprintf(prefixFormat, m.Config.Prefix, out)
+	}
+
+	return out
 }
