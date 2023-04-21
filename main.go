@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -27,6 +28,15 @@ var (
 	helpAppStyle         = outRenderer.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
 	helpFlagStyle        = outRenderer.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true)
 	helpDescriptionStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
+)
+
+// build vars
+// nolint: gochecknoglobals
+var (
+	version = "dev"
+	commit  = ""
+	date    = ""
+	builtBy = ""
 )
 
 func usage() {
@@ -57,11 +67,32 @@ func usage() {
 	)
 }
 
+func buildVersion() string {
+	result := "mods version " + version
+	if commit != "" {
+		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
+	}
+	if date != "" {
+		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
+	}
+	if builtBy != "" {
+		result = fmt.Sprintf("%s\nbuilt by: %s", result, builtBy)
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Sum != "" {
+		result = fmt.Sprintf("%s\nmodule version: %s, checksum: %s", result, info.Main.Version, info.Main.Sum)
+	}
+	return result
+}
+
 func main() {
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
 	config := newConfig()
 	flag.Parse()
+	if *config.Version {
+		fmt.Println(buildVersion())
+		os.Exit(0)
+	}
 	prefix := strings.Join(flag.Args(), " ")
 	if *config.Markdown {
 		prefix = fmt.Sprintf("%s Format output as Markdown.", prefix)
@@ -74,7 +105,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if m.(mods).hadStdin == false && prefix == "" {
+	if !m.(mods).hadStdin && prefix == "" {
 		flag.Usage()
 		os.Exit(0)
 	}

@@ -10,6 +10,7 @@ type config struct {
 	Temperature *float32
 	TopP        *float32
 	ShowHelp    *bool
+	Version     *bool
 }
 
 func newConfig() config {
@@ -21,5 +22,6 @@ func newConfig() config {
 		MaxTokens:   flag.Int("max", 0, "Maximum number of tokens in response."),
 		Temperature: flag.Float32("temp", 1.0, "Temperature (randomness) of results, from 0.0 to 2.0."),
 		TopP:        flag.Float32("top", 1.0, "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0."),
+		Version:     flag.BoolP("version", "v", false, "Show version"),
 	}
 }
