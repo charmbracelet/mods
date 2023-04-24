@@ -118,6 +118,17 @@ func startCompletionCmd(cfg config, content string) tea.Cmd {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
 		}
 
+		var maxPromptChars int
+		if cfg.Model == "gpt-4" {
+			maxPromptChars = 25500
+		} else {
+			maxPromptChars = 12250
+		}
+		if len(content)-1 < maxPromptChars {
+			maxPromptChars = len(content) - 1
+		}
+		content = content[:maxPromptChars]
+
 		resp, err := client.CreateChatCompletion(
 			ctx,
 			openai.ChatCompletionRequest{
@@ -142,7 +153,7 @@ func startCompletionCmd(cfg config, content string) tea.Cmd {
 
 // Init implements tea.Model.
 func (m Mods) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Init(), readStdinCmd)
+	return tea.Batch(readStdinCmd, m.spinner.Init())
 }
 
 // Update implements tea.Model.

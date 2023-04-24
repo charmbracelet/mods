@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
 )
@@ -82,6 +83,12 @@ func buildVersion() string {
 	return result
 }
 
+type noopRead struct{}
+
+func (nr noopRead) Read(_ []byte) (n int, err error) {
+	return 0, nil
+}
+
 func main() {
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
@@ -90,7 +97,11 @@ func main() {
 		fmt.Println(buildVersion())
 		os.Exit(0)
 	}
-	p := tea.NewProgram(newMods(config), tea.WithOutput(errRenderer.Output()))
+	opts := []tea.ProgramOption{tea.WithOutput(errRenderer.Output())}
+	if !isatty.IsTerminal(os.Stdin.Fd()) {
+		opts = append(opts, tea.WithInput(noopRead{}))
+	}
+	p := tea.NewProgram(newMods(config), opts...)
 	m, err := p.Run()
 	if err != nil {
 		panic(err)
