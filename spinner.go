@@ -15,7 +15,7 @@ const (
 
 var (
 	spinnerRunes = []rune("⣾⣽⣻⢿⡿⣟⣯⣷")
-	spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("212"))
+	spinnerStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("212"))
 )
 
 type stepSpinnerMsg struct{}
