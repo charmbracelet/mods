@@ -14,6 +14,7 @@ var (
 	oneCellRunes = []rune("0123456789abcdefABCDEF~!@#$£€%^&*()+=_")
 	twoCellRunes = []rune("アイウエオカキクケコガギグゲゴサシスセソザジズゼゾタチツテトダヂヅデドナニヌネノハヒフへホバビブベボパピプペポマミムメモヤユヨラリルレロワヲン")
 	runeSets     = [][]rune{oneCellRunes, oneCellRunes, oneCellRunes, twoCellRunes} // dups for cheap weighting
+	spinnerRunes = []rune("⣾⣽⣻⢿⡿⣟⣯⣷")
 )
 
 // Styles.
@@ -33,7 +34,7 @@ const (
 	charEndOfLifeState
 )
 
-// animChar is a single character in the animation
+// animChar is a single character in the animation.
 type animChar struct {
 	currentValue rune
 	finalValue   rune // if less than zero cycle forever
@@ -63,19 +64,23 @@ func (c animChar) state(start time.Time) charState {
 	return charCyclingState
 }
 
-// animStepMsg signals to step the animation.
-type animStepMsg struct{}
+// spinnerStepMsg signals to step the spinner.
+type spinnerStepMsg struct{}
+
+// charsStepMsg signals to step the animation.
+type charsStepMsg struct{}
 
 // anim manages the animation that displays while the output is being generated.
 type anim struct {
-	start      time.Time
-	chars      []animChar
-	fps        time.Duration
-	label      []rune
-	prefixSize int
+	start        time.Time
+	chars        []animChar
+	fps          time.Duration
+	label        []rune
+	prefixSize   int
+	spinnerIndex int
 }
 
-// new anim initializes the anim model.
+// newAnim initializes the anim model.
 func newAnim() anim {
 	const label = "Generating..."
 
@@ -119,13 +124,13 @@ func newAnim() anim {
 
 // Init initializes the animation.
 func (a anim) Init() tea.Cmd {
-	return a.step()
+	return tea.Batch(stepSpinner(), stepChars())
 }
 
 // Update handles messages.
 func (a anim) Update(msg tea.Msg) (anim, tea.Cmd) {
 	switch msg.(type) {
-	case animStepMsg:
+	case charsStepMsg:
 		for i, c := range a.chars {
 			switch c.state(a.start) {
 			case charUnbornState:
@@ -138,7 +143,13 @@ func (a anim) Update(msg tea.Msg) (anim, tea.Cmd) {
 				a.chars[i].currentValue = c.finalValue
 			}
 		}
-		return a, a.step()
+		return a, stepChars()
+	case spinnerStepMsg:
+		a.spinnerIndex++
+		if a.spinnerIndex > len(spinnerRunes)-1 {
+			a.spinnerIndex = 0
+		}
+		return a, stepSpinner()
 	default:
 		return a, nil
 	}
@@ -147,6 +158,7 @@ func (a anim) Update(msg tea.Msg) (anim, tea.Cmd) {
 // View renders the animation.
 func (a anim) View() string {
 	var b strings.Builder
+	b.WriteString(prefixStyle.Render(string(spinnerRunes[a.spinnerIndex])) + " ")
 	for _, c := range a.chars {
 		switch c.state(a.start) {
 		case charUnbornState:
@@ -167,8 +179,15 @@ func (a anim) View() string {
 }
 
 // step steps the animation one frame.
-func (a anim) step() tea.Cmd {
-	return tea.Tick(a.fps, func(t time.Time) tea.Msg {
-		return animStepMsg{}
+func stepChars() tea.Cmd {
+	return tea.Tick(time.Second/22, func(t time.Time) tea.Msg {
+		return charsStepMsg{}
+	})
+}
+
+// step steps the spinner one frame.
+func stepSpinner() tea.Cmd {
+	return tea.Tick(time.Second/10, func(t time.Time) tea.Msg {
+		return spinnerStepMsg{}
 	})
 }
