@@ -180,6 +180,7 @@ func (m mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View implements tea.Model.
 func (m mods) View() string {
+	// nolint: exhaustive
 	switch m.state {
 	case errorState:
 		return m.error.Error()
