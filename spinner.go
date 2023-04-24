@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	spinnerLabel = "Generating..."
+	spinnerLabel = " Generating..."
 	spinnerFPS   = time.Second / 10
 )
 
@@ -51,6 +51,6 @@ func (s spinner) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s spinner) View() string {
 	var b strings.Builder
 	b.WriteString(spinnerStyle.Render(string(spinnerRunes[s])))
-	b.WriteString(" Generating...")
+	b.WriteString(spinnerLabel)
 	return b.String()
 }

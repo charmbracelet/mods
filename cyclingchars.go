@@ -70,7 +70,7 @@ type cyclingChars struct {
 func newCyclingChars() cyclingChars {
 	c := cyclingChars{
 		start: time.Now(),
-		label: []rune(" " + spinnerLabel),
+		label: []rune(spinnerLabel),
 	}
 
 	makeDelay := func(a int32, b time.Duration) time.Duration {
