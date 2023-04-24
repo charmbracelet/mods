@@ -19,7 +19,6 @@ var (
 
 // Styles
 var (
-	spinnerStyle         = errRenderer.NewStyle().Foreground(lipgloss.Color("212"))
 	errorStyle           = errRenderer.NewStyle().Foreground(lipgloss.Color("1"))
 	codeStyle            = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
 	codeCommentStyle     = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
@@ -92,7 +91,7 @@ func main() {
 		os.Exit(0)
 	}
 	p := tea.NewProgram(
-		newMods(config, spinnerStyle),
+		newMods(config, config.AltSpinner),
 		tea.WithOutput(errRenderer.Output()),
 	)
 	m, err := p.Run()

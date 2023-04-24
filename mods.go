@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -31,17 +30,23 @@ const (
 type mods struct {
 	state    state
 	config   config
-	anim     anim
+	spinner  tea.Model
 	output   string
 	hadStdin bool
 	error    prettyError
 }
 
-func newMods(cfg config, spinnerStyle lipgloss.Style) mods {
+func newMods(cfg config, altSpinner bool) mods {
+	var m tea.Model
+	if altSpinner {
+		m = newCyclingChars()
+	} else {
+		m = spinner(0)
+	}
 	return mods{
-		state:  startState,
-		config: cfg,
-		anim:   newAnim(),
+		state:   startState,
+		config:  cfg,
+		spinner: m,
 	}
 }
 
@@ -137,7 +142,7 @@ func startCompletionCmd(cfg config, content string) tea.Cmd {
 
 // Init implements tea.Model.
 func (m mods) Init() tea.Cmd {
-	return tea.Batch(m.anim.Init(), readStdinCmd)
+	return tea.Batch(m.spinner.Init(), readStdinCmd)
 }
 
 // Update implements tea.Model.
@@ -169,7 +174,7 @@ func (m mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	var cmd tea.Cmd
-	m.anim, cmd = m.anim.Update(msg)
+	m.spinner, cmd = m.spinner.Update(msg)
 	return m, cmd
 }
 
@@ -180,7 +185,7 @@ func (m mods) View() string {
 		return m.error.Error()
 	case completionState:
 		if !m.config.Quiet {
-			return m.anim.View()
+			return m.spinner.View()
 		}
 	}
 	return ""
