@@ -34,7 +34,7 @@ type cyclingChar struct {
 }
 
 func (c cyclingChar) randomRune() rune {
-	return (charRunes)[rand.Intn(len(charRunes))]
+	return (charRunes)[rand.Intn(len(charRunes))] //nolint:gosec
 }
 
 func (c cyclingChar) state(start time.Time) charState {
@@ -74,7 +74,7 @@ func newCyclingChars() cyclingChars {
 	}
 
 	makeDelay := func(a int32, b time.Duration) time.Duration {
-		return time.Duration(rand.Int31n(a)) * (time.Millisecond * b)
+		return time.Duration(rand.Int31n(a)) * (time.Millisecond * b) //nolint:gosec
 	}
 
 	c.chars = make([]cyclingChar, initialCharsLength+len(c.label))
@@ -82,9 +82,9 @@ func newCyclingChars() cyclingChars {
 	// Initial characters that cycle forever.
 	for i := 0; i < initialCharsLength; i++ {
 		c.chars[i] = cyclingChar{
-			finalValue:   -1, // cycle forever
-			birthDelay:   makeDelay(25, 20),
-			initialDelay: makeDelay(5, 100),
+			finalValue:   -1,                // cycle forever
+			birthDelay:   makeDelay(25, 20), //nolint:gomnd
+			initialDelay: makeDelay(5, 100), //nolint:gomnd
 		}
 	}
 
@@ -93,9 +93,9 @@ func newCyclingChars() cyclingChars {
 		c.chars[i+initialCharsLength] = cyclingChar{
 			currentValue: '#',
 			finalValue:   r,
-			birthDelay:   makeDelay(2, 100),
-			lifetime:     makeDelay(5, 180),
-			initialDelay: makeDelay(5, 100),
+			birthDelay:   makeDelay(2, 100), //nolint:gomnd
+			lifetime:     makeDelay(5, 180), //nolint:gomnd
+			initialDelay: makeDelay(5, 100), //nolint:gomnd
 		}
 	}
 
@@ -103,49 +103,49 @@ func newCyclingChars() cyclingChars {
 }
 
 // Init initializes the animation.
-func (s cyclingChars) Init() tea.Cmd {
+func (c cyclingChars) Init() tea.Cmd {
 	return stepChars()
 }
 
 // Update handles messages.
-func (a cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (c cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg.(type) {
 	case stepCharsMsg:
-		for i, c := range a.chars {
-			switch c.state(a.start) {
+		for i, char := range c.chars {
+			switch char.state(c.start) {
 			case charUnbornState:
 				continue
 			case charNewbornState:
-				a.chars[i].currentValue = '#'
+				c.chars[i].currentValue = '#'
 			case charCyclingState:
-				a.chars[i].currentValue = c.randomRune()
+				c.chars[i].currentValue = char.randomRune()
 			case charEndOfLifeState:
-				a.chars[i].currentValue = c.finalValue
+				c.chars[i].currentValue = char.finalValue
 			}
 		}
-		return a, stepChars()
+		return c, stepChars()
 	default:
-		return a, nil
+		return c, nil
 	}
 }
 
 // View renders the animation.
-func (a cyclingChars) View() string {
+func (c cyclingChars) View() string {
 	var b strings.Builder
-	for _, c := range a.chars {
-		switch c.state(a.start) {
+	for _, char := range c.chars {
+		switch char.state(c.start) {
 		case charUnbornState:
 			continue
 		case charNewbornState:
-			b.WriteString(spinnerStyle.Render(string(c.currentValue)))
+			b.WriteString(spinnerStyle.Render(string(char.currentValue)))
 		case charCyclingState:
-			if c.finalValue < 0 {
-				b.WriteString(spinnerStyle.Render(string(c.currentValue)))
+			if char.finalValue < 0 {
+				b.WriteString(spinnerStyle.Render(string(char.currentValue)))
 				continue
 			}
-			b.WriteRune(c.currentValue)
+			b.WriteRune(char.currentValue)
 		case charEndOfLifeState:
-			b.WriteRune(c.currentValue)
+			b.WriteRune(char.currentValue)
 		}
 	}
 	return b.String()

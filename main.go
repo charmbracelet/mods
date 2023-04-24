@@ -11,13 +11,13 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-// Renderers
+// Renderers.
 var (
 	outRenderer = lipgloss.DefaultRenderer()
 	errRenderer = lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 )
 
-// Styles
+// Styles.
 var (
 	errorStyle           = errRenderer.NewStyle().Foreground(lipgloss.Color("1"))
 	codeStyle            = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
@@ -98,12 +98,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if m.(mods).hadStdin == false && config.Prefix == "" {
+	if !m.(mods).hadStdin && config.Prefix == "" {
 		flag.Usage()
 		os.Exit(0)
 	}
-	out := m.(mods).output
-	if out != "" {
+	if out := m.(mods).output; out != "" {
 		fmt.Println(out)
 	}
 }
