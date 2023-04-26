@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/mattn/go-isatty v0.0.18
 	github.com/muesli/termenv v0.15.2-0.20230414211128-452975b1f758
-	github.com/sashabaranov/go-openai v1.7.0
+	github.com/sashabaranov/go-openai v1.9.0
 	github.com/spf13/pflag v1.0.5
 )
 
