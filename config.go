@@ -7,7 +7,7 @@ import (
 )
 
 type config struct {
-	AltSpinner        bool
+	SimpleSpinner     bool
 	Model             string
 	Markdown          bool
 	Quiet             bool
@@ -27,7 +27,7 @@ func newConfig() config {
 	includePrompt := flag.IntP("prompt", "P", 0, "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.")
 	includePromptArgs := flag.BoolP("prompt-args", "p", false, "Include the prompt from the arguments in the response.")
 	quiet := flag.BoolP("quiet", "q", false, "Quiet mode (hide the spinner while loading).")
-	altSpinner := flag.BoolP("spinner", "s", false, "Use alternate spinner.")
+	simpleSpinner := flag.BoolP("spinner", "s", false, "Use simple spinner.")
 	showHelp := flag.BoolP("help", "h", false, "show help and exit.")
 	version := flag.BoolP("version", "v", false, "Show version")
 	maxTokens := flag.Int("max", 0, "Maximum number of tokens in response.")
@@ -48,6 +48,6 @@ func newConfig() config {
 		IncludePrompt:     *includePrompt,
 		IncludePromptArgs: *includePromptArgs,
 		Version:           *version,
-		AltSpinner:        *altSpinner,
+		SimpleSpinner:     *simpleSpinner,
 	}
 }
