@@ -21,7 +21,7 @@ var (
 type stepSpinnerMsg struct{}
 
 func stepSpinner() tea.Cmd {
-	return tea.Tick(spinnerFPS, func(t time.Time) tea.Msg {
+	return tea.Tick(spinnerFPS, func(_ time.Time) tea.Msg {
 		return stepSpinnerMsg{}
 	})
 }
