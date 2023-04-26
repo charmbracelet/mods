@@ -3,6 +3,7 @@ module github.com/charmbracelet/mods
 go 1.18
 
 require (
+	github.com/charmbracelet/bubbles v0.15.0
 	github.com/charmbracelet/bubbletea v0.23.3-0.20230407150640-666c0814b28a
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/mattn/go-isatty v0.0.18

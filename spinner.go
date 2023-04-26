@@ -1,56 +1,48 @@
 package main
 
 import (
-	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	spinnerLabel = " Generating..."
-	spinnerFPS   = time.Second / 10
-)
+const spinnerLabel = "Generating"
 
 var (
-	spinnerRunes = []rune("⣾⣽⣻⢿⡿⣟⣯⣷")
 	spinnerStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("212"))
+	ellipsis     = spinner.Spinner{
+		Frames: []string{"", ".", "..", "..."},
+		FPS:    time.Second / 3, //nolint:gomnd
+	}
 )
 
-type stepSpinnerMsg struct{}
-
-func stepSpinner() tea.Cmd {
-	return tea.Tick(spinnerFPS, func(_ time.Time) tea.Msg {
-		return stepSpinnerMsg{}
-	})
+type simpleSpinner struct {
+	head spinner.Model
+	tail spinner.Model
 }
 
-type spinner int
-
-// Init initializes the animation.
-func (s spinner) Init() tea.Cmd {
-	return stepSpinner()
-}
-
-// Update handles messages.
-func (s spinner) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
-	case stepSpinnerMsg:
-		s++
-		if int(s) > len(spinnerRunes)-1 {
-			s = 0
-		}
-		return s, stepSpinner()
-	default:
-		return s, nil
+func newSimpleSpinner() tea.Model {
+	return simpleSpinner{
+		head: spinner.New(spinner.WithSpinner(spinner.Dot), spinner.WithStyle(spinnerStyle)),
+		tail: spinner.New(spinner.WithSpinner(ellipsis)),
 	}
 }
 
-// View renders the animation.
-func (s spinner) View() string {
-	var b strings.Builder
-	b.WriteString(spinnerStyle.Render(string(spinnerRunes[s])))
-	b.WriteString(spinnerLabel)
-	return b.String()
+func (s simpleSpinner) Init() tea.Cmd {
+	return tea.Batch(s.head.Tick, s.tail.Tick)
+}
+
+func (s simpleSpinner) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var (
+		cmds = make([]tea.Cmd, 2)
+	)
+	s.head, cmds[0] = s.head.Update(msg)
+	s.tail, cmds[1] = s.tail.Update(msg)
+	return s, tea.Batch(cmds...)
+}
+
+func (s simpleSpinner) View() string {
+	return s.head.View() + spinnerLabel + s.tail.View()
 }
