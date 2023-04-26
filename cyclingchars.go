@@ -18,8 +18,7 @@ var charRunes = []rune("0123456789abcdefABCDEF~!@#$£€%^&*()+=_")
 type charState int
 
 const (
-	charUnbornState charState = iota
-	charNewbornState
+	charInitialState charState = iota
 	charCyclingState
 	charEndOfLifeState
 )
@@ -28,7 +27,6 @@ const (
 type cyclingChar struct {
 	finalValue   rune // if < 0 cycle forever
 	currentValue rune
-	birthDelay   time.Duration
 	initialDelay time.Duration
 	lifetime     time.Duration
 }
@@ -39,13 +37,10 @@ func (c cyclingChar) randomRune() rune {
 
 func (c cyclingChar) state(start time.Time) charState {
 	now := time.Now()
-	if now.Before(start.Add(c.birthDelay)) {
-		return charUnbornState
+	if now.Before(start.Add(c.initialDelay)) {
+		return charInitialState
 	}
-	if now.Before(start.Add(c.birthDelay).Add(c.initialDelay)) {
-		return charNewbornState
-	}
-	if c.finalValue > 0 && now.After(start.Add(c.birthDelay).Add(c.initialDelay)) {
+	if c.finalValue > 0 && now.After(start.Add(c.initialDelay)) {
 		return charEndOfLifeState
 	}
 	return charCyclingState
@@ -54,7 +49,7 @@ func (c cyclingChar) state(start time.Time) charState {
 type stepCharsMsg struct{}
 
 func stepChars() tea.Cmd {
-	return tea.Tick(charCyclingFPS, func(t time.Time) tea.Msg {
+	return tea.Tick(charCyclingFPS, func(_ time.Time) tea.Msg {
 		return stepCharsMsg{}
 	})
 }
@@ -77,14 +72,17 @@ func newCyclingChars() cyclingChars {
 		return time.Duration(rand.Int31n(a)) * (time.Millisecond * b) //nolint:gosec
 	}
 
+	makeInitialDelay := func() time.Duration {
+		return makeDelay(8, 80)
+	}
+
 	c.chars = make([]cyclingChar, initialCharsLength+len(c.label))
 
 	// Initial characters that cycle forever.
 	for i := 0; i < initialCharsLength; i++ {
 		c.chars[i] = cyclingChar{
-			finalValue:   -1,                // cycle forever
-			birthDelay:   makeDelay(25, 20), //nolint:gomnd
-			initialDelay: makeDelay(5, 100), //nolint:gomnd
+			finalValue:   -1,                 // cycle forever
+			initialDelay: makeInitialDelay(), //nolint:gomnd
 		}
 	}
 
@@ -93,9 +91,8 @@ func newCyclingChars() cyclingChars {
 		c.chars[i+initialCharsLength] = cyclingChar{
 			currentValue: '#',
 			finalValue:   r,
-			birthDelay:   makeDelay(2, 100), //nolint:gomnd
-			lifetime:     makeDelay(5, 180), //nolint:gomnd
-			initialDelay: makeDelay(5, 100), //nolint:gomnd
+			initialDelay: makeInitialDelay(), //nolint:gomnd
+			lifetime:     makeDelay(5, 180),  //nolint:gomnd
 		}
 	}
 
@@ -113,9 +110,7 @@ func (c cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case stepCharsMsg:
 		for i, char := range c.chars {
 			switch char.state(c.start) {
-			case charUnbornState:
-				continue
-			case charNewbornState:
+			case charInitialState:
 				c.chars[i].currentValue = '#'
 			case charCyclingState:
 				c.chars[i].currentValue = char.randomRune()
@@ -134,9 +129,7 @@ func (c cyclingChars) View() string {
 	var b strings.Builder
 	for _, char := range c.chars {
 		switch char.state(c.start) {
-		case charUnbornState:
-			continue
-		case charNewbornState:
+		case charInitialState:
 			b.WriteString(spinnerStyle.Render(string(char.currentValue)))
 		case charCyclingState:
 			if char.finalValue < 0 {
