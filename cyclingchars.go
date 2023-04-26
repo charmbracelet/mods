@@ -77,7 +77,7 @@ func newCyclingChars() cyclingChars {
 	}
 
 	makeInitialDelay := func() time.Duration {
-		return makeDelay(8, 60)
+		return makeDelay(8, 60) //nolint:gomnd
 	}
 
 	c.chars = make([]cyclingChar, initialCharsLength+len(c.label))
@@ -85,8 +85,8 @@ func newCyclingChars() cyclingChars {
 	// Initial characters that cycle forever.
 	for i := 0; i < initialCharsLength; i++ {
 		c.chars[i] = cyclingChar{
-			finalValue:   -1,                 // cycle forever
-			initialDelay: makeInitialDelay(), //nolint:gomnd
+			finalValue:   -1, // cycle forever
+			initialDelay: makeInitialDelay(),
 		}
 	}
 
@@ -94,8 +94,8 @@ func newCyclingChars() cyclingChars {
 	for i, r := range c.label {
 		c.chars[i+initialCharsLength] = cyclingChar{
 			finalValue:   r,
-			initialDelay: makeInitialDelay(), //nolint:gomnd
-			lifetime:     makeDelay(5, 180),  //nolint:gomnd
+			initialDelay: makeInitialDelay(),
+			lifetime:     makeDelay(5, 180), //nolint:gomnd
 		}
 	}
 
@@ -134,7 +134,7 @@ func (c cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// If our entire label has reached end of life, start the
 				// ellipsis "spinner" after a short pause.
 				c.ellipsisStarted = true
-				cmd = tea.Tick(time.Millisecond*220, func(_ time.Time) tea.Msg {
+				cmd = tea.Tick(time.Millisecond*220, func(_ time.Time) tea.Msg { //nolint:gomnd
 					return c.ellipsis.Tick()
 				})
 			}
