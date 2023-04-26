@@ -36,7 +36,7 @@ func (s simpleSpinner) Init() tea.Cmd {
 
 func (s simpleSpinner) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
-		cmds = make([]tea.Cmd, 2)
+		cmds = make([]tea.Cmd, 2) //nolint:gomnd
 	)
 	s.head, cmds[0] = s.head.Update(msg)
 	s.tail, cmds[1] = s.tail.Update(msg)
