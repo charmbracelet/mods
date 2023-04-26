@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -57,15 +58,18 @@ func stepChars() tea.Cmd {
 // cyclingChars is the model that manages the animation that displays while the
 // output is being generated.
 type cyclingChars struct {
-	start time.Time
-	chars []cyclingChar
-	label []rune
+	start           time.Time
+	chars           []cyclingChar
+	label           []rune
+	ellipsis        spinner.Model
+	ellipsisStarted bool
 }
 
 func newCyclingChars() cyclingChars {
 	c := cyclingChars{
-		start: time.Now(),
-		label: []rune(" " + spinnerLabel + "..."),
+		start:    time.Now(),
+		label:    []rune(" " + spinnerLabel),
+		ellipsis: spinner.New(spinner.WithSpinner(ellipsis)),
 	}
 
 	makeDelay := func(a int32, b time.Duration) time.Duration {
@@ -73,7 +77,7 @@ func newCyclingChars() cyclingChars {
 	}
 
 	makeInitialDelay := func() time.Duration {
-		return makeDelay(8, 80)
+		return makeDelay(8, 60)
 	}
 
 	c.chars = make([]cyclingChar, initialCharsLength+len(c.label))
@@ -89,7 +93,6 @@ func newCyclingChars() cyclingChars {
 	// Label text that only cycles for a little while.
 	for i, r := range c.label {
 		c.chars[i+initialCharsLength] = cyclingChar{
-			currentValue: '#',
 			finalValue:   r,
 			initialDelay: makeInitialDelay(), //nolint:gomnd
 			lifetime:     makeDelay(5, 180),  //nolint:gomnd
@@ -106,19 +109,42 @@ func (c cyclingChars) Init() tea.Cmd {
 
 // Update handles messages.
 func (c cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg.(type) {
 	case stepCharsMsg:
 		for i, char := range c.chars {
 			switch char.state(c.start) {
 			case charInitialState:
-				c.chars[i].currentValue = '#'
+				c.chars[i].currentValue = '.'
 			case charCyclingState:
 				c.chars[i].currentValue = char.randomRune()
 			case charEndOfLifeState:
 				c.chars[i].currentValue = char.finalValue
 			}
 		}
-		return c, stepChars()
+
+		if !c.ellipsisStarted {
+			var eol int
+			for _, char := range c.chars {
+				if char.state(c.start) == charEndOfLifeState {
+					eol++
+				}
+			}
+			if eol == len(c.label) {
+				// If our entire label has reached end of life, start the
+				// ellipsis "spinner" after a short pause.
+				c.ellipsisStarted = true
+				cmd = tea.Tick(time.Millisecond*220, func(_ time.Time) tea.Msg {
+					return c.ellipsis.Tick()
+				})
+			}
+		}
+
+		return c, tea.Batch(stepChars(), cmd)
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		c.ellipsis, cmd = c.ellipsis.Update(msg)
+		return c, cmd
 	default:
 		return c, nil
 	}
@@ -141,5 +167,5 @@ func (c cyclingChars) View() string {
 			b.WriteRune(char.currentValue)
 		}
 	}
-	return b.String()
+	return b.String() + c.ellipsis.View()
 }
