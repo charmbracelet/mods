@@ -39,9 +39,9 @@ type Mods struct {
 func newMods(cfg config) Mods {
 	var s tea.Model
 	if cfg.AltSpinner {
-		s = newCyclingChars()
-	} else {
 		s = spinner(0)
+	} else {
+		s = newCyclingChars()
 	}
 	return Mods{
 		Config:  cfg,
