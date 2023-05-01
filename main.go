@@ -111,5 +111,8 @@ func main() {
 		flag.Usage()
 		os.Exit(0)
 	}
+	if mods.Error != nil {
+		os.Exit(1)
+	}
 	fmt.Println(mods.FormattedOutput())
 }

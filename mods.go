@@ -31,8 +31,8 @@ type Mods struct {
 	Config  config
 	Output  string
 	Input   string
+	Error   *prettyError
 	state   state
-	error   prettyError
 	spinner tea.Model
 }
 
@@ -174,7 +174,7 @@ func (m Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = quitState
 		return m, tea.Quit
 	case prettyError:
-		m.error = msg
+		m.Error = &msg
 		m.state = errorState
 		return m, tea.Quit
 	case tea.KeyMsg:
@@ -193,7 +193,7 @@ func (m Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Mods) View() string {
 	switch m.state {
 	case errorState:
-		return m.error.Error()
+		return m.Error.Error()
 	case completionState:
 		if !m.Config.Quiet {
 			return m.spinner.View()
