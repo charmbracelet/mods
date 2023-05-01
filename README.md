@@ -1,5 +1,12 @@
 # Mods
 
+<p>
+    <img src="https://stuff.charm.sh/mods/mods-header.webp" width="548" alt="Mods product art and type treatment"/>
+    <br>
+    <a href="https://github.com/charmbracelet/mods/releases"><img src="https://img.shields.io/github/release/charmbracelet/mods.svg" alt="Latest Release"></a>
+    <a href="https://github.com/charmbracelet/mods/actions"><img src="https://github.com/charmbracelet/mods/workflows/build/badge.svg" alt="Build Status"></a>
+</p>
+
 GPT for the command line, built for pipelines.
 
 [demo gif]
