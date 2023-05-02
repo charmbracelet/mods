@@ -16,6 +16,11 @@ import (
 
 const markdownPrefix = "Format the response as Markdown."
 
+const (
+	maxCharsGPT4 = 20000
+	maxCharsGPT  = 12250
+)
+
 type state int
 
 const (
@@ -118,16 +123,17 @@ func startCompletionCmd(cfg config, content string) tea.Cmd {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
 		}
 
-		var maxPromptChars int
-		if cfg.Model == "gpt-4" {
-			maxPromptChars = 25500
-		} else {
-			maxPromptChars = 12250
+		if !cfg.NoLimit {
+			var maxPromptChars int
+			if cfg.Model == "gpt-4" {
+				maxPromptChars = maxCharsGPT4
+			} else {
+				maxPromptChars = maxCharsGPT
+			}
+			if len(content) > maxPromptChars {
+				content = content[:maxPromptChars]
+			}
 		}
-		if len(content)-1 < maxPromptChars {
-			maxPromptChars = len(content) - 1
-		}
-		content = content[:maxPromptChars]
 
 		resp, err := client.CreateChatCompletion(
 			ctx,
