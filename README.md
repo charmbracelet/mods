@@ -7,92 +7,91 @@
     <a href="https://github.com/charmbracelet/mods/actions"><img src="https://github.com/charmbracelet/mods/workflows/build/badge.svg" alt="Build Status"></a>
 </p>
 
-GPT for the command line, built for pipelines.
+AI-powered terminal workflows and pipelines.
 
-[demo gif]
+<img width="600px" src="https://vhs.charm.sh/vhs-2IIUgygv7SwdadyjxKDK86.gif" alt="Made with VHS">
 
-GPT models are really good at interpreting the output of commands and returning
-their results in CLI friendly text formats like Markdown. Mods is a simple tool
-that makes it super easy to use GPT models on the command line and in your
-pipelines.
+GPT models are fantastic at interpreting output and returning results in command line friendly text formats, such as markdown.
 
-To get started, [install Mods]() and check out some of the examples below.
-Since Mods has built-in Markdown formatting, you may also want to grab
-[Glow](https://github.com/charmbracelet/glow) to give the output some _pizzazz_.
+`mods` is a tool that makes it easy for you to use GPT models in your existing pipelines.
 
-## What Can It Do?
+## Usage
 
-Mods works by reading standard in and prefacing it with a prompt supplied in
-the `mods` arguments. It sends the input text to a GPT model and prints out the
-result, optionally asking GPT to format the response as Markdown. This gives
-you a way to "question" the output of a command. Mods will also work on
-standard in or an argument supplied prompt individually.
+Mods reads `stdin` and prefixes a prompt given as arguments.
+This way you can ask questions about the outputs of any command.
+Since the answer will output to `stdout` you can make mods a part of any pipeline.
 
-For example you can:
+For example, you can ask `mods` to improve your code:
 
-### Improve Your Code
+```bash
+mods -f "refactor this code" < main.go | glow
+```
 
-Piping source code to Mods and giving it an instruction on what to do with it
-gives you a lot of options for refactoring, enhancing or debugging code.
+Or, come up with new product features:
 
-`mods -f "refactor this code" < main.go | glow`
-
-### Come Up With Product Features
-
-Mods can also come up with entirely new features based on source code (or a
-README file).
-
+```bash
 `mods -f "come up with 10 new features for this tool." < main.go | glow`
+```
 
-### Help Write Docs
+Even draft up documentation:
 
-Mods can quickly give you a first draft for new documentation.
+```bash
+mods "write a new section to this readme for a feature that sends you a free rabbit if you hit 'r'" | glow
+```
 
-`mods "write a new section to this readme for a feature that sends you a free rabbit if you hit 'r'" | glow`
+Organize your file system:
 
-### Organize Your Videos
+```bash
+ls ~/vids | mods -f "organize these by decade and supply a single sentence summary of each" | glow
+```
 
-The file system can be an amazing source of input for Mods. If you have music
-or video files, Mods can parse the output of `ls` and offer really good
-editorialization of your content.
+Get recommendations on what to watch:
 
-`ls ~/vids | mods -f "organize these by decade and supply a single sentence summary of each" | glow`
+```bash
+ls ~/vids | mods -f "recommend me 10 shows based on these, make them obscure" | glow
+ls ~/vids | mods -f "recommend me 10 albums based on these shows, do not include any soundtrack music or music from the show" | glow
+```
 
-### Make Recommendations
+Predict your fortune based on your chaotic downloads folder:
 
-Mods is really good at generating recommendations based on what you have as
-well, both for similar content but also content in an entirely different media
-(like getting music recommendations based on movies you have).
+```bash
+ls ~/Downloads | mods -f "tell my fortune based on these files" | glow
+```
 
-`ls ~/vids | mods -f "recommend me 10 shows based on these, make them obscure" | glow`
+Quickly understand APIs:
 
-`ls ~/vids | mods -f "recommend me 10 albums based on these shows, do not include any soundtrack music or music from the show" | glow`
+```bash
+curl "https://api.open-meteo.com/v1/forecast?latitude=29.00&longitude=-90.00&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" 2>/dev/null | mods -f "summarize this weather data for a human." | glow
+```
 
-### Read Your Fortune
+Read the comments (so you don't have to):
 
-It's easy to let your downloads folder grow into a chaotic never-ending pit of
-files, but with Mods you can use that to your advantage!
-
-`ls ~/Downloads | mods -f "tell my fortune based on these files" | glow`
-
-### Understand APIs
-
-Mods can parse and understand the output of an API call with `curl` and convert
-it to something human readable.
-
-`curl "https://api.open-meteo.com/v1/forecast?latitude=29.00&longitude=-90.00&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" 2>/dev/null | mods -f "summarize this weather data for a human." | glow`
-
-### Read The Comments (so you don't have to)
-
-Just like with APIs, Mods can read through raw HTML and summarize the contents.
-
-`curl "https://news.ycombinator.com/item?id=30048332" 2>/dev/null | mods -f "what are the authors of these comments saying?" | glow`
+```bash
+curl "https://news.ycombinator.com/item?id=30048332" 2>/dev/null | mods -f "what are the authors of these comments saying?" | glow
+```
 
 ## Installation
 
-Mods currently works with OpenAI's models, so you'll need to set the
-`OPENAI_API_KEY` environment variable to a valid OpenAI key, which you can get
-[from here](https://platform.openai.com/account/api-keys).
+Install `mods` with your preferred package manager.
+`mods` has built-in markdown output which pairs great with `Glow`
+
+```bash
+# macOS or Linux
+brew install mods
+
+# Arch Linux (btw)
+pacman -S mods
+
+# Nix
+nix-env -iA nixpkgs.mods
+```
+
+## Configuration
+
+`mods` requires you to have an `OPENAI_API_KEY` set.
+
+Grab a key from [Open AI](https://platform.openai.com/account/api-keys).
+
 
 ## License
 
