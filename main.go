@@ -89,6 +89,11 @@ func (nr noopRead) Read(_ []byte) (n int, err error) {
 	return 0, nil
 }
 
+func init() {
+	outRenderer.SetHasDarkBackground(true)
+	errRenderer.SetHasDarkBackground(true)
+}
+
 func main() {
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
