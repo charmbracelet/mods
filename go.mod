@@ -7,7 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.23.3-0.20230426200414-29254a08f145
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/mattn/go-isatty v0.0.18
-	github.com/muesli/termenv v0.15.2-0.20230414211128-452975b1f758
+	github.com/muesli/termenv v0.15.2-0.20230503180035-948656871e12
 	github.com/sashabaranov/go-openai v1.9.1
 	github.com/spf13/pflag v1.0.5
 )

@@ -16,20 +16,20 @@ const spinnerLabel = "Generating"
 
 // Renderers.
 var (
-	outRenderer  = lipgloss.DefaultRenderer()
-	errRenderer  = lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
-	spinnerStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("212"))
+	outRenderer = lipgloss.DefaultRenderer()
+	errRenderer = lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 )
 
 // Styles.
 var (
-	errorStyle           = errRenderer.NewStyle().Foreground(lipgloss.Color("1"))
-	codeStyle            = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
-	codeCommentStyle     = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
-	linkStyle            = outRenderer.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
-	helpAppStyle         = outRenderer.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
-	helpFlagStyle        = outRenderer.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true)
-	helpDescriptionStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
+	errorStyle           lipgloss.Style
+	codeStyle            lipgloss.Style
+	codeCommentStyle     lipgloss.Style
+	linkStyle            lipgloss.Style
+	helpAppStyle         lipgloss.Style
+	helpFlagStyle        lipgloss.Style
+	helpDescriptionStyle lipgloss.Style
+	spinnerStyle         lipgloss.Style
 )
 
 // build vars
@@ -95,6 +95,14 @@ func (nr noopRead) Read(_ []byte) (n int, err error) {
 func init() {
 	outRenderer.SetHasDarkBackground(true)
 	errRenderer.SetHasDarkBackground(true)
+	errorStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1"))
+	codeStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
+	codeCommentStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
+	linkStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
+	helpAppStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
+	helpFlagStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true)
+	helpDescriptionStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
+	spinnerStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("212"))
 }
 
 func main() {
