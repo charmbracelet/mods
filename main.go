@@ -105,6 +105,10 @@ func main() {
 		fmt.Println(buildVersion())
 		os.Exit(0)
 	}
+	if config.ShowHelp {
+		flag.Usage()
+		os.Exit(0)
+	}
 	opts := []tea.ProgramOption{tea.WithOutput(errRenderer.Output())}
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		opts = append(opts, tea.WithInput(noopRead{}))
