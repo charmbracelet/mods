@@ -44,7 +44,7 @@ type Mods struct {
 func newMods(cfg config) Mods {
 	var s tea.Model
 	if cfg.SimpleSpinner {
-		s = newSimpleSpinner()
+		s = newEllipsis()
 	} else {
 		s = newCyclingChars()
 	}
