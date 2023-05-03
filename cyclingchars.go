@@ -69,7 +69,7 @@ func newCyclingChars() cyclingChars {
 	c := cyclingChars{
 		start:    time.Now(),
 		label:    []rune(" " + spinnerLabel),
-		ellipsis: spinner.New(spinner.WithSpinner(ellipsis)),
+		ellipsis: spinner.New(spinner.WithSpinner(ellipsisSpinner)),
 	}
 
 	makeDelay := func(a int32, b time.Duration) time.Duration {
