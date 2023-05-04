@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -220,7 +221,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		ae := &openai.APIError{}
 		if errors.As(err, &ae) {
 			switch ae.HTTPStatusCode {
-			case 400:
+			case http.StatusBadRequest:
 				if ae.Code == "context_length_exceeded" {
 					pe := prettyError{err: err, reason: "Maximum prompt size exceeded."}
 					if m.Config.NoLimit {
@@ -230,13 +231,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				}
 				// bad request (do not retry)
 				return prettyError{err: err, reason: "OpenAI API request error."}
-			case 401:
+			case http.StatusUnauthorized:
 				// invalid auth or key (do not retry)
 				return prettyError{err: err, reason: "Invalid OpenAI API key."}
-			case 429:
+			case http.StatusTooManyRequests:
 				// rate limiting or engine overload (wait and retry)
 				return m.retry(content, prettyError{err: err, reason: "You've hit your OpenAI API rate limit."})
-			case 500:
+			case http.StatusInternalServerError:
 				// openai server error (retry)
 				return m.retry(content, prettyError{err: err, reason: "OpenAI API server error."})
 			default:
