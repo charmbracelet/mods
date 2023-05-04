@@ -33,7 +33,7 @@ func newConfig() config {
 	flag.BoolVarP(&c.SimpleSpinner, "spinner", "s", false, "Use simple spinner.")
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, "show help and exit.")
 	flag.BoolVarP(&c.Version, "version", "v", false, "Show version")
-	flag.IntVar(&c.MaxRetries, "max-retries", 5, "Maximum number of times to retry API calls.")
+	flag.IntVar(&c.MaxRetries, "max-retries", 5, "Maximum number of times to retry API calls.") //nolint:gomnd
 	flag.BoolVar(&c.NoLimit, "no-limit", false, "Turn off the client-side limit on the size of the input into the model.")
 	flag.IntVar(&c.MaxTokens, "max", 0, "Maximum number of tokens in response.")
 	flag.Float32Var(&c.Temperature, "temp", 1.0, "Temperature (randomness) of results, from 0.0 to 2.0.")

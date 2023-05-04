@@ -32,9 +32,9 @@ var (
 	helpDescriptionStyle = outRenderer.NewStyle().Foreground(lipgloss.Color("244"))
 )
 
-// build vars
-// nolint: gochecknoglobals
+// Build vars.
 var (
+	//nolint: gochecknoglobals
 	version = "dev"
 	commit  = ""
 	date    = ""

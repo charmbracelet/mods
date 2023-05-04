@@ -118,6 +118,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View implements tea.Model.
 func (m *Mods) View() string {
+	//nolint:exhaustive
 	switch m.state {
 	case errorState:
 		return m.Error.Error()
@@ -165,7 +166,7 @@ func (m *Mods) retry(content string, err prettyError) tea.Msg {
 	if m.retries >= m.Config.MaxRetries {
 		return err
 	}
-	wait := time.Millisecond * 100 * time.Duration(math.Pow(2, float64(m.retries)))
+	wait := time.Millisecond * 100 * time.Duration(math.Pow(2, float64(m.retries))) //nolint:gomnd
 	time.Sleep(wait)
 	return completionInput{content}
 }
