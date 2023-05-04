@@ -10,11 +10,19 @@ import (
 )
 
 const (
+	cyclingCharsLabel  = "Generating"
 	charCyclingFPS     = time.Second / 22
 	initialCharsLength = 10
 )
 
-var charRunes = []rune("0123456789abcdefABCDEF~!@#$£€%^&*()+=_")
+var (
+	charRunes = []rune("0123456789abcdefABCDEF~!@#$£€%^&*()+=_")
+
+	ellipsisSpinner = spinner.Spinner{
+		Frames: []string{"", ".", "..", "..."},
+		FPS:    time.Second / 3, //nolint:gomnd
+	}
+)
 
 type charState int
 
@@ -68,7 +76,7 @@ type cyclingChars struct {
 func newCyclingChars() cyclingChars {
 	c := cyclingChars{
 		start:    time.Now(),
-		label:    []rune(" " + spinnerLabel),
+		label:    []rune(" " + cyclingCharsLabel),
 		ellipsis: spinner.New(spinner.WithSpinner(ellipsisSpinner)),
 	}
 
@@ -156,10 +164,10 @@ func (c cyclingChars) View() string {
 	for _, char := range c.chars {
 		switch char.state(c.start) {
 		case charInitialState:
-			b.WriteString(spinnerStyle.Render(string(char.currentValue)))
+			b.WriteString(cyclingCharsStyle.Render(string(char.currentValue)))
 		case charCyclingState:
 			if char.finalValue < 0 {
-				b.WriteString(spinnerStyle.Render(string(char.currentValue)))
+				b.WriteString(cyclingCharsStyle.Render(string(char.currentValue)))
 				continue
 			}
 			b.WriteRune(char.currentValue)

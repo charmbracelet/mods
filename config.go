@@ -7,7 +7,6 @@ import (
 )
 
 type config struct {
-	SimpleSpinner     bool
 	Model             string
 	Markdown          bool
 	Quiet             bool
@@ -30,7 +29,6 @@ func newConfig() config {
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", 0, "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.")
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", false, "Include the prompt from the arguments in the response.")
 	flag.BoolVarP(&c.Quiet, "quiet", "q", false, "Quiet mode (hide the spinner while loading).")
-	flag.BoolVarP(&c.SimpleSpinner, "spinner", "s", false, "Use simple spinner.")
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, "show help and exit.")
 	flag.BoolVarP(&c.Version, "version", "v", false, "Show version")
 	flag.IntVar(&c.MaxRetries, "max-retries", 5, "Maximum number of times to retry API calls.")

@@ -40,20 +40,15 @@ type Mods struct {
 	Error   *prettyError
 	state   state
 	retries int
-	spinner tea.Model
+	anim    tea.Model
 }
 
 func newMods(cfg config) *Mods {
-	var s tea.Model
-	if cfg.SimpleSpinner {
-		s = newEllipsis()
-	} else {
-		s = newCyclingChars()
-	}
+	anim := newCyclingChars()
 	return &Mods{
-		Config:  cfg,
-		state:   startState,
-		spinner: s,
+		Config: cfg,
+		state:  startState,
+		anim:   anim,
 	}
 }
 
@@ -82,7 +77,7 @@ func (e prettyError) Error() string {
 
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
-	return tea.Batch(readStdinCmd, m.spinner.Init())
+	return tea.Batch(readStdinCmd, m.anim.Init())
 }
 
 // Update implements tea.Model.
@@ -111,7 +106,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	var cmd tea.Cmd
-	m.spinner, cmd = m.spinner.Update(msg)
+	m.anim, cmd = m.anim.Update(msg)
 	return m, cmd
 }
 
@@ -122,7 +117,7 @@ func (m *Mods) View() string {
 		return m.Error.Error()
 	case completionState:
 		if !m.Config.Quiet {
-			return m.spinner.View()
+			return m.anim.View()
 		}
 	}
 	return ""
