@@ -12,13 +12,11 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-const spinnerLabel = "Generating"
-
 // Renderers.
 var (
-	outRenderer  = lipgloss.DefaultRenderer()
-	errRenderer  = lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
-	spinnerStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("212"))
+	outRenderer       = lipgloss.DefaultRenderer()
+	errRenderer       = lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
+	cyclingCharsStyle = errRenderer.NewStyle().Foreground(lipgloss.Color("212"))
 )
 
 // Styles.
