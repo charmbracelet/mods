@@ -18,6 +18,7 @@ type config struct {
 	IncludePromptArgs bool
 	IncludePrompt     int
 	MaxRetries        int
+	Fanciness         uint
 	Prefix            string
 	Version           bool
 }
@@ -36,6 +37,7 @@ func newConfig() config {
 	flag.IntVar(&c.MaxTokens, "max", 0, "Maximum number of tokens in response.")
 	flag.Float32Var(&c.Temperature, "temp", 1.0, "Temperature (randomness) of results, from 0.0 to 2.0.")
 	flag.Float32Var(&c.TopP, "top", 1.0, "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.")
+	flag.UintVar(&c.Fanciness, "fanciness", 10, "Number of cycling characters in the 'generating' animation.")
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Parse()
 	c.Prefix = strings.Join(flag.Args(), " ")
