@@ -12,6 +12,7 @@ import (
 const (
 	cyclingCharsLabel = "Generating"
 	charCyclingFPS    = time.Second / 22
+	maxCyclingChars   = 120
 )
 
 var (
@@ -74,8 +75,8 @@ type cyclingChars struct {
 
 func newCyclingChars(initialCharsSize uint) cyclingChars {
 	n := int(initialCharsSize)
-	if n > 120 {
-		n = 120
+	if n > maxCyclingChars {
+		n = maxCyclingChars
 	}
 
 	c := cyclingChars{
