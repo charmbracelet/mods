@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	cyclingCharsLabel  = "Generating"
-	charCyclingFPS     = time.Second / 22
-	initialCharsLength = 10
+	cyclingCharsLabel = "Generating"
+	charCyclingFPS    = time.Second / 22
 )
 
 var (
@@ -73,7 +72,12 @@ type cyclingChars struct {
 	ellipsisStarted bool
 }
 
-func newCyclingChars() cyclingChars {
+func newCyclingChars(initialCharsSize uint) cyclingChars {
+	n := int(initialCharsSize)
+	if n > 120 {
+		n = 120
+	}
+
 	c := cyclingChars{
 		start:    time.Now(),
 		label:    []rune(" " + cyclingCharsLabel),
@@ -88,10 +92,10 @@ func newCyclingChars() cyclingChars {
 		return makeDelay(8, 60) //nolint:gomnd
 	}
 
-	c.chars = make([]cyclingChar, initialCharsLength+len(c.label))
+	c.chars = make([]cyclingChar, n+len(c.label))
 
 	// Initial characters that cycle forever.
-	for i := 0; i < initialCharsLength; i++ {
+	for i := 0; i < n; i++ {
 		c.chars[i] = cyclingChar{
 			finalValue:   -1, // cycle forever
 			initialDelay: makeInitialDelay(),
@@ -100,7 +104,7 @@ func newCyclingChars() cyclingChars {
 
 	// Label text that only cycles for a little while.
 	for i, r := range c.label {
-		c.chars[i+initialCharsLength] = cyclingChar{
+		c.chars[i+n] = cyclingChar{
 			finalValue:   r,
 			initialDelay: makeInitialDelay(),
 			lifetime:     makeDelay(5, 180), //nolint:gomnd

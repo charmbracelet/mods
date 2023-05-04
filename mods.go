@@ -44,11 +44,10 @@ type Mods struct {
 }
 
 func newMods(cfg config) *Mods {
-	anim := newCyclingChars()
 	return &Mods{
 		Config: cfg,
 		state:  startState,
-		anim:   anim,
+		anim:   newCyclingChars(cfg.Fanciness),
 	}
 }
 
