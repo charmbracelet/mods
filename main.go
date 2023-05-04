@@ -114,7 +114,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	mods := m.(Mods)
+	mods := m.(*Mods)
 	if mods.Input == "" && config.Prefix == "" {
 		flag.Usage()
 		os.Exit(0)

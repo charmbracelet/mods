@@ -3,11 +3,13 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
 	"os"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
@@ -17,7 +19,7 @@ import (
 const markdownPrefix = "Format the response as Markdown."
 
 const (
-	maxCharsGPT4 = 20000
+	maxCharsGPT4 = 24500
 	maxCharsGPT  = 12250
 )
 
@@ -26,7 +28,6 @@ type state int
 const (
 	startState state = iota
 	completionState
-	quitState
 	errorState
 )
 
@@ -38,28 +39,29 @@ type Mods struct {
 	Input   string
 	Error   *prettyError
 	state   state
+	retries int
 	spinner tea.Model
 }
 
-func newMods(cfg config) Mods {
+func newMods(cfg config) *Mods {
 	var s tea.Model
 	if cfg.SimpleSpinner {
 		s = newEllipsis()
 	} else {
 		s = newCyclingChars()
 	}
-	return Mods{
+	return &Mods{
 		Config:  cfg,
 		state:   startState,
 		spinner: s,
 	}
 }
 
-// stdinContent is a tea.Msg that wraps the content read from stdin.
-type stdinContent struct{ content string }
+// completionInput is a tea.Msg that wraps the content read from stdin.
+type completionInput struct{ content string }
 
 // completionOutput a tea.Msg that wraps the content returned from openai.
-type completionOutput struct{ output string }
+type completionOutput struct{ content string }
 
 // prettyError is a wrapper around an error that adds a reason and a pretty
 // error message using lipgloss.
@@ -78,33 +80,98 @@ func (e prettyError) Error() string {
 	return sb.String()
 }
 
-func readStdinCmd() tea.Msg {
-	if !isatty.IsTerminal(os.Stdin.Fd()) {
-		reader := bufio.NewReader(os.Stdin)
-		stdinBytes, err := io.ReadAll(reader)
-		if err != nil {
-			return prettyError{err, "Unable to read stdin."}
+// Init implements tea.Model.
+func (m *Mods) Init() tea.Cmd {
+	return tea.Batch(readStdinCmd, m.spinner.Init())
+}
+
+// Update implements tea.Model.
+func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case completionInput:
+		if msg.content == "" && m.Config.Prefix == "" {
+			return m, tea.Quit
 		}
-		return stdinContent{string(stdinBytes)}
+		if msg.content != "" {
+			m.Input = msg.content
+		}
+		m.state = completionState
+		return m, m.startCompletionCmd(msg.content)
+	case completionOutput:
+		m.Output = msg.content
+		return m, tea.Quit
+	case prettyError:
+		m.Error = &msg
+		m.state = errorState
+		return m, tea.Quit
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		}
 	}
-	return stdinContent{""}
+	var cmd tea.Cmd
+	m.spinner, cmd = m.spinner.Update(msg)
+	return m, cmd
 }
 
-// noOmitFloat converts a 0.0 value to a float usable by the OpenAI client
-// library, which currently uses Float32 fields in the request struct with the
-// omitempty tag. This means we need to use math.SmallestNonzeroFloat32 instead
-// of 0.0 so it doesn't get stripped from the request and replaced server side
-// with the default values.
-// Issue: https://github.com/sashabaranov/go-openai/issues/9
-func noOmitFloat(f float32) float32 {
-	if f == 0.0 {
-		return math.SmallestNonzeroFloat32
+// View implements tea.Model.
+func (m *Mods) View() string {
+	switch m.state {
+	case errorState:
+		return m.Error.Error()
+	case completionState:
+		if !m.Config.Quiet {
+			return m.spinner.View()
+		}
 	}
-	return f
+	return ""
 }
 
-func startCompletionCmd(cfg config, content string) tea.Cmd {
+// FormattedOutput returns the response from OpenAI with the user configured
+// prefix and standard in settings.
+func (m *Mods) FormattedOutput() string {
+	prefixFormat := "> %s\n\n---\n\n%s"
+	stdinFormat := "```\n%s```\n\n---\n\n%s"
+	out := m.Output
+
+	if m.Config.IncludePrompt != 0 {
+		if m.Config.IncludePrompt < 0 {
+			out = fmt.Sprintf(stdinFormat, m.Input, out)
+		}
+		scanner := bufio.NewScanner(strings.NewReader(m.Input))
+		i := 0
+		in := ""
+		for scanner.Scan() {
+			if i == m.Config.IncludePrompt {
+				break
+			}
+			in += (scanner.Text() + "\n")
+			i++
+		}
+		out = fmt.Sprintf(stdinFormat, in, out)
+	}
+
+	if m.Config.IncludePromptArgs || m.Config.IncludePrompt != 0 {
+		out = fmt.Sprintf(prefixFormat, m.Config.Prefix, out)
+	}
+
+	return out
+}
+
+func (m *Mods) retry(content string, err prettyError) tea.Msg {
+	m.retries++
+	if m.retries >= m.Config.MaxRetries {
+		return err
+	}
+	wait := time.Millisecond * 100 * time.Duration(math.Pow(2, float64(m.retries)))
+	time.Sleep(wait)
+	return completionInput{content}
+}
+
+func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	return func() tea.Msg {
+		cfg := m.Config
 		key := os.Getenv("OPENAI_API_KEY")
 		if key == "" {
 			return prettyError{
@@ -150,91 +217,61 @@ func startCompletionCmd(cfg config, content string) tea.Cmd {
 				},
 			},
 		)
+		ae := &openai.APIError{}
+		if errors.As(err, &ae) {
+			switch ae.HTTPStatusCode {
+			case 400:
+				if ae.Code == "context_length_exceeded" {
+					pe := prettyError{err: err, reason: "Maximum prompt size exceeded."}
+					if m.Config.NoLimit {
+						return pe
+					}
+					return m.retry(content[:len(content)-10], pe)
+				}
+				// bad request (do not retry)
+				return prettyError{err: err, reason: "OpenAI API request error."}
+			case 401:
+				// invalid auth or key (do not retry)
+				return prettyError{err: err, reason: "Invalid OpenAI API key."}
+			case 429:
+				// rate limiting or engine overload (wait and retry)
+				return m.retry(content, prettyError{err: err, reason: "You've hit your OpenAI API rate limit."})
+			case 500:
+				// openai server error (retry)
+				return m.retry(content, prettyError{err: err, reason: "OpenAI API server error."})
+			default:
+				return m.retry(content, prettyError{err: err, reason: "Unknown OpenAI API error."})
+			}
+		}
+
 		if err != nil {
-			return prettyError{err: err, reason: "There was a problem with the OpenAI API."}
+			return prettyError{err: err, reason: "There was a problem with the OpenAI API request."}
 		}
 		return completionOutput{resp.Choices[0].Message.Content}
 	}
 }
 
-// Init implements tea.Model.
-func (m Mods) Init() tea.Cmd {
-	return tea.Batch(readStdinCmd, m.spinner.Init())
+func readStdinCmd() tea.Msg {
+	if !isatty.IsTerminal(os.Stdin.Fd()) {
+		reader := bufio.NewReader(os.Stdin)
+		stdinBytes, err := io.ReadAll(reader)
+		if err != nil {
+			return prettyError{err, "Unable to read stdin."}
+		}
+		return completionInput{string(stdinBytes)}
+	}
+	return completionInput{""}
 }
 
-// Update implements tea.Model.
-func (m Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case stdinContent:
-		if msg.content == "" && m.Config.Prefix == "" {
-			m.state = quitState
-			return m, tea.Quit
-		}
-		if msg.content != "" {
-			m.Input = msg.content
-		}
-		m.state = completionState
-		return m, startCompletionCmd(m.Config, msg.content)
-	case completionOutput:
-		m.Output = msg.output
-		m.state = quitState
-		return m, tea.Quit
-	case prettyError:
-		m.Error = &msg
-		m.state = errorState
-		return m, tea.Quit
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			m.state = quitState
-			return m, tea.Quit
-		}
+// noOmitFloat converts a 0.0 value to a float usable by the OpenAI client
+// library, which currently uses Float32 fields in the request struct with the
+// omitempty tag. This means we need to use math.SmallestNonzeroFloat32 instead
+// of 0.0 so it doesn't get stripped from the request and replaced server side
+// with the default values.
+// Issue: https://github.com/sashabaranov/go-openai/issues/9
+func noOmitFloat(f float32) float32 {
+	if f == 0.0 {
+		return math.SmallestNonzeroFloat32
 	}
-	var cmd tea.Cmd
-	m.spinner, cmd = m.spinner.Update(msg)
-	return m, cmd
-}
-
-// View implements tea.Model.
-func (m Mods) View() string {
-	switch m.state {
-	case errorState:
-		return m.Error.Error()
-	case completionState:
-		if !m.Config.Quiet {
-			return m.spinner.View()
-		}
-	}
-	return ""
-}
-
-// FormattedOutput returns the response from OpenAI with the user configured
-// prefix and standard in settings.
-func (m Mods) FormattedOutput() string {
-	prefixFormat := "> %s\n\n---\n\n%s"
-	stdinFormat := "```\n%s```\n\n---\n\n%s"
-	out := m.Output
-
-	if m.Config.IncludePrompt != 0 {
-		if m.Config.IncludePrompt < 0 {
-			out = fmt.Sprintf(stdinFormat, m.Input, out)
-		}
-		scanner := bufio.NewScanner(strings.NewReader(m.Input))
-		i := 0
-		in := ""
-		for scanner.Scan() {
-			if i == m.Config.IncludePrompt {
-				break
-			}
-			in += (scanner.Text() + "\n")
-			i++
-		}
-		out = fmt.Sprintf(stdinFormat, in, out)
-	}
-
-	if m.Config.IncludePromptArgs || m.Config.IncludePrompt != 0 {
-		out = fmt.Sprintf(prefixFormat, m.Config.Prefix, out)
-	}
-
-	return out
+	return f
 }
