@@ -79,9 +79,14 @@ func newCyclingChars(initialCharsSize uint) cyclingChars {
 		n = maxCyclingChars
 	}
 
+	gap := " "
+	if n == 0 {
+		gap = ""
+	}
+
 	c := cyclingChars{
 		start:    time.Now(),
-		label:    []rune(" " + cyclingCharsLabel),
+		label:    []rune(gap + cyclingCharsLabel),
 		ellipsis: spinner.New(spinner.WithSpinner(ellipsisSpinner)),
 	}
 
