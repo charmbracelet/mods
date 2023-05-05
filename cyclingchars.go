@@ -193,26 +193,26 @@ func (c cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the animation.
 func (c cyclingChars) View() string {
-	var (
-		b strings.Builder
-		s = &c.styles.cyclingChars
-	)
+	var b strings.Builder
 	for i, char := range c.chars {
-		switch char.state(c.start) {
-		case charInitialState:
-			b.WriteString(s.Render(string(char.currentValue)))
-		case charCyclingState:
-			if char.finalValue < 0 {
-				if len(c.ramp) > 0 && i < len(c.ramp) {
-					s = &c.ramp[i]
-				}
-				b.WriteString(s.Render(string(char.currentValue)))
-				continue
-			}
-			b.WriteRune(char.currentValue)
-		case charEndOfLifeState:
-			b.WriteRune(char.currentValue)
+		var (
+			s *lipgloss.Style
+			r = char.currentValue
+		)
+		if len(c.ramp) > 0 && i < len(c.ramp) {
+			// There's a gradient ramp style defined for this char. Style it
+			// accordingly.
+			s = &c.ramp[i]
+		} else if char.finalValue < 0 {
+			// No gradient ramp defined, but this color will cycle forever so
+			// let's color it accordingly.
+			s = &c.styles.cyclingChars
 		}
+		if s != nil {
+			b.WriteString(s.Render(string(r)))
+			continue
+		}
+		b.WriteRune(r)
 	}
 	return b.String() + c.ellipsis.View()
 }
