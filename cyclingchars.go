@@ -78,7 +78,7 @@ type cyclingChars struct {
 	styles          styles
 }
 
-func newCyclingChars(initialCharsSize uint, lg *lipgloss.Renderer, s styles) cyclingChars {
+func newCyclingChars(initialCharsSize uint, r *lipgloss.Renderer, s styles) cyclingChars {
 	n := int(initialCharsSize)
 	if n > maxCyclingChars {
 		n = maxCyclingChars
@@ -99,17 +99,17 @@ func newCyclingChars(initialCharsSize uint, lg *lipgloss.Renderer, s styles) cyc
 	// If we're in truecolor mode (and there are enough cycling characters)
 	// color the cycling characters with a gradient ramp.
 	const (
-		minRampSize = 2
+		minRampSize = 3
 		startColor  = "#F967DC"
 		endColor    = "#6B50FF"
 	)
-	if n > minRampSize && lg.ColorProfile() == termenv.TrueColor {
+	if n >= minRampSize && r.ColorProfile() == termenv.TrueColor {
 		c.ramp = make([]lipgloss.Style, n)
 		for i := range c.ramp {
 			start, _ := colorful.Hex(startColor)
 			end, _ := colorful.Hex(endColor)
 			step := start.BlendLuv(end, float64(i)/float64(n))
-			c.ramp[i] = lg.NewStyle().Foreground(lipgloss.Color(step.Hex()))
+			c.ramp[i] = r.NewStyle().Foreground(lipgloss.Color(step.Hex()))
 		}
 	}
 
