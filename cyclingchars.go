@@ -7,6 +7,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/lucasb-eyer/go-colorful"
+	"github.com/muesli/termenv"
 )
 
 const (
@@ -68,12 +71,13 @@ func stepChars() tea.Cmd {
 type cyclingChars struct {
 	start           time.Time
 	chars           []cyclingChar
+	ramp            []lipgloss.Style
 	label           []rune
 	ellipsis        spinner.Model
 	ellipsisStarted bool
 }
 
-func newCyclingChars(initialCharsSize uint) cyclingChars {
+func newCyclingChars(initialCharsSize uint, lg *lipgloss.Renderer) cyclingChars {
 	n := int(initialCharsSize)
 	if n > maxCyclingChars {
 		n = maxCyclingChars
@@ -88,6 +92,23 @@ func newCyclingChars(initialCharsSize uint) cyclingChars {
 		start:    time.Now(),
 		label:    []rune(gap + cyclingCharsLabel),
 		ellipsis: spinner.New(spinner.WithSpinner(ellipsisSpinner)),
+	}
+
+	// If we're in truecolor mode (and there are enough cycling characters)
+	// color the cycling characters with a gradient ramp.
+	const (
+		minRampSize = 2
+		startColor  = "#F967DC"
+		endColor    = "#6B50FF"
+	)
+	if n > minRampSize && lg.ColorProfile() == termenv.TrueColor {
+		c.ramp = make([]lipgloss.Style, n)
+		for i := range c.ramp {
+			start, _ := colorful.Hex(startColor)
+			end, _ := colorful.Hex(endColor)
+			step := start.BlendLuv(end, float64(i)/float64(n))
+			c.ramp[i] = lg.NewStyle().Foreground(lipgloss.Color(step.Hex()))
+		}
 	}
 
 	makeDelay := func(a int32, b time.Duration) time.Duration {
@@ -171,13 +192,17 @@ func (c cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the animation.
 func (c cyclingChars) View() string {
 	var b strings.Builder
-	for _, char := range c.chars {
+	for i, char := range c.chars {
 		switch char.state(c.start) {
 		case charInitialState:
 			b.WriteString(cyclingCharsStyle.Render(string(char.currentValue)))
 		case charCyclingState:
 			if char.finalValue < 0 {
-				b.WriteString(cyclingCharsStyle.Render(string(char.currentValue)))
+				s := &cyclingCharsStyle
+				if len(c.ramp) > 0 && i < len(c.ramp) {
+					s = &c.ramp[i]
+				}
+				b.WriteString(s.Render(string(char.currentValue)))
 				continue
 			}
 			b.WriteRune(char.currentValue)
