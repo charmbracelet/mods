@@ -116,7 +116,8 @@ func main() {
 	p := tea.NewProgram(newMods(config, renderer), opts...)
 	m, err := p.Run()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	mods := m.(*Mods)
 	if mods.Input == "" && config.Prefix == "" {
