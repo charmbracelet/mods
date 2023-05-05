@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -41,7 +42,7 @@ var (
 
 func usage() {
 	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
-	fmt.Printf("Usage:\n  %s [OPTIONS] [PREFIX TERM]\n\n", helpAppStyle.Render(os.Args[0]))
+	fmt.Printf("Usage:\n  %s [OPTIONS] [PREFIX TERM]\n\n", helpAppStyle.Render(filepath.Base(os.Args[0])))
 	fmt.Println("Options:")
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
