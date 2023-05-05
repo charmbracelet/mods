@@ -48,7 +48,7 @@ func newMods(cfg config) *Mods {
 	return &Mods{
 		Config: cfg,
 		state:  startState,
-		anim:   newCyclingChars(cfg.Fanciness),
+		anim:   newCyclingChars(cfg.Fanciness, errRenderer),
 	}
 }
 
