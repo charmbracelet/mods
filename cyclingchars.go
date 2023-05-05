@@ -75,9 +75,10 @@ type cyclingChars struct {
 	label           []rune
 	ellipsis        spinner.Model
 	ellipsisStarted bool
+	styles          styles
 }
 
-func newCyclingChars(initialCharsSize uint, lg *lipgloss.Renderer) cyclingChars {
+func newCyclingChars(initialCharsSize uint, lg *lipgloss.Renderer, s styles) cyclingChars {
 	n := int(initialCharsSize)
 	if n > maxCyclingChars {
 		n = maxCyclingChars
@@ -92,6 +93,7 @@ func newCyclingChars(initialCharsSize uint, lg *lipgloss.Renderer) cyclingChars 
 		start:    time.Now(),
 		label:    []rune(gap + cyclingCharsLabel),
 		ellipsis: spinner.New(spinner.WithSpinner(ellipsisSpinner)),
+		styles:   s,
 	}
 
 	// If we're in truecolor mode (and there are enough cycling characters)
@@ -191,14 +193,16 @@ func (c cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the animation.
 func (c cyclingChars) View() string {
-	var b strings.Builder
+	var (
+		b strings.Builder
+		s = &c.styles.cyclingChars
+	)
 	for i, char := range c.chars {
 		switch char.state(c.start) {
 		case charInitialState:
-			b.WriteString(cyclingCharsStyle.Render(string(char.currentValue)))
+			b.WriteString(s.Render(string(char.currentValue)))
 		case charCyclingState:
 			if char.finalValue < 0 {
-				s := &cyclingCharsStyle
 				if len(c.ramp) > 0 && i < len(c.ramp) {
 					s = &c.ramp[i]
 				}

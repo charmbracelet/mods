@@ -13,6 +13,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -35,20 +36,25 @@ const (
 // Mods is the Bubble Tea model that manages reading stdin and querying the
 // OpenAI API.
 type Mods struct {
-	Config  config
-	Output  string
-	Input   string
-	Error   *prettyError
-	state   state
-	retries int
-	anim    tea.Model
+	Config   config
+	Output   string
+	Input    string
+	Error    *prettyError
+	state    state
+	retries  int
+	styles   styles
+	renderer *lipgloss.Renderer
+	anim     tea.Model
 }
 
-func newMods(cfg config) *Mods {
+func newMods(cfg config, r *lipgloss.Renderer) *Mods {
+	s := makeStyles(r)
 	return &Mods{
-		Config: cfg,
-		state:  startState,
-		anim:   newCyclingChars(cfg.Fanciness, errRenderer),
+		Config:   cfg,
+		state:    startState,
+		renderer: r,
+		styles:   s,
+		anim:     newCyclingChars(cfg.Fanciness, r, s),
 	}
 }
 
@@ -65,12 +71,12 @@ type prettyError struct {
 	reason string
 }
 
-func (e prettyError) Error() string {
+func (e prettyError) Error(s styles) string {
 	var sb strings.Builder
 	fmt.Fprintln(&sb)
-	fmt.Fprintln(&sb, errorStyle.Render("  Error:", e.reason))
+	fmt.Fprintln(&sb, s.error.Render("  Error:", e.reason))
 	fmt.Fprintln(&sb)
-	fmt.Fprintln(&sb, "  "+errorStyle.Render(e.err.Error()))
+	fmt.Fprintln(&sb, "  "+s.error.Render(e.err.Error()))
 	fmt.Fprintln(&sb)
 	return sb.String()
 }
@@ -115,7 +121,7 @@ func (m *Mods) View() string {
 	//nolint:exhaustive
 	switch m.state {
 	case errorState:
-		return m.Error.Error()
+		return m.Error.Error(m.styles)
 	case completionState:
 		if !m.Config.Quiet {
 			return m.anim.View()
@@ -171,8 +177,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		key := os.Getenv("OPENAI_API_KEY")
 		if key == "" {
 			return prettyError{
-				err:    fmt.Errorf("You can grab one at %s", linkStyle.Render("https://platform.openai.com/account/api-keys.")),
-				reason: codeStyle.Render("OPENAI_API_KEY") + errorStyle.Render(" environment variabled is required."),
+				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
+				reason: m.styles.code.Render("OPENAI_API_KEY") + m.styles.error.Render(" environment variabled is required."),
 			}
 		}
 		client := openai.NewClient(key)
