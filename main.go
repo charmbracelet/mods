@@ -25,24 +25,24 @@ var (
 )
 
 type styles struct {
+	comment,
+	cyclingChars,
 	error,
-	code,
-	codeComment,
+	inlineCode,
 	link,
-	helpFlag,
-	helpDesc,
-	cyclingChars lipgloss.Style
+	usageDesc,
+	usageFlag lipgloss.Style
 }
 
 func makeStyles(r *lipgloss.Renderer) styles {
 	return styles{
-		error:        r.NewStyle().Foreground(lipgloss.Color("1")),
-		code:         r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1),
-		codeComment:  r.NewStyle().Foreground(lipgloss.Color("244")),
-		link:         r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true),
-		helpFlag:     r.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true),
-		helpDesc:     r.NewStyle().Foreground(lipgloss.Color("244")),
+		comment:      r.NewStyle().Foreground(lipgloss.Color("244")),
 		cyclingChars: r.NewStyle().Foreground(lipgloss.Color("212")),
+		error:        r.NewStyle().Foreground(lipgloss.Color("1")),
+		inlineCode:   r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1),
+		link:         r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true),
+		usageDesc:    r.NewStyle().Foreground(lipgloss.Color("244")),
+		usageFlag:    r.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true),
 	}
 }
 
@@ -86,22 +86,22 @@ func usage() {
 		if f.Shorthand == "" {
 			fmt.Printf(
 				"  %-42s %s\n",
-				s.helpFlag.Render("--"+f.Name),
-				s.helpDesc.Render(f.Usage),
+				s.usageFlag.Render("--"+f.Name),
+				s.usageDesc.Render(f.Usage),
 			)
 		} else {
 			fmt.Printf(
 				"  %s, %-38s %s\n",
-				s.helpFlag.Render("-"+f.Shorthand),
-				s.helpFlag.Render("--"+f.Name),
-				s.helpDesc.Render(f.Usage),
+				s.usageFlag.Render("-"+f.Shorthand),
+				s.usageFlag.Render("--"+f.Name),
+				s.usageDesc.Render(f.Usage),
 			)
 		}
 	})
 	desc, example := randomExample()
 	fmt.Printf(
 		"\nExample:\n  %s\n  %s\n",
-		s.codeComment.Render("# "+desc),
+		s.comment.Render("# "+desc),
 		example,
 	)
 }
