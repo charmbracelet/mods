@@ -29,23 +29,26 @@ type styles struct {
 	comment      lipgloss.Style
 	cyclingChars lipgloss.Style
 	error        lipgloss.Style
-	inlineCode   lipgloss.Style
 	flag         lipgloss.Style
 	flagComma    lipgloss.Style
+	inlineCode   lipgloss.Style
 	link         lipgloss.Style
+	pipe         lipgloss.Style
+	quote        lipgloss.Style
 }
 
-func makeStyles(r *lipgloss.Renderer) styles {
-	return styles{
-		cliArgs:      r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7964FC", Dark: "#624BED"}),
-		comment:      r.NewStyle().Foreground(lipgloss.Color("243")),
-		cyclingChars: r.NewStyle().Foreground(lipgloss.Color("212")),
-		error:        r.NewStyle().Foreground(lipgloss.Color("1")),
-		flag:         r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"}),
-		flagComma:    r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#5DD6C0", Dark: "#9F5386"}).SetString(","),
-		inlineCode:   r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1),
-		link:         r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true),
-	}
+func makeStyles(r *lipgloss.Renderer) (s styles) {
+	s.cliArgs = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7964FC", Dark: "#624BED"})
+	s.comment = r.NewStyle().Foreground(lipgloss.Color("243"))
+	s.cyclingChars = r.NewStyle().Foreground(lipgloss.Color("212"))
+	s.error = r.NewStyle().Foreground(lipgloss.Color("1"))
+	s.flag = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"})
+	s.flagComma = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#F19DD5", Dark: "#9F5386"}).SetString(",")
+	s.inlineCode = r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
+	s.link = r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
+	s.quote = r.NewStyle().Foreground(lipgloss.Color("#00DA8B"))
+	s.pipe = s.cliArgs.Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
+	return s
 }
 
 func makeGradientRamp(length int) []lipgloss.Color {
@@ -109,7 +112,7 @@ func usage() {
 	fmt.Printf(
 		"\nExample:\n  %s\n  %s\n",
 		s.comment.Render("# "+desc),
-		example,
+		cheapHighlighting(r, s, example),
 	)
 }
 

@@ -2,6 +2,9 @@ package main
 
 import (
 	"math/rand"
+	"regexp"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 var examples = map[string]string{
@@ -17,4 +20,18 @@ func randomExample() (string, string) {
 	}
 	desc := keys[rand.Intn(len(keys))] //nolint:gosec
 	return desc, examples[desc]
+}
+
+func cheapHighlighting(r *lipgloss.Renderer, s styles, code string) string {
+	code = regexp.
+		MustCompile(`"([^"\\]|\\.)*"`).
+		ReplaceAllStringFunc(code, func(x string) string {
+			return s.quote.Render(x)
+		})
+	code = regexp.
+		MustCompile(`\|`).
+		ReplaceAllStringFunc(code, func(x string) string {
+			return s.pipe.Render(x)
+		})
+	return code
 }
