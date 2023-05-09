@@ -29,7 +29,6 @@ type styles struct {
 	code,
 	codeComment,
 	link,
-	helpApp,
 	helpFlag,
 	helpDesc,
 	cyclingChars lipgloss.Style
@@ -41,7 +40,6 @@ func makeStyles(r *lipgloss.Renderer) styles {
 		code:         r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1),
 		codeComment:  r.NewStyle().Foreground(lipgloss.Color("244")),
 		link:         r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true),
-		helpApp:      r.NewStyle().Foreground(lipgloss.Color("208")).Bold(true),
 		helpFlag:     r.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true),
 		helpDesc:     r.NewStyle().Foreground(lipgloss.Color("244")),
 		cyclingChars: r.NewStyle().Foreground(lipgloss.Color("212")),
