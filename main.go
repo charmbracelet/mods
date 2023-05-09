@@ -25,6 +25,7 @@ var (
 )
 
 type styles struct {
+	appName      lipgloss.Style
 	cliArgs      lipgloss.Style
 	comment      lipgloss.Style
 	cyclingChars lipgloss.Style
@@ -38,12 +39,13 @@ type styles struct {
 }
 
 func makeStyles(r *lipgloss.Renderer) (s styles) {
-	s.cliArgs = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7964FC", Dark: "#624BED"})
-	s.comment = r.NewStyle().Foreground(lipgloss.Color("243"))
+	s.appName = r.NewStyle().Bold(true)
+	s.cliArgs = r.NewStyle().Foreground(lipgloss.Color("#585858"))
+	s.comment = r.NewStyle().Foreground(lipgloss.Color("#767676"))
 	s.cyclingChars = r.NewStyle().Foreground(lipgloss.Color("212"))
 	s.error = r.NewStyle().Foreground(lipgloss.Color("1"))
-	s.flag = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"}).Bold(true)
-	s.flagComma = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#F19DD5", Dark: "#9F5386"}).SetString(",")
+	s.flag = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#00B594", Dark: "#3EEFCF"}).Bold(true)
+	s.flagComma = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#5DD6C0", Dark: "#427C72"}).SetString(",")
 	s.inlineCode = r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
 	s.link = r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
 	s.quote = r.NewStyle().Foreground(lipgloss.Color("#00DA8B"))
@@ -66,7 +68,7 @@ func makeGradientRamp(length int) []lipgloss.Color {
 	return c
 }
 
-func makeGradientText(r *lipgloss.Renderer, str string) string {
+func makeGradientText(baseStyle lipgloss.Style, str string) string {
 	const minSize = 3
 	if len(str) < minSize {
 		return str
@@ -74,7 +76,7 @@ func makeGradientText(r *lipgloss.Renderer, str string) string {
 	b := strings.Builder{}
 	runes := []rune(str)
 	for i, c := range makeGradientRamp(len(str)) {
-		b.WriteString(r.NewStyle().Foreground(c).Render(string(runes[i])))
+		b.WriteString(baseStyle.Copy().Foreground(c).Render(string(runes[i])))
 	}
 	return b.String()
 }
@@ -82,25 +84,29 @@ func makeGradientText(r *lipgloss.Renderer, str string) string {
 func usage() {
 	r := lipgloss.DefaultRenderer()
 	s := makeStyles(r)
-	appName := makeGradientText(r, filepath.Base(os.Args[0]))
+	appName := filepath.Base(os.Args[0])
+
+	if r.ColorProfile() == termenv.TrueColor {
+		appName = makeGradientText(s.appName, appName)
+	}
 
 	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
 	fmt.Printf(
 		"Usage:\n  %s %s\n\n",
-		string(appName),
+		appName,
 		s.cliArgs.Render("[OPTIONS] [PREFIX TERM]"),
 	)
 	fmt.Println("Options:")
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
 			fmt.Printf(
-				"  %-42s %s\n",
+				"  %-41s %s\n",
 				s.flag.Render("--"+f.Name),
 				f.Usage,
 			)
 		} else {
 			fmt.Printf(
-				"  %s%s %-38s %s\n",
+				"  %s%s %-37s %s\n",
 				s.flag.Render("-"+f.Shorthand),
 				s.flagComma,
 				s.flag.Render("--"+f.Name),
