@@ -178,7 +178,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if key == "" {
 			return prettyError{
 				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
-				reason: m.styles.code.Render("OPENAI_API_KEY") + m.styles.error.Render(" environment variabled is required."),
+				reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + m.styles.error.Render(" environment variabled is required."),
 			}
 		}
 		client := openai.NewClient(key)
