@@ -25,24 +25,26 @@ var (
 )
 
 type styles struct {
-	comment,
-	cyclingChars,
-	error,
-	inlineCode,
-	link,
-	usageDesc,
-	usageFlag lipgloss.Style
+	cliArgs      lipgloss.Style
+	comment      lipgloss.Style
+	cyclingChars lipgloss.Style
+	error        lipgloss.Style
+	inlineCode   lipgloss.Style
+	flag         lipgloss.Style
+	flagComma    lipgloss.Style
+	link         lipgloss.Style
 }
 
 func makeStyles(r *lipgloss.Renderer) styles {
 	return styles{
-		comment:      r.NewStyle().Foreground(lipgloss.Color("244")),
+		cliArgs:      r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#7964FC", Dark: "#624BED"}),
+		comment:      r.NewStyle().Foreground(lipgloss.Color("243")),
 		cyclingChars: r.NewStyle().Foreground(lipgloss.Color("212")),
 		error:        r.NewStyle().Foreground(lipgloss.Color("1")),
+		flag:         r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"}),
+		flagComma:    r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#5DD6C0", Dark: "#9F5386"}).SetString(","),
 		inlineCode:   r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1),
 		link:         r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true),
-		usageDesc:    r.NewStyle().Foreground(lipgloss.Color("244")),
-		usageFlag:    r.NewStyle().Foreground(lipgloss.Color("#41ffef")).Bold(true),
 	}
 }
 
@@ -80,21 +82,26 @@ func usage() {
 	appName := makeGradientText(r, filepath.Base(os.Args[0]))
 
 	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
-	fmt.Printf("Usage:\n  %s [OPTIONS] [PREFIX TERM]\n\n", string(appName))
+	fmt.Printf(
+		"Usage:\n  %s %s\n\n",
+		string(appName),
+		s.cliArgs.Render("[OPTIONS] [PREFIX TERM]"),
+	)
 	fmt.Println("Options:")
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
 			fmt.Printf(
-				"  %-42s %s\n",
-				s.usageFlag.Render("--"+f.Name),
-				s.usageDesc.Render(f.Usage),
+				"  %-40s %s\n",
+				s.flag.Render("--"+f.Name),
+				f.Usage,
 			)
 		} else {
 			fmt.Printf(
-				"  %s, %-38s %s\n",
-				s.usageFlag.Render("-"+f.Shorthand),
-				s.usageFlag.Render("--"+f.Name),
-				s.usageDesc.Render(f.Usage),
+				"  %s%s %-36s %s\n",
+				s.flag.Render("-"+f.Shorthand),
+				s.flagComma,
+				s.flag.Render("--"+f.Name),
+				f.Usage,
 			)
 		}
 	})
