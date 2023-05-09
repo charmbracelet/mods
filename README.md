@@ -94,6 +94,93 @@ Mods currently works with OpenAI's models, so you'll need to set the
 `OPENAI_API_KEY` environment variable to a valid OpenAI key, which you can get
 [from here](https://platform.openai.com/account/api-keys).
 
+## Settings
+
+Mods lets you tune your query with a variety of settings that you can use with
+flags or environment variables.
+
+### Model
+
+`-m`, `--model`, `MODS_MODEL`
+
+Mods uses `gpt-4` by default but you can specify any OpenAI model as long as
+your account has access to it. Mods also plans to eventually support local
+models.
+
+### Format As Markdown
+
+`-f`, `--format`, `MODS_FORMAT`
+
+GPT models are very good at generating their response in Markdown format. They
+can even organize their content naturally with headers, bullet lists... Use
+this option to append the phrase "Format the response as Markdown." to the
+prompt.
+
+### Max Tokens
+
+`--max-tokens`, `MODS_MAX_TOKENS`
+
+Max tokens tells GPT to respond in less than this number of tokens. GPT is
+better at longer responses so values larger than 256 tend to work best.
+
+### Temperature
+
+`--temp`, `MODS_TEMP`
+
+Sampling temperature is a number between 0.0 and 2.0 and determines how
+confident the model is in its choices. Higher values make the output more
+random and lower values make it more deterministic.
+
+### TopP
+
+`--topp`, `MODS_TOPP`
+
+Top P is an alternative to sampling temperature. It's a number between 0.0 and
+2.0 with smaller numbers narrowing the domain from which the model will create
+its response.
+
+### No Limit
+
+`--no-limit`, `MODS_NO_LIMIT`
+
+By default Mods attempts to size the input to the maximum size the allowed by
+the model. You can potentially squeeze a few more tokens into the input by
+setting this but also risk getting a max token exceeded error from the GPT API.
+
+### Include Prompt
+
+`-P`, `--prompt`, `MODS_INCLUDE_PROMPT`
+
+Include prompt will preface the response with the entire prompt, both standard
+in and the prompt supplied by the arguments.
+
+### Include Prompt Args
+
+`-p`, `--prompt-args`, `MODS_INCLUDE_PROMPT_ARGS`
+
+Include prompt args will include _only_ the prompt supplied by the arguments.
+This can be useful if your standard in content is long and you just a want a
+summary before the response.
+
+### Max Retries
+
+`--max-retries`, `MODS_MAX_RETRIES`
+
+The maximum number of retries to failed API calls. The retries happen with an
+exponential backoff.
+
+### Fanciness
+
+`--fanciness`, `MODS_FANCINESS`
+
+Your desired level of fanciness.
+
+### Quiet
+
+`-q`, `--quiet`, `MODS_QUIET`
+
+Output nothing to standard err.
+
 ## License
 
 [MIT](https://github.com/charmbracelet/mods/raw/main/LICENSE)

@@ -41,9 +41,9 @@ func newConfig() (config, error) {
 	flag.BoolVarP(&c.Version, "version", "v", false, "Show version")
 	flag.IntVar(&c.MaxRetries, "max-retries", 5, "Maximum number of times to retry API calls.") //nolint:gomnd
 	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, "Turn off the client-side limit on the size of the input into the model.")
-	flag.IntVar(&c.MaxTokens, "max", c.MaxTokens, "Maximum number of tokens in response.")
+	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, "Maximum number of tokens in response.")
 	flag.Float32Var(&c.Temperature, "temp", c.Temperature, "Temperature (randomness) of results, from 0.0 to 2.0.")
-	flag.Float32Var(&c.TopP, "top", c.TopP, "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.")
+	flag.Float32Var(&c.TopP, "topp", c.TopP, "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.")
 	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, "Number of cycling characters in the 'generating' animation.") //nolint:gomnd
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Parse()
