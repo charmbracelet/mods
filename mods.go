@@ -21,8 +21,9 @@ import (
 const markdownPrefix = "Format the response as Markdown."
 
 const (
-	maxCharsGPT4 = 24500
-	maxCharsGPT  = 12250
+	maxCharsGPT432k = 98000
+	maxCharsGPT4    = 24500
+	maxCharsGPT     = 12250
 )
 
 type state int
@@ -194,9 +195,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		if !cfg.NoLimit {
 			var maxPromptChars int
-			if cfg.Model == "gpt-4" {
+			switch cfg.Model {
+			case "gpt-4":
 				maxPromptChars = maxCharsGPT4
-			} else {
+			case "gpt-4-32k":
+				maxPromptChars = maxCharsGPT432k
+			default:
 				maxPromptChars = maxCharsGPT
 			}
 			if len(content) > maxPromptChars {
