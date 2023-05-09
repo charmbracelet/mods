@@ -32,6 +32,7 @@ type styles struct {
 	error        lipgloss.Style
 	flag         lipgloss.Style
 	flagComma    lipgloss.Style
+	flagDesc     lipgloss.Style
 	inlineCode   lipgloss.Style
 	link         lipgloss.Style
 	pipe         lipgloss.Style
@@ -41,14 +42,15 @@ type styles struct {
 func makeStyles(r *lipgloss.Renderer) (s styles) {
 	s.appName = r.NewStyle().Bold(true)
 	s.cliArgs = r.NewStyle().Foreground(lipgloss.Color("#585858"))
-	s.comment = r.NewStyle().Foreground(lipgloss.Color("#767676"))
+	s.comment = r.NewStyle().Foreground(lipgloss.Color("#707070"))
 	s.cyclingChars = r.NewStyle().Foreground(lipgloss.Color("212"))
 	s.error = r.NewStyle().Foreground(lipgloss.Color("1"))
 	s.flag = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#00B594", Dark: "#3EEFCF"}).Bold(true)
 	s.flagComma = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#5DD6C0", Dark: "#427C72"}).SetString(",")
+	s.flagDesc = s.comment.Copy()
 	s.inlineCode = r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
 	s.link = r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
-	s.quote = r.NewStyle().Foreground(lipgloss.Color("#00DA8B"))
+	s.quote = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"})
 	s.pipe = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
 	return s
 }
@@ -100,17 +102,17 @@ func usage() {
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
 			fmt.Printf(
-				"  %-41s %s\n",
+				"  %-42s %s\n",
 				s.flag.Render("--"+f.Name),
-				f.Usage,
+				s.flagDesc.Render(f.Usage),
 			)
 		} else {
 			fmt.Printf(
-				"  %s%s %-37s %s\n",
+				"  %s%s %-38s %s\n",
 				s.flag.Render("-"+f.Shorthand),
 				s.flagComma,
 				s.flag.Render("--"+f.Name),
-				f.Usage,
+				s.flagDesc.Render(f.Usage),
 			)
 		}
 	})
