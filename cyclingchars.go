@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lucasb-eyer/go-colorful"
 	"github.com/muesli/termenv"
 )
 
@@ -98,18 +97,12 @@ func newCyclingChars(initialCharsSize uint, r *lipgloss.Renderer, s styles) cycl
 
 	// If we're in truecolor mode (and there are enough cycling characters)
 	// color the cycling characters with a gradient ramp.
-	const (
-		minRampSize = 3
-		startColor  = "#F967DC"
-		endColor    = "#6B50FF"
-	)
+	const minRampSize = 3
 	if n >= minRampSize && r.ColorProfile() == termenv.TrueColor {
 		c.ramp = make([]lipgloss.Style, n)
-		for i := range c.ramp {
-			start, _ := colorful.Hex(startColor)
-			end, _ := colorful.Hex(endColor)
-			step := start.BlendLuv(end, float64(i)/float64(n))
-			c.ramp[i] = r.NewStyle().Foreground(lipgloss.Color(step.Hex()))
+		ramp := makeGradientRamp(n)
+		for i, color := range ramp {
+			c.ramp[i] = r.NewStyle().Foreground(color)
 		}
 	}
 
