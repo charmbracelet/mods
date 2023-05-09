@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/caarlos0/env/v8 v8.0.0
 	github.com/charmbracelet/bubbles v0.15.0
-	github.com/charmbracelet/bubbletea v0.23.3-0.20230426200414-29254a08f145
+	github.com/charmbracelet/bubbletea v0.24.0
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-isatty v0.0.18
