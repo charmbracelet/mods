@@ -99,7 +99,11 @@ func init() {
 func main() {
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
-	config := newConfig()
+	config, err := newConfig()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	if config.Version {
 		fmt.Println(buildVersion())
 		os.Exit(0)
