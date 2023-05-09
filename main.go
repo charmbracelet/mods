@@ -5,12 +5,23 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/lucasb-eyer/go-colorful"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
+)
+
+// Build vars.
+var (
+	//nolint: gochecknoglobals
+	version = "dev"
+	commit  = ""
+	date    = ""
+	builtBy = ""
 )
 
 type styles struct {
@@ -37,21 +48,41 @@ func makeStyles(r *lipgloss.Renderer) styles {
 	}
 }
 
-// Build vars.
-var (
-	//nolint: gochecknoglobals
-	version = "dev"
-	commit  = ""
-	date    = ""
-	builtBy = ""
-)
+func makeGradientRamp(length int) []lipgloss.Color {
+	const startColor = "#F967DC"
+	const endColor = "#6B50FF"
+	var (
+		c        = make([]lipgloss.Color, length)
+		start, _ = colorful.Hex(startColor)
+		end, _   = colorful.Hex(endColor)
+	)
+	for i := 0; i < length; i++ {
+		step := start.BlendLuv(end, float64(i)/float64(length))
+		c[i] = lipgloss.Color(step.Hex())
+	}
+	return c
+}
+
+func makeGradientText(r *lipgloss.Renderer, str string) string {
+	const minSize = 3
+	if len(str) < minSize {
+		return str
+	}
+	b := strings.Builder{}
+	runes := []rune(str)
+	for i, c := range makeGradientRamp(len(str)) {
+		b.WriteString(r.NewStyle().Foreground(c).Render(string(runes[i])))
+	}
+	return b.String()
+}
 
 func usage() {
 	r := lipgloss.DefaultRenderer()
 	s := makeStyles(r)
+	appName := makeGradientText(r, filepath.Base(os.Args[0]))
 
 	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
-	fmt.Printf("Usage:\n  %s [OPTIONS] [PREFIX TERM]\n\n", s.helpApp.Render(filepath.Base(os.Args[0])))
+	fmt.Printf("Usage:\n  %s [OPTIONS] [PREFIX TERM]\n\n", string(appName))
 	fmt.Println("Options:")
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
