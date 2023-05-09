@@ -42,12 +42,12 @@ func makeStyles(r *lipgloss.Renderer) (s styles) {
 	s.comment = r.NewStyle().Foreground(lipgloss.Color("243"))
 	s.cyclingChars = r.NewStyle().Foreground(lipgloss.Color("212"))
 	s.error = r.NewStyle().Foreground(lipgloss.Color("1"))
-	s.flag = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"})
+	s.flag = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"}).Bold(true)
 	s.flagComma = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#F19DD5", Dark: "#9F5386"}).SetString(",")
 	s.inlineCode = r.NewStyle().Foreground(lipgloss.Color("1")).Background(lipgloss.Color("237")).Padding(0, 1)
 	s.link = r.NewStyle().Foreground(lipgloss.Color("10")).Underline(true)
 	s.quote = r.NewStyle().Foreground(lipgloss.Color("#00DA8B"))
-	s.pipe = s.cliArgs.Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
+	s.pipe = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
 	return s
 }
 
@@ -94,13 +94,13 @@ func usage() {
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
 			fmt.Printf(
-				"  %-40s %s\n",
+				"  %-42s %s\n",
 				s.flag.Render("--"+f.Name),
 				f.Usage,
 			)
 		} else {
 			fmt.Printf(
-				"  %s%s %-36s %s\n",
+				"  %s%s %-38s %s\n",
 				s.flag.Render("-"+f.Shorthand),
 				s.flagComma,
 				s.flag.Render("--"+f.Name),
