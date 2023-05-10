@@ -130,16 +130,16 @@ func (m *Mods) View() string {
 
 func (m Mods) errorView() string {
 	const maxWidth = 120
-	s := m.styles.error
-	w := m.width - s.GetHorizontalFrameSize()
+	const horizontalPadding = 2
+	w := m.width - (horizontalPadding * 2)
 	if w > maxWidth {
 		w = maxWidth
 	}
-	s = s.Copy().Width(w)
+	s := lipgloss.NewStyle().Width(w).Padding(0, horizontalPadding)
 	return fmt.Sprintf(
 		"\n%s\n\n%s\n\n",
-		s.Render("Error:", m.Error.reason),
-		s.Render(m.Error.Error()),
+		s.Render(m.styles.errorHeader.String(), m.Error.reason),
+		s.Render(m.styles.errorDetails.Render(m.Error.Error())),
 	)
 }
 
@@ -191,7 +191,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if key == "" {
 			return modsError{
 				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
-				reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + m.styles.error.Render(" environment variabled is required."),
+				reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variabled is required.",
 			}
 		}
 		client := openai.NewClient(key)
