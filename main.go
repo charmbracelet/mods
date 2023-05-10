@@ -44,7 +44,7 @@ func makeStyles(r *lipgloss.Renderer) (s styles) {
 	s.cliArgs = r.NewStyle().Foreground(lipgloss.Color("#585858"))
 	s.comment = r.NewStyle().Foreground(lipgloss.Color("#707070"))
 	s.cyclingChars = r.NewStyle().Foreground(lipgloss.Color("212"))
-	s.error = r.NewStyle().Foreground(lipgloss.Color("1"))
+	s.error = r.NewStyle().Foreground(lipgloss.Color("1")).Padding(0, 2)
 	s.flag = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#00B594", Dark: "#3EEFCF"}).Bold(true)
 	s.flagComma = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#5DD6C0", Dark: "#427C72"}).SetString(",")
 	s.flagDesc = s.comment.Copy()
