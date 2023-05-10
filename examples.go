@@ -3,8 +3,6 @@ package main
 import (
 	"math/rand"
 	"regexp"
-
-	"github.com/charmbracelet/lipgloss"
 )
 
 var examples = map[string]string{
@@ -22,7 +20,7 @@ func randomExample() (string, string) {
 	return desc, examples[desc]
 }
 
-func cheapHighlighting(r *lipgloss.Renderer, s styles, code string) string {
+func cheapHighlighting(s styles, code string) string {
 	code = regexp.
 		MustCompile(`"([^"\\]|\\.)*"`).
 		ReplaceAllStringFunc(code, func(x string) string {
