@@ -122,7 +122,7 @@ func usage() {
 	fmt.Printf(
 		"\nExample:\n  %s\n  %s\n",
 		s.comment.Render("# "+desc),
-		cheapHighlighting(r, s, example),
+		cheapHighlighting(s, example),
 	)
 }
 
