@@ -143,12 +143,6 @@ func buildVersion() string {
 	return result
 }
 
-type noopRead struct{}
-
-func (nr noopRead) Read(_ []byte) (n int, err error) {
-	return 0, nil
-}
-
 func main() {
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
@@ -164,7 +158,7 @@ func main() {
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
-		opts = append(opts, tea.WithInput(noopRead{}))
+		opts = append(opts, tea.WithInput(nil))
 	}
 	p := tea.NewProgram(newMods(config, renderer), opts...)
 	m, err := p.Run()
