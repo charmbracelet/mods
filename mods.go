@@ -40,12 +40,14 @@ type Mods struct {
 	Config   config
 	Output   string
 	Input    string
-	Error    *prettyError
+	Error    *modsError
 	state    state
 	retries  int
 	styles   styles
 	renderer *lipgloss.Renderer
 	anim     tea.Model
+	width    int
+	height   int
 }
 
 func newMods(cfg config, r *lipgloss.Renderer) *Mods {
@@ -65,21 +67,14 @@ type completionInput struct{ content string }
 // completionOutput a tea.Msg that wraps the content returned from openai.
 type completionOutput struct{ content string }
 
-// prettyError is a wrapper around an error that adds a reason and a pretty
-// error message using lipgloss.
-type prettyError struct {
+// modsError is a wrapper around an error that adds additional context.
+type modsError struct {
 	err    error
 	reason string
 }
 
-func (e prettyError) Error(s styles) string {
-	var sb strings.Builder
-	fmt.Fprintln(&sb)
-	fmt.Fprintln(&sb, s.error.Render("  Error:", e.reason))
-	fmt.Fprintln(&sb)
-	fmt.Fprintln(&sb, "  "+s.error.Render(e.err.Error()))
-	fmt.Fprintln(&sb)
-	return sb.String()
+func (m modsError) Error() string {
+	return m.err.Error()
 }
 
 // Init implements tea.Model.
@@ -102,10 +97,12 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case completionOutput:
 		m.Output = msg.content
 		return m, tea.Quit
-	case prettyError:
+	case modsError:
 		m.Error = &msg
 		m.state = errorState
 		return m, tea.Quit
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -122,13 +119,28 @@ func (m *Mods) View() string {
 	//nolint:exhaustive
 	switch m.state {
 	case errorState:
-		return m.Error.Error(m.styles)
+		return m.errorView()
 	case completionState:
 		if !m.Config.Quiet {
 			return m.anim.View()
 		}
 	}
 	return ""
+}
+
+func (m Mods) errorView() string {
+	const maxWidth = 120
+	s := m.styles.error
+	w := m.width - s.GetHorizontalFrameSize()
+	if w > maxWidth {
+		w = maxWidth
+	}
+	s = s.Copy().Width(w)
+	return fmt.Sprintf(
+		"\n%s\n\n%s\n\n",
+		s.Render("Error:", m.Error.reason),
+		s.Render(m.Error.Error()),
+	)
 }
 
 // FormattedOutput returns the response from OpenAI with the user configured
@@ -162,7 +174,7 @@ func (m *Mods) FormattedOutput() string {
 	return out
 }
 
-func (m *Mods) retry(content string, err prettyError) tea.Msg {
+func (m *Mods) retry(content string, err modsError) tea.Msg {
 	m.retries++
 	if m.retries >= m.Config.MaxRetries {
 		return err
@@ -177,7 +189,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		cfg := m.Config
 		key := os.Getenv("OPENAI_API_KEY")
 		if key == "" {
-			return prettyError{
+			return modsError{
 				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
 				reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + m.styles.error.Render(" environment variabled is required."),
 			}
@@ -228,30 +240,30 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			switch ae.HTTPStatusCode {
 			case http.StatusBadRequest:
 				if ae.Code == "context_length_exceeded" {
-					pe := prettyError{err: err, reason: "Maximum prompt size exceeded."}
+					pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
 					if m.Config.NoLimit {
 						return pe
 					}
 					return m.retry(content[:len(content)-10], pe)
 				}
 				// bad request (do not retry)
-				return prettyError{err: err, reason: "OpenAI API request error."}
+				return modsError{err: err, reason: "OpenAI API request error."}
 			case http.StatusUnauthorized:
 				// invalid auth or key (do not retry)
-				return prettyError{err: err, reason: "Invalid OpenAI API key."}
+				return modsError{err: err, reason: "Invalid OpenAI API key."}
 			case http.StatusTooManyRequests:
 				// rate limiting or engine overload (wait and retry)
-				return m.retry(content, prettyError{err: err, reason: "You've hit your OpenAI API rate limit."})
+				return m.retry(content, modsError{err: err, reason: "You’ve hit your OpenAI API rate limit."})
 			case http.StatusInternalServerError:
 				// openai server error (retry)
-				return m.retry(content, prettyError{err: err, reason: "OpenAI API server error."})
+				return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 			default:
-				return m.retry(content, prettyError{err: err, reason: "Unknown OpenAI API error."})
+				return m.retry(content, modsError{err: err, reason: "Unknown OpenAI API error."})
 			}
 		}
 
 		if err != nil {
-			return prettyError{err: err, reason: "There was a problem with the OpenAI API request."}
+			return modsError{err: err, reason: "There was a problem with the OpenAI API request."}
 		}
 		return completionOutput{resp.Choices[0].Message.Content}
 	}
@@ -262,7 +274,7 @@ func readStdinCmd() tea.Msg {
 		reader := bufio.NewReader(os.Stdin)
 		stdinBytes, err := io.ReadAll(reader)
 		if err != nil {
-			return prettyError{err, "Unable to read stdin."}
+			return modsError{err, "Unable to read stdin."}
 		}
 		return completionInput{string(stdinBytes)}
 	}
