@@ -7,13 +7,13 @@
     <a href="https://github.com/charmbracelet/mods/actions"><img src="https://github.com/charmbracelet/mods/workflows/build/badge.svg" alt="Build Status"></a>
 </p>
 
-GPT for the command line, built for pipelines.
+AI for the command line, built for pipelines.
 
 <p><img src="https://github.com/charmbracelet/mods/assets/25087/ffaad9a3-1105-429f-a076-dae47ef01a07" width="900" alt="a GIF of mods running"></p>
 
-GPT models are really good at interpreting the output of commands and returning
-their results in CLI friendly text formats like Markdown. Mods is a simple tool
-that makes it super easy to use GPT models on the command line and in your
+LLM based AI is really good at interpreting the output of commands and
+returning the results in CLI friendly text formats like Markdown. Mods is a
+simple tool that makes it super easy to use AI on the command line and in your
 pipelines.
 
 To get started, [install Mods](#installation) and check out some of the
@@ -24,9 +24,9 @@ _pizzazz_.
 ## What Can It Do?
 
 Mods works by reading standard in and prefacing it with a prompt supplied in
-the `mods` arguments. It sends the input text to a GPT model and prints out the
-result, optionally asking GPT to format the response as Markdown. This gives
-you a way to "question" the output of a command. Mods will also work on
+the `mods` arguments. It sends the input text to an LLM and prints out the
+result, optionally asking the LLM to format the response as Markdown. This
+gives you a way to "question" the output of a command. Mods will also work on
 standard in or an argument supplied prompt individually.
 
 For example you can:
@@ -177,7 +177,7 @@ models.
 
 `-f`, `--format`, `MODS_FORMAT`
 
-GPT models are very good at generating their response in Markdown format. They
+LLMs are very good at generating their response in Markdown format. They
 can even organize their content naturally with headers, bullet lists... Use
 this option to append the phrase "Format the response as Markdown." to the
 prompt.
@@ -186,8 +186,8 @@ prompt.
 
 `--max-tokens`, `MODS_MAX_TOKENS`
 
-Max tokens tells GPT to respond in less than this number of tokens. GPT is
-better at longer responses so values larger than 256 tend to work best.
+Max tokens tells the LLM to respond in less than this number of tokens. LLMs
+are better at longer responses so values larger than 256 tend to work best.
 
 #### Temperature
 
@@ -211,7 +211,7 @@ its response.
 
 By default Mods attempts to size the input to the maximum size the allowed by
 the model. You can potentially squeeze a few more tokens into the input by
-setting this but also risk getting a max token exceeded error from the GPT API.
+setting this but also risk getting a max token exceeded error from the OpenAI API.
 
 #### Include Prompt
 
