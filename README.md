@@ -35,7 +35,7 @@ For example you can:
 Piping source code to Mods and giving it an instruction on what to do with it
 gives you a lot of options for refactoring, enhancing or debugging code.
 
-`mods -f "refactor this code" < main.go | glow`
+`mods -f "what are your thoughts on improving this code?" < main.go | glow`
 
 <p><img src="https://github.com/charmbracelet/mods/assets/25087/e4802dbe-2fb5-444e-a240-831a9865801f" width="900" alt="a GIF of mods offering code refactoring suggestions"></p>
 
@@ -52,7 +52,7 @@ README file).
 
 Mods can quickly give you a first draft for new documentation.
 
-`mods "write a new section to this readme for a feature that sends you a free rabbit if you hit 'r'" | glow`
+`mods "write a new section to this readme for a feature that sends you a free rabbit if you hit r" | glow`
 
 <p><img src="https://github.com/charmbracelet/mods/assets/25087/c653187b-a071-4599-82d1-f7023f954b15" width="900" alt="a GIF of mods contributing to a product README"></p>
 
@@ -62,7 +62,7 @@ The file system can be an amazing source of input for Mods. If you have music
 or video files, Mods can parse the output of `ls` and offer really good
 editorialization of your content.
 
-`ls ~/vids | mods -f "organize these by decade and supply a single sentence summary of each" | glow`
+`ls ~/vids | mods -f "organize these by decade and summarize each" | glow`
 
 <p><img src="https://github.com/charmbracelet/mods/assets/25087/0319568c-c87c-4f9d-980c-847ac95797f6" width="900" alt="a GIF of mods oraganizing and summarizing video from a shell ls statement"></p>
 
