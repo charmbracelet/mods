@@ -1,7 +1,7 @@
-# Mods
+# Mods!
 
 <p>
-    <img src="https://stuff.charm.sh/mods/mods-header.webp" width="548" alt="Mods product art and type treatment"/>
+    <img src="https://github.com/charmbracelet/mods/assets/25087/0b8872df-7e43-44a7-a2ce-231acd0d2baa" width="630" alt="Mods product art and type treatment"/>
     <br>
     <a href="https://github.com/charmbracelet/mods/releases"><img src="https://img.shields.io/github/release/charmbracelet/mods.svg" alt="Latest Release"></a>
     <a href="https://github.com/charmbracelet/mods/actions"><img src="https://github.com/charmbracelet/mods/workflows/build/badge.svg" alt="Build Status"></a>
