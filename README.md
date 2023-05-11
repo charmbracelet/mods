@@ -16,9 +16,10 @@ their results in CLI friendly text formats like Markdown. Mods is a simple tool
 that makes it super easy to use GPT models on the command line and in your
 pipelines.
 
-To get started, [install Mods]() and check out some of the examples below.
-Since Mods has built-in Markdown formatting, you may also want to grab
-[Glow](https://github.com/charmbracelet/glow) to give the output some _pizzazz_.
+To get started, [install Mods](#installation) and check out some of the
+examples below. Since Mods has built-in Markdown formatting, you may also want
+to grab [Glow](https://github.com/charmbracelet/glow) to give the output some
+_pizzazz_.
 
 ## What Can It Do?
 
@@ -109,6 +110,54 @@ Just like with APIs, Mods can read through raw HTML and summarize the contents.
 Mods currently works with OpenAI's models, so you'll need to set the
 `OPENAI_API_KEY` environment variable to a valid OpenAI key, which you can get
 [from here](https://platform.openai.com/account/api-keys).
+
+Then install Mods with your package manager:
+
+```
+# macOS or Linux
+brew install mods
+
+# macOS (via MacPorts)
+sudo port install mods
+
+# Arch Linux (btw)
+pacman -S mods
+
+# Nix
+nix-env -iA nixpkgs.mods
+
+# Debian/Ubuntu
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+sudo apt update && sudo apt install mods
+
+# Fedora/RHEL
+echo '[charm]
+name=Charm
+baseurl=https://repo.charm.sh/yum/
+enabled=1
+gpgcheck=1
+gpgkey=https://repo.charm.sh/yum/gpg.key' | sudo tee /etc/yum.repos.d/charm.repo
+sudo yum install mods
+
+# Void Linux
+sudo xbps-install mods
+
+# Windows
+scoop install mods
+
+```
+
+Or, download it:
+
+* [Packages][releases] are available in Debian and RPM formats
+* [Binaries][releases] are available for Linux, macOS, and Windows
+
+Or, just install it with `go`:
+
+```sh
+go install github.com/charmbracelet/mods@latest
 
 ## Settings
 
