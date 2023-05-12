@@ -135,8 +135,8 @@ sudo yum install mods
 
 Or, download it:
 
-* [Packages][releases] are available in Debian and RPM formats
-* [Binaries][releases] are available for Linux, macOS, and Windows
+* [Packages](releases) are available in Debian and RPM formats
+* [Binaries](releases) are available for Linux, macOS, and Windows
 
 Or, just install it with `go`:
 
