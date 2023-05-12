@@ -238,6 +238,11 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		ae := &openai.APIError{}
 		if errors.As(err, &ae) {
 			switch ae.HTTPStatusCode {
+			case http.StatusNotFound:
+				if m.Config.Model != "gpt-3.5-turbo" {
+					m.Config.Model = "gpt-3.5-turbo"
+					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
+				}
 			case http.StatusBadRequest:
 				if ae.Code == "context_length_exceeded" {
 					pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
