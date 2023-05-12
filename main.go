@@ -155,6 +155,10 @@ func main() {
 		fmt.Println(buildVersion())
 		os.Exit(0)
 	}
+	if config.ShowHelp {
+		flag.Usage()
+		os.Exit(0)
+	}
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
 	if !isatty.IsTerminal(os.Stdin.Fd()) {

@@ -37,8 +37,8 @@ func newConfig() (config, error) {
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.")
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, "Include the prompt from the arguments in the response.")
 	flag.BoolVarP(&c.Quiet, "quiet", "q", c.Quiet, "Quiet mode (hide the spinner while loading).")
-	flag.BoolVarP(&c.ShowHelp, "help", "h", false, "show help and exit.")
-	flag.BoolVarP(&c.Version, "version", "v", false, "Show version")
+	flag.BoolVarP(&c.ShowHelp, "help", "h", false, "Show help and exit.")
+	flag.BoolVarP(&c.Version, "version", "v", false, "Show version and exit.")
 	flag.IntVar(&c.MaxRetries, "max-retries", 5, "Maximum number of times to retry API calls.") //nolint:gomnd
 	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, "Turn off the client-side limit on the size of the input into the model.")
 	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, "Maximum number of tokens in response.")
