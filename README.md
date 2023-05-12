@@ -115,16 +115,7 @@ Then install Mods with your package manager:
 
 ```
 # macOS or Linux
-brew install mods
-
-# macOS (via MacPorts)
-sudo port install mods
-
-# Arch Linux (btw)
-pacman -S mods
-
-# Nix
-nix-env -iA nixpkgs.mods
+brew install charmbracelet/tap/mods
 
 # Debian/Ubuntu
 sudo mkdir -p /etc/apt/keyrings
@@ -140,13 +131,6 @@ enabled=1
 gpgcheck=1
 gpgkey=https://repo.charm.sh/yum/gpg.key' | sudo tee /etc/yum.repos.d/charm.repo
 sudo yum install mods
-
-# Void Linux
-sudo xbps-install mods
-
-# Windows
-scoop install mods
-
 ```
 
 Or, download it:
