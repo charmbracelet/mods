@@ -113,9 +113,12 @@ Mods currently works with OpenAI's models, so you'll need to set the
 
 Then install Mods with your package manager:
 
-```
+```bash
 # macOS or Linux
 brew install charmbracelet/tap/mods
+
+# Arch Linux (btw)
+yay -S mods
 
 # Debian/Ubuntu
 sudo mkdir -p /etc/apt/keyrings
