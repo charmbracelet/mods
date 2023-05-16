@@ -57,7 +57,7 @@ func newMods(cfg config, r *lipgloss.Renderer) *Mods {
 		state:    startState,
 		renderer: r,
 		styles:   s,
-		anim:     newCyclingChars(cfg.Fanciness, r, s),
+		anim:     newCyclingChars(cfg.Fanciness, cfg.StatusText, r, s),
 	}
 }
 

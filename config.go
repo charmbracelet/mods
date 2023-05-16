@@ -15,11 +15,12 @@ type config struct {
 	Temperature       float32 `env:"TEMP" envDefault:"1.0"`
 	TopP              float32 `env:"TOPP" envDefault:"1.0"`
 	ShowHelp          bool
-	NoLimit           bool `env:"NO_LIMIT"`
-	IncludePromptArgs bool `env:"INCLUDE_PROMPT_ARGS"`
-	IncludePrompt     int  `env:"INCLUDE_PROMPT"`
-	MaxRetries        int  `env:"MAX_RETRIES" envDefault:"5"`
-	Fanciness         uint `env:"FANCINESS" envDefault:"10"`
+	NoLimit           bool   `env:"NO_LIMIT"`
+	IncludePromptArgs bool   `env:"INCLUDE_PROMPT_ARGS"`
+	IncludePrompt     int    `env:"INCLUDE_PROMPT"`
+	MaxRetries        int    `env:"MAX_RETRIES" envDefault:"5"`
+	Fanciness         uint   `env:"FANCINESS" envDefault:"10"`
+	StatusText        string `env:"STATUS_TEXT" envDefault:"Generating"`
 	Prefix            string
 	Version           bool
 }
@@ -45,6 +46,7 @@ func newConfig() (config, error) {
 	flag.Float32Var(&c.Temperature, "temp", c.Temperature, "Temperature (randomness) of results, from 0.0 to 2.0.")
 	flag.Float32Var(&c.TopP, "topp", c.TopP, "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.")
 	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, "Number of cycling characters in the 'generating' animation.") //nolint:gomnd
+	flag.StringVar(&c.StatusText, "status-text", c.StatusText, "Text to show while generating.")
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Parse()
 	c.Prefix = strings.Join(flag.Args(), " ")

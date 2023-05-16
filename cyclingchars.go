@@ -12,9 +12,8 @@ import (
 )
 
 const (
-	cyclingCharsLabel = "Generating"
-	charCyclingFPS    = time.Second / 22
-	maxCyclingChars   = 120
+	charCyclingFPS  = time.Second / 22
+	maxCyclingChars = 120
 )
 
 var (
@@ -77,7 +76,7 @@ type cyclingChars struct {
 	styles          styles
 }
 
-func newCyclingChars(initialCharsSize uint, r *lipgloss.Renderer, s styles) cyclingChars {
+func newCyclingChars(initialCharsSize uint, label string, r *lipgloss.Renderer, s styles) cyclingChars {
 	n := int(initialCharsSize)
 	if n > maxCyclingChars {
 		n = maxCyclingChars
@@ -90,7 +89,7 @@ func newCyclingChars(initialCharsSize uint, r *lipgloss.Renderer, s styles) cycl
 
 	c := cyclingChars{
 		start:    time.Now(),
-		label:    []rune(gap + cyclingCharsLabel),
+		label:    []rune(gap + label),
 		ellipsis: spinner.New(spinner.WithSpinner(ellipsisSpinner)),
 		styles:   s,
 	}
