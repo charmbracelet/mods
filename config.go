@@ -1,52 +1,151 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/caarlos0/env/v8"
+	gap "github.com/muesli/go-app-paths"
 	flag "github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
 )
 
+const configTemplate = `# {{ index .Help "model" }}
+model: {{ .Config.Model}}
+# {{ index .Help "format" }}
+format: {{ .Config.Markdown }}
+# {{ index .Help "quiet" }}
+quiet: {{ .Config.Quiet }}
+# {{ index .Help "temp" }}
+temp: {{ printf "%.1f" .Config.Temperature }}
+# {{ index .Help "topp" }}
+topp: {{ printf "%.1f" .Config.TopP }}
+# {{ index .Help "no-limit" }}
+no-limit: {{ .Config.NoLimit }}
+# {{ index .Help "prompt-args" }}
+include-prompt-args: {{ .Config.IncludePromptArgs }}
+# {{ index .Help "prompt" }}
+include-prompt: {{ .Config.IncludePrompt }}
+# {{ index .Help "max-retries" }}
+max-retries: {{ .Config.MaxRetries }}
+# {{ index .Help "fanciness" }}
+fanciness: {{ .Config.Fanciness }}
+# {{ index .Help "status-text" }}
+status-text: {{ .Config.StatusText }}
+# {{ index .Help "max-tokens" }}
+# max-tokens: 100
+`
+
 type config struct {
-	Model             string  `env:"MODEL" envDefault:"gpt-4"`
-	Markdown          bool    `env:"FORMAT"`
-	Quiet             bool    `env:"QUIET"`
-	MaxTokens         int     `env:"MAX_TOKENS"`
-	Temperature       float32 `env:"TEMP" envDefault:"1.0"`
-	TopP              float32 `env:"TOPP" envDefault:"1.0"`
+	Model             string  `yaml:"model" env:"MODEL"`
+	Markdown          bool    `yaml:"format" env:"FORMAT"`
+	Quiet             bool    `yaml:"quiet" env:"QUIET"`
+	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
+	Temperature       float32 `yaml:"temp" env:"TEMP"`
+	TopP              float32 `yaml:"topp" env:"TOPP"`
+	NoLimit           bool    `yaml:"no-limit" env:"NO_LIMIT"`
+	IncludePromptArgs bool    `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
+	IncludePrompt     int     `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
+	MaxRetries        int     `yaml:"max-retries" env:"MAX_RETRIES"`
+	Fanciness         uint    `yaml:"fanciness" env:"FANCINESS"`
+	StatusText        string  `yaml:"status-text" env:"STATUS_TEXT"`
 	ShowHelp          bool
-	NoLimit           bool   `env:"NO_LIMIT"`
-	IncludePromptArgs bool   `env:"INCLUDE_PROMPT_ARGS"`
-	IncludePrompt     int    `env:"INCLUDE_PROMPT"`
-	MaxRetries        int    `env:"MAX_RETRIES" envDefault:"5"`
-	Fanciness         uint   `env:"FANCINESS" envDefault:"10"`
-	StatusText        string `env:"STATUS_TEXT" envDefault:"Generating"`
 	Prefix            string
 	Version           bool
 }
 
 func newConfig() (config, error) {
 	var c config
-	err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"})
+	var content []byte
+
+	help := map[string]string{
+		"model":       "OpenAI model (gpt-3.5-turbo, gpt-4).",
+		"format":      "Format response as markdown.",
+		"prompt":      "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
+		"prompt-args": "Include the prompt from the arguments in the response.",
+		"quiet":       "Quiet mode (hide the spinner while loading).",
+		"help":        "Show help and exit.",
+		"version":     "Show version and exit.",
+		"max-retries": "Maximum number of times to retry API calls.",
+		"no-limit":    "Turn off the client-side limit on the size of the input into the model.",
+		"max-tokens":  "Maximum number of tokens in response.",
+		"temp":        "Temperature (randomness) of results, from 0.0 to 2.0.",
+		"topp":        "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
+		"fanciness":   "Number of cycling characters in the 'generating' animation.",
+		"status-text": "Text to show while generating.",
+	}
+
+	// Defaults
+	c.Model = "gpt-4"
+	c.Temperature = 1.0
+	c.TopP = 1.0
+	c.MaxRetries = 5
+	c.Fanciness = 10
+	c.StatusText = "Generating"
+
+	scope := gap.NewScope(gap.User, "mods")
+	configFile, err := scope.ConfigPath("mods.yml")
+	if err != nil {
+		return c, err
+	}
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		tmpl, err := template.New("config").Parse(configTemplate)
+		if err != nil {
+			return c, err
+		}
+		if err := os.MkdirAll(filepath.Dir(configFile), 0o700); err != nil {
+			return c, err
+		}
+
+		f, err := os.Create(configFile)
+		if err != nil {
+			return c, err
+		}
+		defer func() { _ = f.Close() }()
+
+		m := struct {
+			Config config
+			Help   map[string]string
+		}{
+			Config: c,
+			Help:   help,
+		}
+		if err := tmpl.Execute(f, m); err != nil {
+			return c, err
+		}
+	} else if err != nil {
+		return c, err
+	}
+	content, err = os.ReadFile(configFile)
+	if err != nil {
+		return c, err
+	}
+	err = yaml.Unmarshal(content, &c)
 	if err != nil {
 		return c, err
 	}
 
-	// Parse flags, overriding any values set in the environment.
-	flag.StringVarP(&c.Model, "model", "m", c.Model, "OpenAI model (gpt-3.5-turbo, gpt-4).")
-	flag.BoolVarP(&c.Markdown, "format", "f", c.Markdown, "Format response as markdown.")
-	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.")
-	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, "Include the prompt from the arguments in the response.")
-	flag.BoolVarP(&c.Quiet, "quiet", "q", c.Quiet, "Quiet mode (hide the spinner while loading).")
-	flag.BoolVarP(&c.ShowHelp, "help", "h", false, "Show help and exit.")
-	flag.BoolVarP(&c.Version, "version", "v", false, "Show version and exit.")
-	flag.IntVar(&c.MaxRetries, "max-retries", 5, "Maximum number of times to retry API calls.") //nolint:gomnd
-	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, "Turn off the client-side limit on the size of the input into the model.")
-	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, "Maximum number of tokens in response.")
-	flag.Float32Var(&c.Temperature, "temp", c.Temperature, "Temperature (randomness) of results, from 0.0 to 2.0.")
-	flag.Float32Var(&c.TopP, "topp", c.TopP, "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.")
-	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, "Number of cycling characters in the 'generating' animation.") //nolint:gomnd
-	flag.StringVar(&c.StatusText, "status-text", c.StatusText, "Text to show while generating.")
+	err = env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"})
+	if err != nil {
+		return c, err
+	}
+
+	flag.StringVarP(&c.Model, "model", "m", c.Model, help["model"])
+	flag.BoolVarP(&c.Markdown, "format", "f", c.Markdown, help["format"])
+	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, help["prompt"])
+	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, help["prompt-args"])
+	flag.BoolVarP(&c.Quiet, "quiet", "q", c.Quiet, help["quiet"])
+	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
+	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
+	flag.IntVar(&c.MaxRetries, "max-retries", c.MaxRetries, help["max-retries"])
+	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, help["no-limit"])
+	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, help["max-tokens"])
+	flag.Float32Var(&c.Temperature, "temp", c.Temperature, help["temp"])
+	flag.Float32Var(&c.TopP, "topp", c.TopP, help["topp"])
+	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, help["fanciness"])
+	flag.StringVar(&c.StatusText, "status-text", c.StatusText, help["status-text"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Parse()
 	c.Prefix = strings.Join(flag.Args(), " ")
