@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/lucasb-eyer/go-colorful"
 	"github.com/muesli/termenv"
 )
 
@@ -207,4 +208,32 @@ func (c cyclingChars) View() string {
 		b.WriteRune(r)
 	}
 	return b.String() + c.ellipsis.View()
+}
+
+func makeGradientRamp(length int) []lipgloss.Color {
+	const startColor = "#F967DC"
+	const endColor = "#6B50FF"
+	var (
+		c        = make([]lipgloss.Color, length)
+		start, _ = colorful.Hex(startColor)
+		end, _   = colorful.Hex(endColor)
+	)
+	for i := 0; i < length; i++ {
+		step := start.BlendLuv(end, float64(i)/float64(length))
+		c[i] = lipgloss.Color(step.Hex())
+	}
+	return c
+}
+
+func makeGradientText(baseStyle lipgloss.Style, str string) string {
+	const minSize = 3
+	if len(str) < minSize {
+		return str
+	}
+	b := strings.Builder{}
+	runes := []rune(str)
+	for i, c := range makeGradientRamp(len(str)) {
+		b.WriteString(baseStyle.Copy().Foreground(c).Render(string(runes[i])))
+	}
+	return b.String()
 }

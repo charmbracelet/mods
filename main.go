@@ -5,11 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lucasb-eyer/go-colorful"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
@@ -55,34 +53,6 @@ func makeStyles(r *lipgloss.Renderer) (s styles) {
 	s.quote = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"})
 	s.pipe = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
 	return s
-}
-
-func makeGradientRamp(length int) []lipgloss.Color {
-	const startColor = "#F967DC"
-	const endColor = "#6B50FF"
-	var (
-		c        = make([]lipgloss.Color, length)
-		start, _ = colorful.Hex(startColor)
-		end, _   = colorful.Hex(endColor)
-	)
-	for i := 0; i < length; i++ {
-		step := start.BlendLuv(end, float64(i)/float64(length))
-		c[i] = lipgloss.Color(step.Hex())
-	}
-	return c
-}
-
-func makeGradientText(baseStyle lipgloss.Style, str string) string {
-	const minSize = 3
-	if len(str) < minSize {
-		return str
-	}
-	b := strings.Builder{}
-	runes := []rune(str)
-	for i, c := range makeGradientRamp(len(str)) {
-		b.WriteString(baseStyle.Copy().Foreground(c).Render(string(runes[i])))
-	}
-	return b.String()
 }
 
 func usage() {
