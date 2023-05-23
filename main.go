@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -55,47 +54,6 @@ func makeStyles(r *lipgloss.Renderer) (s styles) {
 	return s
 }
 
-func usage() {
-	r := lipgloss.DefaultRenderer()
-	s := makeStyles(r)
-	appName := filepath.Base(os.Args[0])
-
-	if r.ColorProfile() == termenv.TrueColor {
-		appName = makeGradientText(s.appName, appName)
-	}
-
-	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
-	fmt.Printf(
-		"Usage:\n  %s %s\n\n",
-		appName,
-		s.cliArgs.Render("[OPTIONS] [PREFIX TERM]"),
-	)
-	fmt.Println("Options:")
-	flag.VisitAll(func(f *flag.Flag) {
-		if f.Shorthand == "" {
-			fmt.Printf(
-				"  %-42s %s\n",
-				s.flag.Render("--"+f.Name),
-				s.flagDesc.Render(f.Usage),
-			)
-		} else {
-			fmt.Printf(
-				"  %s%s %-38s %s\n",
-				s.flag.Render("-"+f.Shorthand),
-				s.flagComma,
-				s.flag.Render("--"+f.Name),
-				s.flagDesc.Render(f.Usage),
-			)
-		}
-	})
-	desc, example := randomExample()
-	fmt.Printf(
-		"\nExample:\n  %s\n  %s\n",
-		s.comment.Render("# "+desc),
-		cheapHighlighting(s, example),
-	)
-}
-
 func buildVersion() string {
 	result := "mods version " + version
 	if commit != "" {
@@ -114,39 +72,29 @@ func buildVersion() string {
 }
 
 func main() {
-	flag.Usage = usage
-	flag.CommandLine.SortFlags = false
-	config, err := newConfig()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	if config.Version {
-		fmt.Println(buildVersion())
-		os.Exit(0)
-	}
-	if config.ShowHelp {
-		flag.Usage()
-		os.Exit(0)
-	}
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		opts = append(opts, tea.WithInput(nil))
 	}
-	p := tea.NewProgram(newMods(config, renderer), opts...)
+	mods := newMods(renderer)
+	p := tea.NewProgram(mods, opts...)
 	m, err := p.Run()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	mods := m.(*Mods)
-	if mods.Input == "" && config.Prefix == "" {
-		flag.Usage()
-		os.Exit(0)
-	}
+	mods = m.(*Mods)
 	if mods.Error != nil {
 		os.Exit(1)
+	}
+	if mods.Config.Version {
+		fmt.Println(buildVersion())
+		os.Exit(0)
+	}
+	if mods.Config.ShowHelp || (mods.Input == "" && mods.Config.Prefix == "") {
+		flag.Usage()
+		os.Exit(0)
 	}
 	fmt.Println(mods.FormattedOutput())
 }
