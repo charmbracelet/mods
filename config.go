@@ -1,11 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/caarlos0/env/v8"
 	flag "github.com/spf13/pflag"
 )
+
+var openAIModels = []string{
+	"gpt-3.5-turbo",
+	"gpt-4",
+	"gpt-4-32k",
+}
 
 type config struct {
 	Model             string  `env:"MODEL" envDefault:"gpt-4"`
@@ -15,6 +22,7 @@ type config struct {
 	Temperature       float32 `env:"TEMP" envDefault:"1.0"`
 	TopP              float32 `env:"TOPP" envDefault:"1.0"`
 	ShowHelp          bool
+	ListModels        bool
 	NoLimit           bool   `env:"NO_LIMIT"`
 	IncludePromptArgs bool   `env:"INCLUDE_PROMPT_ARGS"`
 	IncludePrompt     int    `env:"INCLUDE_PROMPT"`
@@ -33,7 +41,8 @@ func newConfig() (config, error) {
 	}
 
 	// Parse flags, overriding any values set in the environment.
-	flag.StringVarP(&c.Model, "model", "m", c.Model, "OpenAI model (gpt-3.5-turbo, gpt-4).")
+	flag.StringVarP(&c.Model, "model", "m", c.Model, fmt.Sprintf("OpenAI model (%s).", strings.Join(openAIModels, ", ")))
+	flag.BoolVarP(&c.ListModels, "list-models", "l", c.ListModels, "Show available models and exit.")
 	flag.BoolVarP(&c.Markdown, "format", "f", c.Markdown, "Format response as markdown.")
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.")
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, "Include the prompt from the arguments in the response.")
@@ -52,4 +61,9 @@ func newConfig() (config, error) {
 	c.Prefix = strings.Join(flag.Args(), " ")
 
 	return c, nil
+}
+
+func availableModels() []string {
+	// TODO: Return local models that are installed as well.
+	return openAIModels
 }

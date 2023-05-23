@@ -7,6 +7,8 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/lucasb-eyer/go-colorful"
@@ -157,6 +159,17 @@ func main() {
 	}
 	if config.ShowHelp {
 		flag.Usage()
+		os.Exit(0)
+	}
+	models := availableModels()
+	if !slices.Contains(models, config.Model) {
+		fmt.Printf("Model must be one of: %s\n", strings.Join(models, ", "))
+		os.Exit(1)
+	}
+	if config.ListModels {
+		for _, model := range models {
+			fmt.Println(model)
+		}
 		os.Exit(0)
 	}
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
