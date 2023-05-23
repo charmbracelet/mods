@@ -15,8 +15,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const configTemplate = `# {{ index .Help "model" }}
+const configTemplate = `
+# {{ index .Help "model" }}
 model: {{ .Config.Model}}
+# {{ index .Help "api" }}
+api: {{ .Config.API}}
+# {{ index .Help "api-base-urls" }}
+api-base-urls:
+  openai: https://api.openai.com/v1
+  localai: http://localhost:8080
 # {{ index .Help "format" }}
 format: {{ .Config.Markdown }}
 # {{ index .Help "quiet" }}
@@ -42,18 +49,20 @@ status-text: {{ .Config.StatusText }}
 `
 
 type config struct {
-	Model             string  `yaml:"model" env:"MODEL"`
-	Markdown          bool    `yaml:"format" env:"FORMAT"`
-	Quiet             bool    `yaml:"quiet" env:"QUIET"`
-	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
-	Temperature       float32 `yaml:"temp" env:"TEMP"`
-	TopP              float32 `yaml:"topp" env:"TOPP"`
-	NoLimit           bool    `yaml:"no-limit" env:"NO_LIMIT"`
-	IncludePromptArgs bool    `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
-	IncludePrompt     int     `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
-	MaxRetries        int     `yaml:"max-retries" env:"MAX_RETRIES"`
-	Fanciness         uint    `yaml:"fanciness" env:"FANCINESS"`
-	StatusText        string  `yaml:"status-text" env:"STATUS_TEXT"`
+	API               string            `yaml:"api" env:"API"`
+	Model             string            `yaml:"model" env:"MODEL"`
+	Markdown          bool              `yaml:"format" env:"FORMAT"`
+	Quiet             bool              `yaml:"quiet" env:"QUIET"`
+	MaxTokens         int               `yaml:"max-tokens" env:"MAX_TOKENS"`
+	Temperature       float32           `yaml:"temp" env:"TEMP"`
+	TopP              float32           `yaml:"topp" env:"TOPP"`
+	NoLimit           bool              `yaml:"no-limit" env:"NO_LIMIT"`
+	IncludePromptArgs bool              `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
+	IncludePrompt     int               `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
+	MaxRetries        int               `yaml:"max-retries" env:"MAX_RETRIES"`
+	Fanciness         uint              `yaml:"fanciness" env:"FANCINESS"`
+	StatusText        string            `yaml:"status-text" env:"STATUS_TEXT"`
+	APIBaseUrls       map[string]string `yaml:"api-base-urls"`
 	ShowHelp          bool
 	Prefix            string
 	Version           bool
@@ -64,23 +73,26 @@ func newConfig() (config, error) {
 	var content []byte
 
 	help := map[string]string{
-		"model":       "OpenAI model (gpt-3.5-turbo, gpt-4).",
-		"format":      "Format response as markdown.",
-		"prompt":      "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
-		"prompt-args": "Include the prompt from the arguments in the response.",
-		"quiet":       "Quiet mode (hide the spinner while loading).",
-		"help":        "Show help and exit.",
-		"version":     "Show version and exit.",
-		"max-retries": "Maximum number of times to retry API calls.",
-		"no-limit":    "Turn off the client-side limit on the size of the input into the model.",
-		"max-tokens":  "Maximum number of tokens in response.",
-		"temp":        "Temperature (randomness) of results, from 0.0 to 2.0.",
-		"topp":        "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
-		"fanciness":   "Number of cycling characters in the 'generating' animation.",
-		"status-text": "Text to show while generating.",
+		"api":           "Which OpenAI compatible REST API to use, as defined in the config file (openai, localai).",
+		"api-base-urls": "Aliases and endpoints for OpenAI compatible REST API.",
+		"model":         "OpenAI model (gpt-3.5-turbo, gpt-4).",
+		"format":        "Format response as markdown.",
+		"prompt":        "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
+		"prompt-args":   "Include the prompt from the arguments in the response.",
+		"quiet":         "Quiet mode (hide the spinner while loading).",
+		"help":          "Show help and exit.",
+		"version":       "Show version and exit.",
+		"max-retries":   "Maximum number of times to retry API calls.",
+		"no-limit":      "Turn off the client-side limit on the size of the input into the model.",
+		"max-tokens":    "Maximum number of tokens in response.",
+		"temp":          "Temperature (randomness) of results, from 0.0 to 2.0.",
+		"topp":          "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
+		"fanciness":     "Number of cycling characters in the 'generating' animation.",
+		"status-text":   "Text to show while generating.",
 	}
 
 	// Defaults
+	c.API = "openai"
 	c.Model = "gpt-4"
 	c.Temperature = 1.0
 	c.TopP = 1.0
@@ -136,6 +148,7 @@ func newConfig() (config, error) {
 	}
 
 	flag.StringVarP(&c.Model, "model", "m", c.Model, help["model"])
+	flag.StringVarP(&c.API, "api", "a", c.API, help["api"])
 	flag.BoolVarP(&c.Markdown, "format", "f", c.Markdown, help["format"])
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, help["prompt"])
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, help["prompt-args"])
