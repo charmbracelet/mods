@@ -135,7 +135,7 @@ func (m Mods) errorView() string {
 	if w > maxWidth {
 		w = maxWidth
 	}
-	s := lipgloss.NewStyle().Width(w).Padding(0, horizontalPadding)
+	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalPadding)
 	return fmt.Sprintf(
 		"\n%s\n\n%s\n\n",
 		s.Render(m.styles.errorHeader.String(), m.Error.reason),
