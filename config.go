@@ -1,13 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
 	"github.com/caarlos0/env/v8"
+	"github.com/charmbracelet/lipgloss"
 	gap "github.com/muesli/go-app-paths"
+	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
@@ -147,8 +150,51 @@ func newConfig() (config, error) {
 	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, help["fanciness"])
 	flag.StringVar(&c.StatusText, "status-text", c.StatusText, help["status-text"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
+	flag.Usage = usage
+	flag.CommandLine.SortFlags = false
 	flag.Parse()
 	c.Prefix = strings.Join(flag.Args(), " ")
 
 	return c, nil
+}
+
+func usage() {
+	r := lipgloss.DefaultRenderer()
+	s := makeStyles(r)
+	appName := filepath.Base(os.Args[0])
+
+	if r.ColorProfile() == termenv.TrueColor {
+		appName = makeGradientText(s.appName, appName)
+	}
+
+	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
+	fmt.Printf(
+		"Usage:\n  %s %s\n\n",
+		appName,
+		s.cliArgs.Render("[OPTIONS] [PREFIX TERM]"),
+	)
+	fmt.Println("Options:")
+	flag.VisitAll(func(f *flag.Flag) {
+		if f.Shorthand == "" {
+			fmt.Printf(
+				"  %-42s %s\n",
+				s.flag.Render("--"+f.Name),
+				s.flagDesc.Render(f.Usage),
+			)
+		} else {
+			fmt.Printf(
+				"  %s%s %-38s %s\n",
+				s.flag.Render("-"+f.Shorthand),
+				s.flagComma,
+				s.flag.Render("--"+f.Name),
+				s.flagDesc.Render(f.Usage),
+			)
+		}
+	})
+	desc, example := randomExample()
+	fmt.Printf(
+		"\nExample:\n  %s\n  %s\n",
+		s.comment.Render("# "+desc),
+		cheapHighlighting(s, example),
+	)
 }

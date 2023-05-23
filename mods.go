@@ -30,6 +30,7 @@ type state int
 
 const (
 	startState state = iota
+	configLoadedState
 	completionState
 	errorState
 )
@@ -50,14 +51,12 @@ type Mods struct {
 	height   int
 }
 
-func newMods(cfg config, r *lipgloss.Renderer) *Mods {
+func newMods(r *lipgloss.Renderer) *Mods {
 	s := makeStyles(r)
 	return &Mods{
-		Config:   cfg,
 		state:    startState,
 		renderer: r,
 		styles:   s,
-		anim:     newCyclingChars(cfg.Fanciness, cfg.StatusText, r, s),
 	}
 }
 
@@ -79,12 +78,17 @@ func (m modsError) Error() string {
 
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
-	return tea.Batch(readStdinCmd, m.anim.Init())
+	return m.loadConfigCmd
 }
 
 // Update implements tea.Model.
 func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case config:
+		m.Config = msg
+		m.state = configLoadedState
+		m.anim = newCyclingChars(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.styles)
+		return m, tea.Batch(readStdinCmd, m.anim.Init())
 	case completionInput:
 		if msg.content == "" && m.Config.Prefix == "" {
 			return m, tea.Quit
@@ -109,9 +113,12 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	}
-	var cmd tea.Cmd
-	m.anim, cmd = m.anim.Update(msg)
-	return m, cmd
+	if m.state == configLoadedState || m.state == completionState {
+		var cmd tea.Cmd
+		m.anim, cmd = m.anim.Update(msg)
+		return m, cmd
+	}
+	return m, nil
 }
 
 // View implements tea.Model.
@@ -182,6 +189,14 @@ func (m *Mods) retry(content string, err modsError) tea.Msg {
 	wait := time.Millisecond * 100 * time.Duration(math.Pow(2, float64(m.retries))) //nolint:gomnd
 	time.Sleep(wait)
 	return completionInput{content}
+}
+
+func (m *Mods) loadConfigCmd() tea.Msg {
+	cfg, err := newConfig()
+	if err != nil {
+		return modsError{err, "There was an error in your config file."}
+	}
+	return cfg
 }
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
