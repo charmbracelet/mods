@@ -207,7 +207,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	return func() tea.Msg {
 		cfg := m.Config
 		key := os.Getenv("OPENAI_API_KEY")
-		if key == "" {
+		if cfg.API == "openai" && key == "" {
 			return modsError{
 				reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variabled is required.",
 				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
@@ -271,15 +271,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if errors.As(err, &ae) {
 			switch ae.HTTPStatusCode {
 			case http.StatusNotFound:
-				if m.Config.Model != "gpt-3.5-turbo" && m.Config.API == "openai" {
-					m.Config.Model = "gpt-3.5-turbo"
+				if cfg.Model != "gpt-3.5-turbo" && cfg.API == "openai" {
+					cfg.Model = "gpt-3.5-turbo"
 					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 				}
-				return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", m.Config.Model, m.Config.API)}
+				return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", cfg.Model, cfg.API)}
 			case http.StatusBadRequest:
 				if ae.Code == "context_length_exceeded" {
 					pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
-					if m.Config.NoLimit {
+					if cfg.NoLimit {
 						return pe
 					}
 					return m.retry(content[:len(content)-10], pe)
@@ -293,10 +293,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				// rate limiting or engine overload (wait and retry)
 				return m.retry(content, modsError{err: err, reason: "You’ve hit your OpenAI API rate limit."})
 			case http.StatusInternalServerError:
-				if m.Config.API == "openai" {
+				if cfg.API == "openai" {
 					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 				}
-				return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", m.Config.Model, m.Config.API)}
+				return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", cfg.Model, cfg.API)}
 			default:
 				return m.retry(content, modsError{err: err, reason: "Unknown OpenAI API error."})
 			}
