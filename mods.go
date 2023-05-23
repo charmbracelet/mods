@@ -209,11 +209,24 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		key := os.Getenv("OPENAI_API_KEY")
 		if key == "" {
 			return modsError{
-				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
 				reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variabled is required.",
+				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
 			}
 		}
-		client := openai.NewClient(key)
+		ccfg := openai.DefaultConfig(key)
+		var ok bool
+		ccfg.BaseURL, ok = cfg.APIBaseUrls[cfg.API]
+		if !ok {
+			eps := make([]string, 0)
+			for k := range cfg.APIBaseUrls {
+				eps = append(eps, m.styles.inlineCode.Render(k))
+			}
+			return modsError{
+				reason: fmt.Sprintf("The API endpoint %s is not configured ", m.styles.inlineCode.Render(cfg.API)),
+				err:    fmt.Errorf("Your configured API endpoints are: %s", eps),
+			}
+		}
+		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		prefix := cfg.Prefix
@@ -258,10 +271,11 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if errors.As(err, &ae) {
 			switch ae.HTTPStatusCode {
 			case http.StatusNotFound:
-				if m.Config.Model != "gpt-3.5-turbo" {
+				if m.Config.Model != "gpt-3.5-turbo" && m.Config.API == "openai" {
 					m.Config.Model = "gpt-3.5-turbo"
 					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 				}
+				return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", m.Config.Model, m.Config.API)}
 			case http.StatusBadRequest:
 				if ae.Code == "context_length_exceeded" {
 					pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
@@ -279,8 +293,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				// rate limiting or engine overload (wait and retry)
 				return m.retry(content, modsError{err: err, reason: "You’ve hit your OpenAI API rate limit."})
 			case http.StatusInternalServerError:
-				// openai server error (retry)
-				return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
+				if m.Config.API == "openai" {
+					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
+				}
+				return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", m.Config.Model, m.Config.API)}
 			default:
 				return m.retry(content, modsError{err: err, reason: "Unknown OpenAI API error."})
 			}
