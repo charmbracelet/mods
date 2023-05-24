@@ -106,7 +106,7 @@ func newConfig() (config, error) {
 		return c, err
 	}
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		tmpl, err := template.New("config").Parse(configTemplate)
+		tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
 		if err != nil {
 			return c, err
 		}
