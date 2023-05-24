@@ -20,12 +20,6 @@ import (
 
 const markdownPrefix = "Format the response as Markdown."
 
-const (
-	maxCharsGPT432k = 98000
-	maxCharsGPT4    = 24500
-	maxCharsGPT     = 12250
-)
-
 type state int
 
 const (
@@ -205,20 +199,37 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	return func() tea.Msg {
+		var ok bool
+		var mod Model
+		var key string
 		cfg := m.Config
-		key := os.Getenv("OPENAI_API_KEY")
-		if cfg.API == "openai" && key == "" {
-			return modsError{
-				reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variabled is required.",
-				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
+		mod, ok = cfg.Models[cfg.Model]
+		if !ok {
+			if cfg.API == "" {
+				return modsError{
+					reason: "Model " + m.styles.inlineCode.Render(cfg.Model) + " is not in the settings file.",
+					err:    fmt.Errorf("Please specify an API endpoint with %s or configure the model in the settings: %s", m.styles.inlineCode.Render("--api"), m.styles.inlineCode.Render("mods -s")),
+				}
+			}
+			mod.Name = cfg.Model
+			mod.API = cfg.API
+			mod.MaxChars = cfg.MaxInputChars
+		}
+
+		if mod.API == "openai" {
+			key = os.Getenv("OPENAI_API_KEY")
+			if key == "" {
+				return modsError{
+					reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variabled is required.",
+					err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
+				}
 			}
 		}
 		ccfg := openai.DefaultConfig(key)
-		var ok bool
-		ccfg.BaseURL, ok = cfg.APIBaseUrls[cfg.API]
+		ccfg.BaseURL, ok = cfg.APIs[mod.API]
 		if !ok {
 			eps := make([]string, 0)
-			for k := range cfg.APIBaseUrls {
+			for k := range cfg.APIs {
 				eps = append(eps, m.styles.inlineCode.Render(k))
 			}
 			return modsError{
@@ -238,24 +249,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		if !cfg.NoLimit {
-			var maxPromptChars int
-			switch cfg.Model {
-			case "gpt-4":
-				maxPromptChars = maxCharsGPT4
-			case "gpt-4-32k":
-				maxPromptChars = maxCharsGPT432k
-			default:
-				maxPromptChars = maxCharsGPT
-			}
-			if len(content) > maxPromptChars {
-				content = content[:maxPromptChars]
+			if len(content) > mod.MaxChars {
+				content = content[:mod.MaxChars]
 			}
 		}
 
 		resp, err := client.CreateChatCompletion(
 			ctx,
 			openai.ChatCompletionRequest{
-				Model:       cfg.Model,
+				Model:       mod.Name,
 				Temperature: noOmitFloat(cfg.Temperature),
 				TopP:        noOmitFloat(cfg.TopP),
 				MaxTokens:   cfg.MaxTokens,
@@ -271,8 +273,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if errors.As(err, &ae) {
 			switch ae.HTTPStatusCode {
 			case http.StatusNotFound:
-				if cfg.Model != "gpt-3.5-turbo" && cfg.API == "openai" {
-					cfg.Model = "gpt-3.5-turbo"
+				if mod.Fallback != "" {
+					m.Config.Model = mod.Fallback
 					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 				}
 				return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", cfg.Model, cfg.API)}
@@ -293,10 +295,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				// rate limiting or engine overload (wait and retry)
 				return m.retry(content, modsError{err: err, reason: "You’ve hit your OpenAI API rate limit."})
 			case http.StatusInternalServerError:
-				if cfg.API == "openai" {
+				if mod.API == "openai" {
 					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 				}
-				return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", cfg.Model, cfg.API)}
+				return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", mod.Name, mod.API)}
 			default:
 				return m.retry(content, modsError{err: err, reason: "Unknown OpenAI API error."})
 			}
