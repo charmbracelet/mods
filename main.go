@@ -96,7 +96,7 @@ func main() {
 		c.Stderr = os.Stderr
 		if err := c.Run(); err != nil {
 			mods.Error = &modsError{reason: "Missing $EDITOR", err: err}
-			fmt.Printf(mods.ErrorView())
+			fmt.Println(mods.ErrorView())
 			os.Exit(1)
 		}
 		fmt.Println("Wrote config file to:", mods.Config.SettingsPath)

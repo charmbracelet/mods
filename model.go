@@ -1,5 +1,6 @@
 package main
 
+// Model represents the LLM model used in the API call.
 type Model struct {
 	Name     string
 	MaxChars int      `yaml:"max-input-chars"`
