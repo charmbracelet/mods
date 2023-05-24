@@ -226,7 +226,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 		ccfg := openai.DefaultConfig(key)
-		ccfg.BaseURL, ok = cfg.APIs[mod.API]
+		api, ok := cfg.APIs[mod.API]
 		if !ok {
 			eps := make([]string, 0)
 			for k := range cfg.APIs {
@@ -237,6 +237,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				err:    fmt.Errorf("Your configured API endpoints are: %s", eps),
 			}
 		}
+		ccfg.BaseURL = api.BaseURL
 		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
