@@ -203,7 +203,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	return func() tea.Msg {
 		cfg := m.Config
 		key := os.Getenv("OPENAI_API_KEY")
-		if cfg.API == "openai" && key == "" {
+		if cfg.API == openAIAPI && key == "" {
 			return modsError{
 				reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variabled is required.",
 				err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
@@ -236,9 +236,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !cfg.NoLimit {
 			var maxPromptChars int
 			switch cfg.Model {
-			case "gpt-4":
+			case gpt4:
 				maxPromptChars = maxCharsGPT4
-			case "gpt-4-32k":
+			case gpt4_32k:
 				maxPromptChars = maxCharsGPT432k
 			default:
 				maxPromptChars = maxCharsGPT
@@ -267,8 +267,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if errors.As(err, &ae) {
 			switch ae.HTTPStatusCode {
 			case http.StatusNotFound:
-				if cfg.Model != "gpt-3.5-turbo" && cfg.API == "openai" {
-					cfg.Model = "gpt-3.5-turbo"
+				if cfg.Model != gpt35turbo && cfg.API == "openai" {
+					cfg.Model = gpt35turbo
 					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 				}
 				return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", cfg.Model, cfg.API)}
@@ -289,7 +289,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				// rate limiting or engine overload (wait and retry)
 				return m.retry(content, modsError{err: err, reason: "You’ve hit your OpenAI API rate limit."})
 			case http.StatusInternalServerError:
-				if cfg.API == "openai" {
+				if cfg.API == openAIAPI {
 					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 				}
 				return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", cfg.Model, cfg.API)}

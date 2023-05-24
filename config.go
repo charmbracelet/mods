@@ -15,6 +15,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// APIs.
+const (
+	openAIAPI  = "openai"
+	localAIAPI = "localai"
+)
+
+// Models.
+const (
+	gpt4       = "gpt-4"
+	gpt4_32k   = "gpt-4-32k"
+	gpt35turbo = "gpt-3.5-turbo"
+)
+
 const configTemplate = `
 # {{ index .Help "model" }}
 model: {{ .Config.Model}}
@@ -92,8 +105,8 @@ func newConfig() (config, error) {
 	}
 
 	// Defaults
-	c.API = "openai"
-	c.Model = "gpt-4"
+	c.API = openAIAPI
+	c.Model = gpt4
 	c.Temperature = 1.0
 	c.TopP = 1.0
 	c.MaxRetries = 5
