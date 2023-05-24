@@ -7,9 +7,9 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/adrg/xdg"
 	"github.com/caarlos0/env/v8"
 	"github.com/charmbracelet/lipgloss"
-	gap "github.com/muesli/go-app-paths"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
@@ -126,8 +126,7 @@ func newConfig() (config, error) {
 		"settings":        "Open settings in your $EDITOR.",
 	}
 
-	scope := gap.NewScope(gap.User, "mods")
-	sp, err := scope.ConfigPath("mods.yml")
+	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
 	if err != nil {
 		return c, err
 	}
