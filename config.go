@@ -110,7 +110,7 @@ func newConfig() (config, error) {
 	}
 	c.SettingsPath = sp
 	if _, err := os.Stat(sp); os.IsNotExist(err) {
-		tmpl, err := template.New("config").Parse(configTemplate)
+		tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
 		if err != nil {
 			return c, err
 		}
