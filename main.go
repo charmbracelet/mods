@@ -6,6 +6,7 @@ import (
 	"runtime/debug"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glow/editor"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
@@ -87,6 +88,19 @@ func main() {
 	mods = m.(*Mods)
 	if mods.Error != nil {
 		os.Exit(1)
+	}
+	if mods.Config.Settings {
+		c := editor.Cmd(mods.Config.SettingsPath)
+		c.Stdin = os.Stdin
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		if err := c.Run(); err != nil {
+			mods.Error = &modsError{reason: "Missing $EDITOR", err: err}
+			fmt.Printf(mods.ErrorView())
+			os.Exit(1)
+		}
+		fmt.Println("Wrote config file to:", mods.Config.SettingsPath)
+		os.Exit(0)
 	}
 	if mods.Config.Version {
 		fmt.Println(buildVersion())
