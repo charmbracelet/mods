@@ -19,9 +19,8 @@ const configTemplate = `
 # {{ index .Help "apis" }}
 apis:
   openai: https://api.openai.com/v1
+  # LocalAI setup instructions: https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model
   localai: http://localhost:8080
-# {{ index .Help "model" }}
-default-model: gpt-4
 # {{ index .Help "models" }}
 models:
   gpt-4:
@@ -49,6 +48,8 @@ models:
     max-input-chars: 12250
     api: localai
     fallback:
+# {{ index .Help "model" }}
+default-model: gpt-4
 # {{ index .Help "max-input-chars" }}
 max-input-chars: 12250
 # {{ index .Help "format" }}

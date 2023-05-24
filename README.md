@@ -14,7 +14,8 @@ AI for the command line, built for pipelines.
 LLM based AI is really good at interpreting the output of commands and
 returning the results in CLI friendly text formats like Markdown. Mods is a
 simple tool that makes it super easy to use AI on the command line and in your
-pipelines.
+pipelines. Mods works with [OpenAI](https://platform.openai.com/account/api-keys)
+and [LocalAI](https://github.com/go-skynet/LocalAI)
 
 To get started, [install Mods](#installation) and check out some of the
 examples below. Since Mods has built-in Markdown formatting, you may also want
@@ -107,11 +108,23 @@ Just like with APIs, Mods can read through raw HTML and summarize the contents.
 
 ## Installation
 
-Mods currently works with OpenAI's models, so you'll need to set the
-`OPENAI_API_KEY` environment variable to a valid OpenAI key, which you can get
-[from here](https://platform.openai.com/account/api-keys).
+Mods works with OpenAI compatible endpoints. By default, Mods is configured to
+support OpenAI's official API and a LocalAI installation running on port 8080.
+You can configure additional endpoints in your settings file by running `mods -s`.
 
-Then install Mods with your package manager:
+### OpenAI
+
+Mods uses GPT-4 by default and will fallback to GPT-3.5 Turbo if it's not
+available. Set the `OPENAI_API_KEY` environment variable to a valid OpenAI key,
+which you can get [from here](https://platform.openai.com/account/api-keys).
+
+### LocalAI
+
+LocalAI allows you to run a multitude of models locally. Mods works with the
+GPT4ALL-J model as setup in [this tutorial](https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model).
+You can define more LocalAI models and endpoints with `mods -s`.
+
+### Install Mods
 
 ```bash
 # macOS or Linux
@@ -151,16 +164,19 @@ go install github.com/charmbracelet/mods@latest
 
 ## Settings
 
-Mods lets you tune your query with a variety of settings that you can use with
-flags or environment variables.
+Mods lets you tune your query with a variety of settings. You can configure
+Mods with `mods -s` or pass the settings as environment variables and flags.
 
 #### Model
 
 `-m`, `--model`, `MODS_MODEL`
 
-Mods uses `gpt-4` by default but you can specify any OpenAI model as long as
-your account has access to it. Mods also plans to eventually support local
-models.
+Mods uses `gpt-4` with OpenAI by default but you can specify any model as long
+as your account has access to it or you have installed locally with LocalAI.
+
+You can add new models to the settings with `mods -s`. You can also specify a
+model and an API endpoint with `-m` and `-a` to use models not in the settings
+file.
 
 #### Format As Markdown
 
