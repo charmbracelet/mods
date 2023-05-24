@@ -6,6 +6,7 @@ require (
 	github.com/caarlos0/env/v8 v8.0.0
 	github.com/charmbracelet/bubbles v0.15.0
 	github.com/charmbracelet/bubbletea v0.24.0
+	github.com/charmbracelet/glow v1.5.1
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-isatty v0.0.19

@@ -87,6 +87,9 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case config:
 		m.Config = msg
 		m.state = configLoadedState
+		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
+			return m, tea.Quit
+		}
 		m.anim = newCyclingChars(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.styles)
 		return m, tea.Batch(readStdinCmd, m.anim.Init())
 	case completionInput:
@@ -126,7 +129,7 @@ func (m *Mods) View() string {
 	//nolint:exhaustive
 	switch m.state {
 	case errorState:
-		return m.errorView()
+		return m.ErrorView()
 	case completionState:
 		if !m.Config.Quiet {
 			return m.anim.View()
@@ -135,7 +138,8 @@ func (m *Mods) View() string {
 	return ""
 }
 
-func (m Mods) errorView() string {
+// ErrorView renders the currently set modsError
+func (m Mods) ErrorView() string {
 	const maxWidth = 120
 	const horizontalPadding = 2
 	w := m.width - (horizontalPadding * 2)

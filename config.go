@@ -57,6 +57,8 @@ type config struct {
 	ShowHelp          bool
 	Prefix            string
 	Version           bool
+	Settings          bool
+	SettingsPath      string
 }
 
 func newConfig() (config, error) {
@@ -78,6 +80,7 @@ func newConfig() (config, error) {
 		"topp":        "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
 		"fanciness":   "Number of cycling characters in the 'generating' animation.",
 		"status-text": "Text to show while generating.",
+		"settings":    "Open settings in your $EDITOR.",
 	}
 
 	// Defaults
@@ -89,20 +92,21 @@ func newConfig() (config, error) {
 	c.StatusText = "Generating"
 
 	scope := gap.NewScope(gap.User, "mods")
-	configFile, err := scope.ConfigPath("mods.yml")
+	sp, err := scope.ConfigPath("mods.yml")
 	if err != nil {
 		return c, err
 	}
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+	c.SettingsPath = sp
+	if _, err := os.Stat(sp); os.IsNotExist(err) {
 		tmpl, err := template.New("config").Parse(configTemplate)
 		if err != nil {
 			return c, err
 		}
-		if err := os.MkdirAll(filepath.Dir(configFile), 0o700); err != nil {
+		if err := os.MkdirAll(filepath.Dir(sp), 0o700); err != nil {
 			return c, err
 		}
 
-		f, err := os.Create(configFile)
+		f, err := os.Create(sp)
 		if err != nil {
 			return c, err
 		}
@@ -121,7 +125,7 @@ func newConfig() (config, error) {
 	} else if err != nil {
 		return c, err
 	}
-	content, err = os.ReadFile(configFile)
+	content, err = os.ReadFile(sp)
 	if err != nil {
 		return c, err
 	}
@@ -140,6 +144,7 @@ func newConfig() (config, error) {
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, help["prompt"])
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, help["prompt-args"])
 	flag.BoolVarP(&c.Quiet, "quiet", "q", c.Quiet, help["quiet"])
+	flag.BoolVarP(&c.Settings, "settings", "s", false, help["settings"])
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
 	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
 	flag.IntVar(&c.MaxRetries, "max-retries", c.MaxRetries, help["max-retries"])
