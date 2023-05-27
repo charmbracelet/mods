@@ -21,6 +21,7 @@ const configTemplate = `
 apis:
   openai:
     base-url: https://api.openai.com/v1
+    api-key: ""
     models:
       gpt-4:
         aliases: ["4"]

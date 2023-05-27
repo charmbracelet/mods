@@ -14,12 +14,16 @@ require (
 	github.com/muesli/termenv v0.15.2-0.20230414211128-452975b1f758
 	github.com/sashabaranov/go-openai v1.9.4
 	github.com/spf13/pflag v1.0.5
+	github.com/zalando/go-keyring v0.2.3
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
+	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
+	github.com/danieljoos/wincred v1.2.0 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect

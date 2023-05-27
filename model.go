@@ -13,4 +13,5 @@ type Model struct {
 type API struct {
 	BaseURL string           `yaml:"base-url"`
 	Models  map[string]Model `yaml:"models"`
+	APIKey  string           `yaml:"api-key,omitempty"`
 }
