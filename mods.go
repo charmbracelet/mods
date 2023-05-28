@@ -202,6 +202,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var ok bool
 		var mod Model
 		var key string
+		var azureOpenAIEndpoint string
+
 		cfg := m.Config
 		mod, ok = cfg.Models[cfg.Model]
 		if !ok {
@@ -224,8 +226,17 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 					err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
 				}
 			}
+
+			azureOpenAIEndpoint = os.Getenv("AZURE_OPENAI_ENDPOINT")
 		}
-		ccfg := openai.DefaultConfig(key)
+
+		var ccfg openai.ClientConfig
+		if azureOpenAIEndpoint != "" {
+			ccfg = openai.DefaultAzureConfig(key, azureOpenAIEndpoint)
+		} else {
+			ccfg = openai.DefaultConfig(key)
+		}
+
 		api, ok := cfg.APIs[mod.API]
 		if !ok {
 			eps := make([]string, 0)
@@ -237,7 +248,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				err:    fmt.Errorf("Your configured API endpoints are: %s", eps),
 			}
 		}
-		ccfg.BaseURL = api.BaseURL
+		if azureOpenAIEndpoint == "" {
+			ccfg.BaseURL = api.BaseURL
+		}
 		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
