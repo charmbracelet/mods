@@ -84,7 +84,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
 			return m, tea.Quit
 		}
-		m.anim = newCyclingChars(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.styles)
+		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.styles)
 		return m, tea.Batch(readStdinCmd, m.anim.Init())
 	case completionInput:
 		if msg.content == "" && m.Config.Prefix == "" {
