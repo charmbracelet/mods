@@ -2,3 +2,4 @@ mods
 .envrc
 
 dist/
+.idea/
