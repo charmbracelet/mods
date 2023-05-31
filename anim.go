@@ -65,11 +65,11 @@ func stepChars() tea.Cmd {
 	})
 }
 
-// cyclingChars is the model that manages the animation that displays while the
+// anim is the model that manages the animation that displays while the
 // output is being generated.
-type cyclingChars struct {
+type anim struct {
 	start           time.Time
-	chars           []cyclingChar
+	cyclingChars    []cyclingChar
 	ramp            []lipgloss.Style
 	label           []rune
 	ellipsis        spinner.Model
@@ -77,8 +77,8 @@ type cyclingChars struct {
 	styles          styles
 }
 
-func newCyclingChars(initialCharsSize uint, label string, r *lipgloss.Renderer, s styles) cyclingChars {
-	n := int(initialCharsSize)
+func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles) anim {
+	n := int(cyclingCharsSize)
 	if n > maxCyclingChars {
 		n = maxCyclingChars
 	}
@@ -88,7 +88,7 @@ func newCyclingChars(initialCharsSize uint, label string, r *lipgloss.Renderer, 
 		gap = ""
 	}
 
-	c := cyclingChars{
+	c := anim{
 		start:    time.Now(),
 		label:    []rune(gap + label),
 		ellipsis: spinner.New(spinner.WithSpinner(ellipsisSpinner)),
@@ -114,11 +114,11 @@ func newCyclingChars(initialCharsSize uint, label string, r *lipgloss.Renderer, 
 		return makeDelay(8, 60) //nolint:gomnd
 	}
 
-	c.chars = make([]cyclingChar, n+len(c.label))
+	c.cyclingChars = make([]cyclingChar, n+len(c.label))
 
 	// Initial characters that cycle forever.
 	for i := 0; i < n; i++ {
-		c.chars[i] = cyclingChar{
+		c.cyclingChars[i] = cyclingChar{
 			finalValue:   -1, // cycle forever
 			initialDelay: makeInitialDelay(),
 		}
@@ -126,7 +126,7 @@ func newCyclingChars(initialCharsSize uint, label string, r *lipgloss.Renderer, 
 
 	// Label text that only cycles for a little while.
 	for i, r := range c.label {
-		c.chars[i+n] = cyclingChar{
+		c.cyclingChars[i+n] = cyclingChar{
 			finalValue:   r,
 			initialDelay: makeInitialDelay(),
 			lifetime:     makeDelay(5, 180), //nolint:gomnd
@@ -137,69 +137,69 @@ func newCyclingChars(initialCharsSize uint, label string, r *lipgloss.Renderer, 
 }
 
 // Init initializes the animation.
-func (c cyclingChars) Init() tea.Cmd {
+func (anim) Init() tea.Cmd {
 	return stepChars()
 }
 
 // Update handles messages.
-func (c cyclingChars) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (a anim) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg.(type) {
 	case stepCharsMsg:
-		for i, char := range c.chars {
-			switch char.state(c.start) {
+		for i, char := range a.cyclingChars {
+			switch char.state(a.start) {
 			case charInitialState:
-				c.chars[i].currentValue = '.'
+				a.cyclingChars[i].currentValue = '.'
 			case charCyclingState:
-				c.chars[i].currentValue = char.randomRune()
+				a.cyclingChars[i].currentValue = char.randomRune()
 			case charEndOfLifeState:
-				c.chars[i].currentValue = char.finalValue
+				a.cyclingChars[i].currentValue = char.finalValue
 			}
 		}
 
-		if !c.ellipsisStarted {
+		if !a.ellipsisStarted {
 			var eol int
-			for _, char := range c.chars {
-				if char.state(c.start) == charEndOfLifeState {
+			for _, char := range a.cyclingChars {
+				if char.state(a.start) == charEndOfLifeState {
 					eol++
 				}
 			}
-			if eol == len(c.label) {
+			if eol == len(a.label) {
 				// If our entire label has reached end of life, start the
 				// ellipsis "spinner" after a short pause.
-				c.ellipsisStarted = true
+				a.ellipsisStarted = true
 				cmd = tea.Tick(time.Millisecond*220, func(_ time.Time) tea.Msg { //nolint:gomnd
-					return c.ellipsis.Tick()
+					return a.ellipsis.Tick()
 				})
 			}
 		}
 
-		return c, tea.Batch(stepChars(), cmd)
+		return a, tea.Batch(stepChars(), cmd)
 	case spinner.TickMsg:
 		var cmd tea.Cmd
-		c.ellipsis, cmd = c.ellipsis.Update(msg)
-		return c, cmd
+		a.ellipsis, cmd = a.ellipsis.Update(msg)
+		return a, cmd
 	default:
-		return c, nil
+		return a, nil
 	}
 }
 
 // View renders the animation.
-func (c cyclingChars) View() string {
+func (a anim) View() string {
 	var b strings.Builder
-	for i, char := range c.chars {
+	for i, char := range a.cyclingChars {
 		var (
 			s *lipgloss.Style
 			r = char.currentValue
 		)
-		if len(c.ramp) > 0 && i < len(c.ramp) {
+		if len(a.ramp) > 0 && i < len(a.ramp) {
 			// There's a gradient ramp style defined for this char. Style it
 			// accordingly.
-			s = &c.ramp[i]
+			s = &a.ramp[i]
 		} else if char.finalValue < 0 {
 			// No gradient ramp defined, but this color will cycle forever so
 			// let's color it accordingly.
-			s = &c.styles.cyclingChars
+			s = &a.styles.cyclingChars
 		}
 		if s != nil {
 			b.WriteString(s.Render(string(r)))
@@ -207,7 +207,7 @@ func (c cyclingChars) View() string {
 		}
 		b.WriteRune(r)
 	}
-	return b.String() + c.ellipsis.View()
+	return b.String() + a.ellipsis.View()
 }
 
 func makeGradientRamp(length int) []lipgloss.Color {
