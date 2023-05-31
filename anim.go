@@ -14,6 +14,7 @@ import (
 
 const (
 	charCyclingFPS  = time.Second / 22
+	colorCycleFPS   = time.Second / 5
 	maxCyclingChars = 120
 )
 
@@ -60,8 +61,16 @@ func (c cyclingChar) state(start time.Time) charState {
 type stepCharsMsg struct{}
 
 func stepChars() tea.Cmd {
-	return tea.Tick(charCyclingFPS, func(_ time.Time) tea.Msg {
+	return tea.Tick(charCyclingFPS, func(time.Time) tea.Msg {
 		return stepCharsMsg{}
+	})
+}
+
+type colorCycleMsg struct{}
+
+func cycleColors() tea.Cmd {
+	return tea.Tick(colorCycleFPS, func(time.Time) tea.Msg {
+		return colorCycleMsg{}
 	})
 }
 
@@ -100,11 +109,12 @@ func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles
 	// color the cycling characters with a gradient ramp.
 	const minRampSize = 3
 	if n >= minRampSize && r.ColorProfile() == termenv.TrueColor {
-		c.ramp = make([]lipgloss.Style, n)
+		c.ramp = make([]lipgloss.Style, n, n*2) // double capacity for color cycling
 		ramp := makeGradientRamp(n)
 		for i, color := range ramp {
 			c.ramp[i] = r.NewStyle().Foreground(color)
 		}
+		c.ramp = append(c.ramp, reverse(c.ramp)...) // reverse and append for color cycling
 	}
 
 	makeDelay := func(a int32, b time.Duration) time.Duration {
@@ -141,7 +151,7 @@ func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles
 
 // Init initializes the animation.
 func (anim) Init() tea.Cmd {
-	return stepChars()
+	return tea.Batch(stepChars(), cycleColors())
 }
 
 // Update handles messages.
@@ -163,13 +173,19 @@ func (a anim) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// If our entire label has reached end of life, start the
 				// ellipsis "spinner" after a short pause.
 				a.ellipsisStarted = true
-				cmd = tea.Tick(time.Millisecond*220, func(_ time.Time) tea.Msg { //nolint:gomnd
+				cmd = tea.Tick(time.Millisecond*220, func(time.Time) tea.Msg { //nolint:gomnd
 					return a.ellipsis.Tick()
 				})
 			}
 		}
 
 		return a, tea.Batch(stepChars(), cmd)
+	case colorCycleMsg:
+		if len(a.ramp) < 2 {
+			return a, nil
+		}
+		a.ramp = append(a.ramp[1:], a.ramp[0])
+		return a, cycleColors()
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		a.ellipsis, cmd = a.ellipsis.Update(msg)
@@ -237,4 +253,13 @@ func makeGradientText(baseStyle lipgloss.Style, str string) string {
 		b.WriteString(baseStyle.Copy().Foreground(c).Render(string(runes[i])))
 	}
 	return b.String()
+}
+
+func reverse[T any](in []T) []T {
+	out := make([]T, len(in))
+	copy(out, in[:])
+	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+		out[i], out[j] = out[j], out[i]
+	}
+	return out
 }
