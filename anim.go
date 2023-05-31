@@ -181,7 +181,8 @@ func (a anim) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return a, tea.Batch(stepChars(), cmd)
 	case colorCycleMsg:
-		if len(a.ramp) < 2 {
+		const minColorCycleSize = 2
+		if len(a.ramp) < minColorCycleSize {
 			return a, nil
 		}
 		a.ramp = append(a.ramp[1:], a.ramp[0])
