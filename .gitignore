@@ -1,2 +1,4 @@
-.idea/
 mods
+.envrc
+
+dist/
