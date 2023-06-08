@@ -229,6 +229,8 @@ github.com/charmbracelet/bubbletea v0.23.1/go.mod h1:JAfGK/3/pPKHTnAS8JIE2u9f61B
 github.com/charmbracelet/bubbletea v0.23.2/go.mod h1:FaP3WUivcTM0xOKNmhciz60M6I+weYLF76mr1JyI7sM=
 github.com/charmbracelet/bubbletea v0.24.1 h1:LpdYfnu+Qc6XtvMz6d/6rRY71yttHTP5HtrjMgWvixc=
 github.com/charmbracelet/bubbletea v0.24.1/go.mod h1:rK3g/2+T8vOSEkNHvtq40umJpeVYDn6bLaqbgzhL/hg=
+github.com/charmbracelet/bubbletea v0.24.2 h1:uaQIKx9Ai6Gdh5zpTbGiWpytMU+CfsPp06RaW2cx/SY=
+github.com/charmbracelet/bubbletea v0.24.2/go.mod h1:XdrNrV4J8GiyshTtx3DNuYkR1FDaJmO3l2nejekbsgg=
 github.com/charmbracelet/charm v0.8.7/go.mod h1:ApJYwJljEjODkOYJgFDzbUqztLrCWQct9zyPD+xcVr4=
 github.com/charmbracelet/glamour v0.6.0/go.mod h1:taqWV4swIMMbWALc0m7AfE9JkPSU8om2538k9ITBxOc=
 github.com/charmbracelet/glow v1.5.1 h1:o1mwT4xXXpkfUhJG6euQayNxLZf9yKctOCNHLztrwdE=
@@ -596,6 +598,8 @@ github.com/sashabaranov/go-openai v1.9.4 h1:KanoCEoowAI45jVXlenMCckutSRr39qOmSi9
 github.com/sashabaranov/go-openai v1.9.4/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
 github.com/sashabaranov/go-openai v1.10.0 h1:uUD3EOKDdGa6geMVbe2Trj9/ckF9sCV5jpQM19f7GM8=
 github.com/sashabaranov/go-openai v1.10.0/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
+github.com/sashabaranov/go-openai v1.10.1 h1:6WyHJaNzF266VaEEuW6R4YW+Ei0wpMnqRYPGK7fhuhQ=
+github.com/sashabaranov/go-openai v1.10.1/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/segmentio/ksuid v1.0.4/go.mod h1:/XUiZBD3kVx5SmUOl55voK5yeAbBNNIed+2O73XgrPE=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
