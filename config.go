@@ -159,9 +159,8 @@ func newConfig() (config, error) {
 	if err != nil {
 		return c, err
 	}
-	err = yaml.Unmarshal(content, &c)
-	if err != nil {
-		return c, err
+	if err := yaml.Unmarshal(content, &c); err != nil {
+		return c, fmt.Errorf("%s: %w", sp, err)
 	}
 
 	ms := make(map[string]Model)
