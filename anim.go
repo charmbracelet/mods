@@ -18,14 +18,7 @@ const (
 	maxCyclingChars = 120
 )
 
-var (
-	charRunes = []rune("0123456789abcdefABCDEF~!@#$£€%^&*()+=_")
-
-	ellipsisSpinner = spinner.Spinner{
-		Frames: []string{"", ".", "..", "..."},
-		FPS:    time.Second / 3, //nolint:gomnd
-	}
-)
+var charRunes = []rune("0123456789abcdefABCDEF~!@#$£€%^&*()+=_")
 
 type charState int
 
@@ -101,7 +94,7 @@ func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles
 	c := anim{
 		start:    time.Now(),
 		label:    []rune(gap + label),
-		ellipsis: spinner.New(spinner.WithSpinner(ellipsisSpinner)),
+		ellipsis: spinner.New(spinner.WithSpinner(spinner.Ellipsis)),
 		styles:   s,
 	}
 
