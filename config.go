@@ -34,6 +34,10 @@ apis:
         aliases: ["35t"]
         max-input-chars: 12250
         fallback: gpt-3.5
+      gpt-3.5-turbo-16k:
+        aliases: ["35t16k"]
+        max-input-chars: 44500
+        fallback: gpt-3.5
       gpt-3.5:
         aliases: ["35"]
         max-input-chars: 12250
