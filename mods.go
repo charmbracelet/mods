@@ -220,7 +220,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			key = os.Getenv("OPENAI_API_KEY")
 			if key == "" {
 				return modsError{
-					reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variabled is required.",
+					reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variable is required.",
 					err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
 				}
 			}
