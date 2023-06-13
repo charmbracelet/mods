@@ -15,7 +15,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai"
+	"github.com/zalando/go-keyring"
 )
 
 const markdownPrefix = "Format the response as Markdown."
@@ -217,10 +218,18 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		if mod.API == "openai" {
-			key = os.Getenv("OPENAI_API_KEY")
+			// we can ignore errors because the user could have the key not in the keyring
+			key, _ = keyring.Get("charmcli-mods", "openai")
+			// if the key is not in the keyring, fallback to config file or env var
+			if key == "" {
+				key = cfg.APIs["openai"].APIKey
+			}
+			if key == "" {
+				key = os.Getenv("OPENAI_API_KEY")
+			}
 			if key == "" {
 				return modsError{
-					reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variabled is required.",
+					reason: "No OpenAI API key found. Set it in the config (mods -s) or set the " + m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variable.",
 					err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
 				}
 			}
