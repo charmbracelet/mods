@@ -216,8 +216,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			mod.MaxChars = cfg.MaxInputChars
 		}
 
+		key = os.Getenv("OPENAI_API_KEY")
 		if mod.API == "openai" {
-			key = os.Getenv("OPENAI_API_KEY")
 			if key == "" {
 				return modsError{
 					reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variable is required.",
@@ -225,7 +225,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				}
 			}
 		}
-		ccfg := openai.DefaultConfig(key)
 		api, ok := cfg.APIs[mod.API]
 		if !ok {
 			eps := make([]string, 0)
@@ -237,7 +236,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				err:    fmt.Errorf("Your configured API endpoints are: %s", eps),
 			}
 		}
-		ccfg.BaseURL = api.BaseURL
+		var ccfg openai.ClientConfig
+		switch mod.API {
+		case "azure", "azure_ad":
+			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
+		default: // openai/localai
+			ccfg = openai.DefaultConfig(key)
+			ccfg.BaseURL = api.BaseURL
+		}
+
 		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
