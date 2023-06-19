@@ -54,7 +54,7 @@ README file).
 
 Mods can quickly give you a first draft for new documentation.
 
-`mods "write a new section to this readme for a feature that sends you a free rabbit if you hit r" | glow`
+`mods "write a new section to this readme for a feature that sends you a free rabbit if you hit r" < README.md | glow`
 
 <p><img src="https://github.com/charmbracelet/mods/assets/25087/c26a17a9-c772-40cc-b3f1-9189ac682730" width="900" alt="a GIF of mods contributing to a product README"></p>
 
