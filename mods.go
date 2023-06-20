@@ -32,7 +32,7 @@ const (
 // Mods is the Bubble Tea model that manages reading stdin and querying the
 // OpenAI API.
 type Mods struct {
-	Config   config
+	Config   Config
 	Output   string
 	Input    string
 	Error    *modsError
@@ -78,7 +78,7 @@ func (m *Mods) Init() tea.Cmd {
 // Update implements tea.Model.
 func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case config:
+	case Config:
 		m.Config = msg
 		m.state = configLoadedState
 		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
@@ -132,7 +132,7 @@ func (m *Mods) View() string {
 	return ""
 }
 
-// ErrorView renders the currently set modsError
+// ErrorView renders the currently set modsError.
 func (m Mods) ErrorView() string {
 	const maxWidth = 120
 	const horizontalPadding = 2
@@ -201,8 +201,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	return func() tea.Msg {
 		var ok bool
 		var mod Model
+		var api API
 		var key string
-		var azureOpenAIEndpoint string
+		var ccfg openai.ClientConfig
 
 		cfg := m.Config
 		mod, ok = cfg.Models[cfg.Model]
@@ -217,40 +218,62 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			mod.API = cfg.API
 			mod.MaxChars = cfg.MaxInputChars
 		}
-
-		if mod.API == "openai" {
-			key = os.Getenv("OPENAI_API_KEY")
-			if key == "" {
-				return modsError{
-					reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variable is required.",
-					err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
-				}
+		for _, a := range cfg.APIs {
+			if mod.API == a.Name {
+				api = a
+				break
 			}
-
-			azureOpenAIEndpoint = os.Getenv("AZURE_OPENAI_ENDPOINT")
 		}
-
-		var ccfg openai.ClientConfig
-		if azureOpenAIEndpoint != "" {
-			ccfg = openai.DefaultAzureConfig(key, azureOpenAIEndpoint)
-		} else {
-			ccfg = openai.DefaultConfig(key)
-		}
-
-		api, ok := cfg.APIs[mod.API]
-		if !ok {
+		if api.Name == "" {
 			eps := make([]string, 0)
-			for k := range cfg.APIs {
-				eps = append(eps, m.styles.inlineCode.Render(k))
+			for _, a := range cfg.APIs {
+				eps = append(eps, m.styles.inlineCode.Render(a.Name))
 			}
 			return modsError{
 				reason: fmt.Sprintf("The API endpoint %s is not configured ", m.styles.inlineCode.Render(cfg.API)),
 				err:    fmt.Errorf("Your configured API endpoints are: %s", eps),
 			}
 		}
-		if azureOpenAIEndpoint == "" {
-			ccfg.BaseURL = api.BaseURL
+		if api.APIKeyEnv != "" {
+			key = os.Getenv(api.APIKeyEnv)
 		}
+
+		switch mod.API {
+		case "openai":
+			if key == "" {
+				key = os.Getenv("OPENAI_API_KEY")
+			}
+			if key == "" {
+				return modsError{
+					reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variable is required.",
+					err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
+				}
+			}
+			ccfg = openai.DefaultConfig(key)
+			if api.BaseURL != "" {
+				ccfg.BaseURL = api.BaseURL
+			}
+		case "azure", "azure-ad":
+			if key == "" {
+				key = os.Getenv("AZURE_OPENAI_KEY")
+			}
+			if key == "" {
+				return modsError{
+					reason: m.styles.inlineCode.Render("AZURE_OPENAI_KEY") + " environment variable is required.",
+					err:    fmt.Errorf("You can apply for one at %s", m.styles.link.Render("https://aka.ms/oai/access")),
+				}
+			}
+			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
+			if mod.API == "azure-ad" {
+				ccfg.APIType = openai.APITypeAzureAD
+			}
+		default:
+			ccfg = openai.DefaultConfig(key)
+			if api.BaseURL != "" {
+				ccfg.BaseURL = api.BaseURL
+			}
+		}
+
 		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -314,12 +337,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				}
 				return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", mod.Name, mod.API)}
 			default:
-				return m.retry(content, modsError{err: err, reason: "Unknown OpenAI API error."})
+				return m.retry(content, modsError{err: err, reason: "Unknown API error."})
 			}
 		}
 
 		if err != nil {
-			return modsError{err: err, reason: "There was a problem with the OpenAI API request."}
+			return modsError{err: err, reason: fmt.Sprintf("There was a problem with the %s API request.", mod.API)}
 		}
 		return completionOutput{resp.Choices[0].Message.Content}
 	}

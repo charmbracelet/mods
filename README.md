@@ -118,7 +118,9 @@ Mods uses GPT-4 by default and will fallback to GPT-3.5 Turbo if it's not
 available. Set the `OPENAI_API_KEY` environment variable to a valid OpenAI key,
 which you can get [from here](https://platform.openai.com/account/api-keys).
 
-Mods can also use the [Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service) service. Set the `AZURE_OPENAI_ENDPOINT` environment variable to the Azure endpoint URL if using Azure.
+Mods can also use the [Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service)
+service. Set the `AZURE_OPENAI_KEY` environment variable and configure your
+Azure endpoint with `mods -s`.
 
 ### LocalAI
 

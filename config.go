@@ -15,83 +15,55 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const configTemplate = `
-# {{ index .Help "apis" }}
-# LocalAI setup instructions: https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model
-apis:
-  openai:
-    base-url: https://api.openai.com/v1
-    models:
-      gpt-4:
-        aliases: ["4"]
-        max-input-chars: 24500
-        fallback: gpt-3.5-turbo
-      gpt-4-32k:
-        aliases: ["32k"]
-        max-input-chars: 98000
-        fallback: gpt-4
-      gpt-3.5-turbo:
-        aliases: ["35t"]
-        max-input-chars: 12250
-        fallback: gpt-3.5
-      gpt-3.5-turbo-16k:
-        aliases: ["35t16k"]
-        max-input-chars: 44500
-        fallback: gpt-3.5
-      gpt-3.5:
-        aliases: ["35"]
-        max-input-chars: 12250
-        fallback:
-  localai:
-    base-url: http://localhost:8080
-    models:
-      ggml-gpt4all-j:
-        aliases: ["local", "4all"]
-        max-input-chars: 12250
-        fallback:
-# {{ index .Help "model" }}
-default-model: gpt-4
-# {{ index .Help "max-input-chars" }}
-max-input-chars: 12250
-# {{ index .Help "format" }}
-format: false
-# {{ index .Help "quiet" }}
-quiet: false
-# {{ index .Help "temp" }}
-temp: 1.0
-# {{ index .Help "topp" }}
-topp: 1.0
-# {{ index .Help "no-limit" }}
-no-limit: false
-# {{ index .Help "prompt-args" }}
-include-prompt-args: false
-# {{ index .Help "prompt" }}
-include-prompt: 0
-# {{ index .Help "max-retries" }}
-max-retries: 5
-# {{ index .Help "fanciness" }}
-fanciness: 10
-# {{ index .Help "status-text" }}
-status-text: Generating
-# {{ index .Help "max-tokens" }}
-# max-tokens: 100
-`
+// Model represents the LLM model used in the API call.
+type Model struct {
+	Name     string
+	API      string
+	MaxChars int      `yaml:"max-input-chars"`
+	Aliases  []string `yaml:"aliases"`
+	Fallback string   `yaml:"fallback"`
+}
 
-type config struct {
-	APIs              map[string]API `yaml:"apis"`
-	Model             string         `yaml:"default-model" env:"MODEL"`
-	Markdown          bool           `yaml:"format" env:"FORMAT"`
-	Quiet             bool           `yaml:"quiet" env:"QUIET"`
-	MaxTokens         int            `yaml:"max-tokens" env:"MAX_TOKENS"`
-	MaxInputChars     int            `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
-	Temperature       float32        `yaml:"temp" env:"TEMP"`
-	TopP              float32        `yaml:"topp" env:"TOPP"`
-	NoLimit           bool           `yaml:"no-limit" env:"NO_LIMIT"`
-	IncludePromptArgs bool           `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
-	IncludePrompt     int            `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
-	MaxRetries        int            `yaml:"max-retries" env:"MAX_RETRIES"`
-	Fanciness         uint           `yaml:"fanciness" env:"FANCINESS"`
-	StatusText        string         `yaml:"status-text" env:"STATUS_TEXT"`
+// API represents an API endpoint and its models.
+type API struct {
+	Name      string
+	APIKeyEnv string           `yaml:"api-key-env"`
+	BaseURL   string           `yaml:"base-url"`
+	Models    map[string]Model `yaml:"models"`
+}
+
+// APIs is a type alias to allow custom YAML decoding.
+type APIs []API
+
+// UnmarshalYAML implements sorted API YAML decoding.
+func (apis *APIs) UnmarshalYAML(node *yaml.Node) error {
+	for i := 0; i < len(node.Content); i += 2 {
+		var api API
+		if err := node.Content[i+1].Decode(&api); err != nil {
+			return fmt.Errorf("error decoding YAML file: %s", err)
+		}
+		api.Name = node.Content[i].Value
+		*apis = append(*apis, api)
+	}
+	return nil
+}
+
+// Config holds the main configuration and is mapped to the YAML settings file.
+type Config struct {
+	Model             string  `yaml:"default-model" env:"MODEL"`
+	Markdown          bool    `yaml:"format" env:"FORMAT"`
+	Quiet             bool    `yaml:"quiet" env:"QUIET"`
+	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
+	MaxInputChars     int     `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
+	Temperature       float32 `yaml:"temp" env:"TEMP"`
+	TopP              float32 `yaml:"topp" env:"TOPP"`
+	NoLimit           bool    `yaml:"no-limit" env:"NO_LIMIT"`
+	IncludePromptArgs bool    `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
+	IncludePrompt     int     `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
+	MaxRetries        int     `yaml:"max-retries" env:"MAX_RETRIES"`
+	Fanciness         uint    `yaml:"fanciness" env:"FANCINESS"`
+	StatusText        string  `yaml:"status-text" env:"STATUS_TEXT"`
+	APIs              APIs    `yaml:"apis"`
 	API               string
 	Models            map[string]Model
 	ShowHelp          bool
@@ -101,8 +73,8 @@ type config struct {
 	SettingsPath      string
 }
 
-func newConfig() (config, error) {
-	var c config
+func newConfig() (Config, error) {
+	var c Config
 	var content []byte
 
 	help := map[string]string{
@@ -147,7 +119,7 @@ func newConfig() (config, error) {
 		defer func() { _ = f.Close() }()
 
 		m := struct {
-			Config config
+			Config Config
 			Help   map[string]string
 		}{
 			Config: c,
@@ -168,13 +140,20 @@ func newConfig() (config, error) {
 	}
 
 	ms := make(map[string]Model)
-	for ak, av := range c.APIs {
-		for mk, mv := range av.Models {
+	for _, api := range c.APIs {
+		for mk, mv := range api.Models {
 			mv.Name = mk
-			mv.API = ak
-			ms[mk] = mv
+			mv.API = api.Name
+			// only set the model key and aliases if they haven't already been used
+			_, ok := ms[mk]
+			if !ok {
+				ms[mk] = mv
+			}
 			for _, a := range mv.Aliases {
-				ms[a] = mv
+				_, ok := ms[a]
+				if !ok {
+					ms[a] = mv
+				}
 			}
 		}
 	}
