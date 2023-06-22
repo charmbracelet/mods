@@ -12,7 +12,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-isatty v0.0.19
 	github.com/muesli/termenv v0.15.2-0.20230414211128-452975b1f758
-	github.com/sashabaranov/go-openai v1.11.2
+	github.com/sashabaranov/go-openai v1.11.3
 	github.com/spf13/pflag v1.0.5
 	gopkg.in/yaml.v3 v3.0.1
 )
