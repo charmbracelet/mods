@@ -3,6 +3,8 @@ package main
 const configTemplate = `
 # {{ index .Help "model" }}
 default-model: gpt-4
+# {{ index .Help "format-text" }}
+format-text: Format the response as markdown without enclosing backticks.
 # {{ index .Help "max-input-chars" }}
 max-input-chars: 12250
 # {{ index .Help "format" }}

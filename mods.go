@@ -18,8 +18,6 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-const markdownPrefix = "Format the response as Markdown."
-
 type state int
 
 const (
@@ -174,7 +172,11 @@ func (m *Mods) FormattedOutput() string {
 	}
 
 	if m.Config.IncludePromptArgs || m.Config.IncludePrompt != 0 {
-		out = fmt.Sprintf(prefixFormat, m.Config.Prefix, out)
+		prefix := m.Config.Prefix
+		if m.Config.Format {
+			prefix = fmt.Sprintf("%s %s", prefix, m.Config.FormatText)
+		}
+		out = fmt.Sprintf(prefixFormat, prefix, out)
 	}
 
 	return out
@@ -279,8 +281,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		prefix := cfg.Prefix
-		if cfg.Markdown {
-			prefix = fmt.Sprintf("%s %s", prefix, markdownPrefix)
+		if cfg.Format {
+			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
 		}
 		if prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)

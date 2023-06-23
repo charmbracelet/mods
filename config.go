@@ -51,7 +51,7 @@ func (apis *APIs) UnmarshalYAML(node *yaml.Node) error {
 // Config holds the main configuration and is mapped to the YAML settings file.
 type Config struct {
 	Model             string  `yaml:"default-model" env:"MODEL"`
-	Markdown          bool    `yaml:"format" env:"FORMAT"`
+	Format            bool    `yaml:"format" env:"FORMAT"`
 	Quiet             bool    `yaml:"quiet" env:"QUIET"`
 	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
 	MaxInputChars     int     `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
@@ -63,6 +63,7 @@ type Config struct {
 	MaxRetries        int     `yaml:"max-retries" env:"MAX_RETRIES"`
 	Fanciness         uint    `yaml:"fanciness" env:"FANCINESS"`
 	StatusText        string  `yaml:"status-text" env:"STATUS_TEXT"`
+	FormatText        string  `yaml:"format-text" env:"FORMAT_TEXT"`
 	APIs              APIs    `yaml:"apis"`
 	API               string
 	Models            map[string]Model
@@ -82,7 +83,8 @@ func newConfig() (Config, error) {
 		"apis":            "Aliases and endpoints for OpenAI compatible REST API.",
 		"model":           "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
 		"max-input-chars": "Default character limit on input to model.",
-		"format":          "Format response as markdown.",
+		"format":          "Ask for the response to be formatted as markdown (default).",
+		"format-text":     "Text to append when using the -f flag.",
 		"prompt":          "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
 		"prompt-args":     "Include the prompt from the arguments in the response.",
 		"quiet":           "Quiet mode (hide the spinner while loading).",
@@ -166,7 +168,7 @@ func newConfig() (Config, error) {
 
 	flag.StringVarP(&c.Model, "model", "m", c.Model, help["model"])
 	flag.StringVarP(&c.API, "api", "a", c.API, help["api"])
-	flag.BoolVarP(&c.Markdown, "format", "f", c.Markdown, help["format"])
+	flag.BoolVarP(&c.Format, "format", "f", c.Format, help["format"])
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, help["prompt"])
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, help["prompt-args"])
 	flag.BoolVarP(&c.Quiet, "quiet", "q", c.Quiet, help["quiet"])
@@ -184,6 +186,9 @@ func newConfig() (Config, error) {
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
 	flag.Parse()
+	if c.Format && c.FormatText == "" {
+		c.FormatText = "Format the response as markdown without enclosing backticks."
+	}
 	c.Prefix = strings.Join(flag.Args(), " ")
 
 	return c, nil

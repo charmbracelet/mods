@@ -186,10 +186,8 @@ file.
 
 `-f`, `--format`, `MODS_FORMAT`
 
-LLMs are very good at generating their response in Markdown format. They
-can even organize their content naturally with headers, bullet lists... Use
-this option to append the phrase "Format the response as Markdown." to the
-prompt.
+Ask the LLM to format the response as markdown. You can edit the text passed to
+the LLM with `mods -s` then changing the `format-text` value.
 
 #### Max Tokens
 
