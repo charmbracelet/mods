@@ -155,21 +155,22 @@ func (m *Mods) FormattedOutput() string {
 	stdinFormat := "```\n%s```\n\n---\n\n%s"
 	out := m.Output
 
-	if m.Config.IncludePrompt != 0 {
+	if m.Config.IncludePrompt != 0 && m.Input != "" {
 		if m.Config.IncludePrompt < 0 {
 			out = fmt.Sprintf(stdinFormat, m.Input, out)
-		}
-		scanner := bufio.NewScanner(strings.NewReader(m.Input))
-		i := 0
-		in := ""
-		for scanner.Scan() {
-			if i == m.Config.IncludePrompt {
-				break
+		} else {
+			scanner := bufio.NewScanner(strings.NewReader(m.Input))
+			i := 0
+			in := ""
+			for scanner.Scan() {
+				if i == m.Config.IncludePrompt {
+					break
+				}
+				in += (scanner.Text() + "\n")
+				i++
 			}
-			in += (scanner.Text() + "\n")
-			i++
+			out = fmt.Sprintf(stdinFormat, in, out)
 		}
-		out = fmt.Sprintf(stdinFormat, in, out)
 	}
 
 	if m.Config.IncludePromptArgs || m.Config.IncludePrompt != 0 {
