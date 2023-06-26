@@ -5,10 +5,10 @@ const configTemplate = `
 default-model: gpt-4
 # {{ index .Help "format-text" }}
 format-text: Format the response as markdown without enclosing backticks.
-# {{ index .Help "max-input-chars" }}
-max-input-chars: 12250
 # {{ index .Help "format" }}
 format: false
+# {{ index .Help "glamour" }}
+glamour: false
 # {{ index .Help "quiet" }}
 quiet: false
 # {{ index .Help "temp" }}
@@ -27,6 +27,8 @@ max-retries: 5
 fanciness: 10
 # {{ index .Help "status-text" }}
 status-text: Generating
+# {{ index .Help "max-input-chars" }}
+max-input-chars: 12250
 # {{ index .Help "max-tokens" }}
 # max-tokens: 100
 # {{ index .Help "apis" }}

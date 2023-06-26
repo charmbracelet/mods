@@ -12,9 +12,13 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/exp/ordered"
 	"github.com/mattn/go-isatty"
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -24,39 +28,57 @@ type state int
 const (
 	startState state = iota
 	configLoadedState
-	completionState
+	requestState
+	responseState
+	doneState
 	errorState
 )
 
 // Mods is the Bubble Tea model that manages reading stdin and querying the
 // OpenAI API.
 type Mods struct {
-	Config   Config
-	Output   string
-	Input    string
-	Styles   styles
-	Error    *modsError
-	state    state
-	retries  int
-	renderer *lipgloss.Renderer
-	anim     tea.Model
-	width    int
-	height   int
+	Config        Config
+	Output        string
+	Input         string
+	Styles        styles
+	Error         *modsError
+	state         state
+	retries       int
+	renderer      *lipgloss.Renderer
+	glam          *glamour.TermRenderer
+	glamViewport  viewport.Model
+	glamOutput    string
+	glamHeight    int
+	messages      []openai.ChatCompletionMessage
+	cancelRequest context.CancelFunc
+	anim          tea.Model
+	width         int
+	height        int
 }
 
 func newMods(r *lipgloss.Renderer) *Mods {
+	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
+	vp := viewport.New(0, 0)
+	vp.GotoBottom()
 	return &Mods{
-		Styles:   makeStyles(r),
-		state:    startState,
-		renderer: r,
+		Styles:       makeStyles(r),
+		glam:         gr,
+		state:        startState,
+		renderer:     r,
+		glamViewport: vp,
 	}
 }
 
 // completionInput is a tea.Msg that wraps the content read from stdin.
-type completionInput struct{ content string }
+type completionInput struct {
+	content string
+}
 
 // completionOutput a tea.Msg that wraps the content returned from openai.
-type completionOutput struct{ content string }
+type completionOutput struct {
+	content string
+	stream  *openai.ChatCompletionStream
+}
 
 // modsError is a wrapper around an error that adds additional context.
 type modsError struct {
@@ -75,45 +97,84 @@ func (m *Mods) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case Config:
 		m.Config = msg
-		m.state = configLoadedState
 		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
-			return m, tea.Quit
+			return m, m.quit
 		}
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
-		return m, tea.Batch(readStdinCmd, m.anim.Init())
+		m.state = configLoadedState
+		cmds = append(cmds, readStdinCmd, m.anim.Init())
 	case completionInput:
 		if msg.content == "" && m.Config.Prefix == "" {
-			return m, tea.Quit
+			return m, m.quit
 		}
 		if msg.content != "" {
 			m.Input = msg.content
 		}
-		m.state = completionState
-		return m, m.startCompletionCmd(msg.content)
+		m.state = requestState
+		cmds = append(cmds, m.startCompletionCmd(msg.content))
 	case completionOutput:
-		m.Output = msg.content
-		return m, tea.Quit
+		if msg.stream == nil {
+			m.state = doneState
+			return m, m.quit
+		}
+		if msg.content != "" {
+			m.Output += msg.content
+			if m.Config.Glamour {
+				const tabWidth = 4
+				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
+				oldHeight := m.glamHeight
+				m.glamOutput, _ = m.glam.Render(m.Output)
+				m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
+				m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
+				m.glamHeight = lipgloss.Height(m.glamOutput)
+				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
+				m.glamViewport.SetContent(truncatedGlamOutput)
+				if oldHeight < m.glamHeight && wasAtBottom {
+					// If the viewport's at the bottom and we've received a new
+					// line of content, follow the output by auto scrolling to
+					// the bottom.
+					m.glamViewport.GotoBottom()
+				}
+			}
+			m.state = responseState
+		}
+		cmds = append(cmds, m.receiveCompletionStreamCmd(msg))
 	case modsError:
 		m.Error = &msg
 		m.state = errorState
-		return m, tea.Quit
+		return m, m.quit
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		m.glamViewport.Width = m.width
+		m.glamViewport.Height = m.height
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
-			return m, tea.Quit
+			m.state = doneState
+			return m, m.quit
 		}
 	}
-	if m.state == configLoadedState || m.state == completionState {
-		var cmd tea.Cmd
+	if m.state == configLoadedState || m.state == requestState {
 		m.anim, cmd = m.anim.Update(msg)
-		return m, cmd
+		cmds = append(cmds, cmd)
 	}
-	return m, nil
+	if m.viewportNeeded() {
+		// Only respond to keypresses when the viewport (i.e. the content) is
+		// taller than the window.
+		m.glamViewport, cmd = m.glamViewport.Update(msg)
+	}
+	cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
+}
+
+func (m Mods) viewportNeeded() bool {
+	return m.glamHeight > m.height
 }
 
 // View implements tea.Model.
@@ -122,10 +183,19 @@ func (m *Mods) View() string {
 	switch m.state {
 	case errorState:
 		return m.ErrorView()
-	case completionState:
+	case requestState:
 		if !m.Config.Quiet {
 			return m.anim.View()
 		}
+	case responseState:
+		if m.Config.Glamour {
+			if m.viewportNeeded() {
+				return m.glamViewport.View()
+			}
+			// We don't need the viewport yet.
+			return m.glamOutput
+		}
+		return m.Output
 	}
 	return ""
 }
@@ -135,10 +205,7 @@ func (m Mods) ErrorView() string {
 	const maxWidth = 120
 	const horizontalEdgePadding = 2
 	const totalHorizontalPadding = horizontalEdgePadding * 2
-	w := m.width - totalHorizontalPadding
-	if w > maxWidth {
-		w = maxWidth
-	}
+	w := ordered.Max(maxWidth, m.width-totalHorizontalPadding)
 	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalEdgePadding)
 	return fmt.Sprintf(
 		"\n%s\n\n%s\n\n",
@@ -150,6 +217,9 @@ func (m Mods) ErrorView() string {
 // FormattedOutput returns the response from OpenAI with the user configured
 // prefix and standard in settings.
 func (m *Mods) FormattedOutput() string {
+	if m.Config.Glamour {
+		return m.glamOutput
+	}
 	prefixFormat := "> %s\n\n---\n\n%s"
 	stdinFormat := "```\n%s```\n\n---\n\n%s"
 	out := m.Output
@@ -181,6 +251,13 @@ func (m *Mods) FormattedOutput() string {
 	}
 
 	return out
+}
+
+func (m *Mods) quit() tea.Msg {
+	if m.cancelRequest != nil {
+		m.cancelRequest()
+	}
+	return tea.Quit()
 }
 
 func (m *Mods) retry(content string, err modsError) tea.Msg {
@@ -298,7 +375,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		m.cancelRequest = cancel
 		prefix := cfg.Prefix
 		if cfg.Format {
 			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
@@ -313,9 +390,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		messages := []openai.ChatCompletionMessage{}
+		m.messages = []openai.ChatCompletionMessage{}
 		if cfg.Continue != "" && !cfg.NoCache {
-			err := readCache(cfg.Continue, &messages, cfg)
+			err := readCache(cfg.Continue, &m.messages, cfg)
 			if err != nil {
 				return modsError{
 					err:    err,
@@ -324,19 +401,20 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		messages = append(messages, openai.ChatCompletionMessage{
+		m.messages = append(m.messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
 			Content: content,
 		})
 
-		resp, err := client.CreateChatCompletion(
+		stream, err := client.CreateChatCompletionStream(
 			ctx,
 			openai.ChatCompletionRequest{
 				Model:       mod.Name,
 				Temperature: noOmitFloat(cfg.Temperature),
 				TopP:        noOmitFloat(cfg.TopP),
 				MaxTokens:   cfg.MaxTokens,
-				Messages:    messages,
+				Messages:    m.messages,
+				Stream:      true,
 			},
 		)
 		ae := &openai.APIError{}
@@ -378,30 +456,47 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			return modsError{err: err, reason: fmt.Sprintf("There was a problem with the %s API request.", mod.API)}
 		}
 
-		respMessage := resp.Choices[0].Message
-		if !cfg.NoCache {
-			messages = append(messages, respMessage)
-			if cfg.Continue != "" {
-				err = writeCache(cfg.Continue, &messages, cfg)
-				if err != nil {
-					return modsError{
-						err:    err,
-						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", cfg.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
-					}
-				}
-			}
-			if cfg.Continue != defaultCacheName {
-				err = writeCache(defaultCacheName, &messages, cfg)
-				if err != nil {
-					return modsError{
-						err:    err,
-						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", cfg.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
-					}
-				}
-			}
-		}
+		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
+	}
+}
 
-		return completionOutput{respMessage.Content}
+func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
+	return func() tea.Msg {
+		resp, err := msg.stream.Recv()
+		if errors.Is(err, io.EOF) {
+			msg.stream.Close()
+			if !m.Config.NoCache {
+				messages := append(m.messages, openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: m.Output,
+				})
+				if m.Config.Continue != "" {
+					err = writeCache(m.Config.Continue, &messages, m.Config)
+					if err != nil {
+						return modsError{
+							err:    err,
+							reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+						}
+					}
+				}
+				if m.Config.Continue != defaultCacheName {
+					err = writeCache(defaultCacheName, &messages, m.Config)
+					if err != nil {
+						return modsError{
+							err:    err,
+							reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+						}
+					}
+				}
+			}
+			return completionOutput{}
+		}
+		if err != nil {
+			msg.stream.Close()
+			return modsError{err, "There was an error when streaming the API response."}
+		}
+		msg.content = resp.Choices[0].Delta.Content
+		return msg
 	}
 }
 
