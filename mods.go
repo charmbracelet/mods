@@ -13,6 +13,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	openai "github.com/sashabaranov/go-openai"
@@ -23,7 +24,9 @@ type state int
 const (
 	startState state = iota
 	configLoadedState
-	completionState
+	requestState
+	responseState
+	doneState
 	errorState
 )
 
@@ -38,24 +41,32 @@ type Mods struct {
 	state    state
 	retries  int
 	renderer *lipgloss.Renderer
+	glam     *glamour.TermRenderer
 	anim     tea.Model
 	width    int
 	height   int
 }
 
 func newMods(r *lipgloss.Renderer) *Mods {
+	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
 	return &Mods{
 		Styles:   makeStyles(r),
+		glam:     gr,
 		state:    startState,
 		renderer: r,
 	}
 }
 
 // completionInput is a tea.Msg that wraps the content read from stdin.
-type completionInput struct{ content string }
+type completionInput struct {
+	content string
+}
 
 // completionOutput a tea.Msg that wraps the content returned from openai.
-type completionOutput struct{ content string }
+type completionOutput struct {
+	content string
+	stream  *openai.ChatCompletionStream
+}
 
 // modsError is a wrapper around an error that adds additional context.
 type modsError struct {
@@ -65,6 +76,22 @@ type modsError struct {
 
 func (m modsError) Error() string {
 	return m.err.Error()
+}
+
+func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
+	return func() tea.Msg {
+		resp, err := msg.stream.Recv()
+		if errors.Is(err, io.EOF) {
+			msg.stream.Close()
+			return completionOutput{}
+		}
+		if err != nil {
+			msg.stream.Close()
+			return modsError{err, "There was an error when streaming the API response."}
+		}
+		msg.content = resp.Choices[0].Delta.Content
+		return msg
+	}
 }
 
 // Init implements tea.Model.
@@ -77,11 +104,11 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case Config:
 		m.Config = msg
-		m.state = configLoadedState
 		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
 			return m, tea.Quit
 		}
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
+		m.state = configLoadedState
 		return m, tea.Batch(readStdinCmd, m.anim.Init())
 	case completionInput:
 		if msg.content == "" && m.Config.Prefix == "" {
@@ -90,11 +117,17 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.content != "" {
 			m.Input = msg.content
 		}
-		m.state = completionState
+		m.state = requestState
 		return m, m.startCompletionCmd(msg.content)
 	case completionOutput:
-		m.Output = msg.content
-		return m, tea.Quit
+		if msg.stream == nil {
+			m.state = doneState
+			return m, tea.Quit
+		}
+		m.Output += msg.content
+		m.state = responseState
+		msg.content = ""
+		return m, m.receiveCompletionStreamCmd(msg)
 	case modsError:
 		m.Error = &msg
 		m.state = errorState
@@ -104,10 +137,11 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
+			m.state = doneState
 			return m, tea.Quit
 		}
 	}
-	if m.state == configLoadedState || m.state == completionState {
+	if m.state == configLoadedState || m.state == requestState {
 		var cmd tea.Cmd
 		m.anim, cmd = m.anim.Update(msg)
 		return m, cmd
@@ -121,10 +155,13 @@ func (m *Mods) View() string {
 	switch m.state {
 	case errorState:
 		return m.ErrorView()
-	case completionState:
+	case requestState:
 		if !m.Config.Quiet {
 			return m.anim.View()
 		}
+	case responseState:
+		out, _ := m.glam.Render(m.Output)
+		return out
 	}
 	return ""
 }
@@ -286,8 +323,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		client := openai.NewClientWithConfig(ccfg)
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := context.Background()
 		prefix := cfg.Prefix
 		if cfg.Format {
 			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
@@ -302,13 +338,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		resp, err := client.CreateChatCompletion(
+		stream, err := client.CreateChatCompletionStream(
 			ctx,
 			openai.ChatCompletionRequest{
 				Model:       mod.Name,
 				Temperature: noOmitFloat(cfg.Temperature),
 				TopP:        noOmitFloat(cfg.TopP),
 				MaxTokens:   cfg.MaxTokens,
+				Stream:      true,
 				Messages: []openai.ChatCompletionMessage{
 					{
 						Role:    openai.ChatMessageRoleUser,
@@ -355,7 +392,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if err != nil {
 			return modsError{err: err, reason: fmt.Sprintf("There was a problem with the %s API request.", mod.API)}
 		}
-		return completionOutput{resp.Choices[0].Message.Content}
+		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 	}
 }
 
