@@ -80,6 +80,7 @@ func (apis *APIs) UnmarshalYAML(node *yaml.Node) error {
 type Config struct {
 	Model             string  `yaml:"default-model" env:"MODEL"`
 	Format            bool    `yaml:"format" env:"FORMAT"`
+	Glamour           bool    `yaml:"glamour" env:"GLAMOUR"`
 	Quiet             bool    `yaml:"quiet" env:"QUIET"`
 	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
 	MaxInputChars     int     `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
@@ -175,6 +176,7 @@ func newConfig() (Config, error) {
 	flag.StringVarP(&c.Model, "model", "m", c.Model, help["model"])
 	flag.StringVarP(&c.API, "api", "a", c.API, help["api"])
 	flag.BoolVarP(&c.Format, "format", "f", c.Format, help["format"])
+	flag.BoolVarP(&c.Glamour, "glamour", "g", c.Glamour, help["glamour"])
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, help["prompt"])
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, help["prompt-args"])
 	flag.BoolVarP(&c.Quiet, "quiet", "q", c.Quiet, help["quiet"])
