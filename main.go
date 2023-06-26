@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/glow/editor"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
@@ -44,6 +45,16 @@ func exitError(mods *Mods, err error, reason string) {
 	mods.Error = &modsError{reason: reason, err: err}
 	fmt.Println(mods.ErrorView())
 	os.Exit(1)
+}
+
+func init() {
+	// XXX: unset error styles in Glamour dark and light styles.
+	// On the glamour side, we should probably add constructors for generating
+	// default styles so they can be essentially copied and altered without
+	// mutating the definitions in Glamour itself (or relying on any deep
+	// copying).
+	glamour.DarkStyleConfig.CodeBlock.Chroma.Error.BackgroundColor = new(string)
+	glamour.LightStyleConfig.CodeBlock.Chroma.Error.BackgroundColor = new(string)
 }
 
 func main() {
