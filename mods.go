@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -33,29 +34,33 @@ const (
 // Mods is the Bubble Tea model that manages reading stdin and querying the
 // OpenAI API.
 type Mods struct {
-	Config         Config
-	Output         string
-	Input          string
-	Styles         styles
-	Error          *modsError
-	state          state
-	retries        int
-	renderer       *lipgloss.Renderer
-	glam           *glamour.TermRenderer
-	messages       []openai.ChatCompletionMessage
-	renderedOutput string
-	anim           tea.Model
-	width          int
-	height         int
+	Config        Config
+	Output        string
+	Input         string
+	Styles        styles
+	Error         *modsError
+	state         state
+	retries       int
+	renderer      *lipgloss.Renderer
+	glam          *glamour.TermRenderer
+	glamViewport  viewport.Model
+	glamOutput    string
+	glamLines     int
+	messages      []openai.ChatCompletionMessage
+	cancelRequest context.CancelFunc
+	anim          tea.Model
+	width         int
+	height        int
 }
 
 func newMods(r *lipgloss.Renderer) *Mods {
 	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
 	return &Mods{
-		Styles:   makeStyles(r),
-		glam:     gr,
-		state:    startState,
-		renderer: r,
+		Styles:       makeStyles(r),
+		glam:         gr,
+		state:        startState,
+		renderer:     r,
+		glamViewport: viewport.New(0, 0),
 	}
 }
 
@@ -87,56 +92,70 @@ func (m *Mods) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case Config:
 		m.Config = msg
 		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
-			return m, tea.Quit
+			return m, m.quit
 		}
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
 		m.state = configLoadedState
-		return m, tea.Batch(readStdinCmd, m.anim.Init())
+		cmds = append(cmds, readStdinCmd, m.anim.Init())
 	case completionInput:
 		if msg.content == "" && m.Config.Prefix == "" {
-			return m, tea.Quit
+			return m, m.quit
 		}
 		if msg.content != "" {
 			m.Input = msg.content
 		}
 		m.state = requestState
-		return m, m.startCompletionCmd(msg.content)
+		cmds = append(cmds, m.startCompletionCmd(msg.content))
 	case completionOutput:
 		if msg.stream == nil {
 			m.state = doneState
-			return m, tea.Quit
+			return m, m.quit
 		}
-		m.Output += msg.content
-		if m.Config.Glamour {
-			out, _ := m.glam.Render(m.Output)
-			m.renderedOutput = out
+		if msg.content != "" {
+			m.Output += msg.content
+			if m.Config.Glamour {
+				m.glamOutput, _ = m.glam.Render(m.Output)
+				m.glamViewport.SetContent(m.glamOutput)
+				m.glamLines = strings.Count(m.glamOutput, "\n")
+				if m.glamLines > m.height {
+					m.glamViewport.Height = m.height
+				}
+				m.glamViewport.Height = m.glamLines
+			}
+			m.state = responseState
 		}
-		m.state = responseState
-		msg.content = ""
-		return m, m.receiveCompletionStreamCmd(msg)
+		cmds = append(cmds, m.receiveCompletionStreamCmd(msg))
 	case modsError:
 		m.Error = &msg
 		m.state = errorState
-		return m, tea.Quit
+		return m, m.quit
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		m.glamViewport.Width = msg.Width
+		if m.glamLines > m.height {
+			m.glamViewport.Height = m.height
+		}
+		m.glamViewport.Height = m.glamLines
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			m.state = doneState
-			return m, tea.Quit
+			return m, m.quit
 		}
 	}
 	if m.state == configLoadedState || m.state == requestState {
-		var cmd tea.Cmd
 		m.anim, cmd = m.anim.Update(msg)
-		return m, cmd
+		cmds = append(cmds, cmd)
 	}
-	return m, nil
+	m.glamViewport, cmd = m.glamViewport.Update(msg)
+	cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
 }
 
 // View implements tea.Model.
@@ -151,7 +170,7 @@ func (m *Mods) View() string {
 		}
 	case responseState:
 		if m.Config.Glamour {
-			return m.renderedOutput
+			return m.glamViewport.View()
 		}
 		return m.Output
 	}
@@ -177,6 +196,9 @@ func (m Mods) ErrorView() string {
 // FormattedOutput returns the response from OpenAI with the user configured
 // prefix and standard in settings.
 func (m *Mods) FormattedOutput() string {
+	if m.Config.Glamour {
+		return m.glamOutput
+	}
 	prefixFormat := "> %s\n\n---\n\n%s"
 	stdinFormat := "```\n%s```\n\n---\n\n%s"
 	out := m.Output
@@ -208,6 +230,13 @@ func (m *Mods) FormattedOutput() string {
 	}
 
 	return out
+}
+
+func (m *Mods) quit() tea.Msg {
+	if m.cancelRequest != nil {
+		m.cancelRequest()
+	}
+	return tea.Quit()
 }
 
 func (m *Mods) retry(content string, err modsError) tea.Msg {
@@ -315,9 +344,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		client := openai.NewClientWithConfig(ccfg)
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		m.cancelRequest = cancel
 		prefix := cfg.Prefix
-		if cfg.Format || cfg.Glamour {
+		if cfg.Format {
 			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
 		}
 		if prefix != "" {
