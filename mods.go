@@ -176,6 +176,9 @@ func (m Mods) ErrorView() string {
 // FormattedOutput returns the response from OpenAI with the user configured
 // prefix and standard in settings.
 func (m *Mods) FormattedOutput() string {
+	if m.Config.Glamour {
+		return m.renderedOutput
+	}
 	prefixFormat := "> %s\n\n---\n\n%s"
 	stdinFormat := "```\n%s```\n\n---\n\n%s"
 	out := m.Output
