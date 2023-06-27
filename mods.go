@@ -328,7 +328,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		ctx, cancel := context.WithCancel(context.Background())
 		m.cancelRequest = cancel
 		prefix := cfg.Prefix
-		if cfg.Format || cfg.Glamour {
+		if cfg.Format {
 			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
 		}
 		if prefix != "" {
