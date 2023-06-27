@@ -33,18 +33,19 @@ const (
 // Mods is the Bubble Tea model that manages reading stdin and querying the
 // OpenAI API.
 type Mods struct {
-	Config   Config
-	Output   string
-	Input    string
-	Styles   styles
-	Error    *modsError
-	state    state
-	retries  int
-	renderer *lipgloss.Renderer
-	glam     *glamour.TermRenderer
-	anim     tea.Model
-	width    int
-	height   int
+	Config         Config
+	Output         string
+	Input          string
+	Styles         styles
+	Error          *modsError
+	state          state
+	retries        int
+	renderer       *lipgloss.Renderer
+	glam           *glamour.TermRenderer
+	renderedOutput string
+	anim           tea.Model
+	width          int
+	height         int
 }
 
 func newMods(r *lipgloss.Renderer) *Mods {
@@ -78,22 +79,6 @@ func (m modsError) Error() string {
 	return m.err.Error()
 }
 
-func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
-	return func() tea.Msg {
-		resp, err := msg.stream.Recv()
-		if errors.Is(err, io.EOF) {
-			msg.stream.Close()
-			return completionOutput{}
-		}
-		if err != nil {
-			msg.stream.Close()
-			return modsError{err, "There was an error when streaming the API response."}
-		}
-		msg.content = resp.Choices[0].Delta.Content
-		return msg
-	}
-}
-
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
 	return m.loadConfigCmd
@@ -125,6 +110,10 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		m.Output += msg.content
+		if m.Config.Glamour {
+			out, _ := m.glam.Render(m.Output)
+			m.renderedOutput = out
+		}
 		m.state = responseState
 		msg.content = ""
 		return m, m.receiveCompletionStreamCmd(msg)
@@ -160,8 +149,10 @@ func (m *Mods) View() string {
 			return m.anim.View()
 		}
 	case responseState:
-		out, _ := m.glam.Render(m.Output)
-		return out
+		if m.Config.Glamour {
+			return m.renderedOutput
+		}
+		return m.Output
 	}
 	return ""
 }
@@ -325,7 +316,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		client := openai.NewClientWithConfig(ccfg)
 		ctx := context.Background()
 		prefix := cfg.Prefix
-		if cfg.Format {
+		if cfg.Format || cfg.Glamour {
 			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
 		}
 		if prefix != "" {
@@ -393,6 +384,22 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			return modsError{err: err, reason: fmt.Sprintf("There was a problem with the %s API request.", mod.API)}
 		}
 		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
+	}
+}
+
+func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
+	return func() tea.Msg {
+		resp, err := msg.stream.Recv()
+		if errors.Is(err, io.EOF) {
+			msg.stream.Close()
+			return completionOutput{}
+		}
+		if err != nil {
+			msg.stream.Close()
+			return modsError{err, "There was an error when streaming the API response."}
+		}
+		msg.content = resp.Choices[0].Delta.Content
+		return msg
 	}
 }
 
