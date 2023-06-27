@@ -43,6 +43,7 @@ type Mods struct {
 	renderer       *lipgloss.Renderer
 	glam           *glamour.TermRenderer
 	renderedOutput string
+	cancelRequest  context.CancelFunc
 	anim           tea.Model
 	width          int
 	height         int
@@ -90,14 +91,14 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case Config:
 		m.Config = msg
 		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
-			return m, tea.Quit
+			return m, m.quit
 		}
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
 		m.state = configLoadedState
 		return m, tea.Batch(readStdinCmd, m.anim.Init())
 	case completionInput:
 		if msg.content == "" && m.Config.Prefix == "" {
-			return m, tea.Quit
+			return m, m.quit
 		}
 		if msg.content != "" {
 			m.Input = msg.content
@@ -107,7 +108,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case completionOutput:
 		if msg.stream == nil {
 			m.state = doneState
-			return m, tea.Quit
+			return m, m.quit
 		}
 		m.Output += msg.content
 		if m.Config.Glamour {
@@ -120,14 +121,14 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case modsError:
 		m.Error = &msg
 		m.state = errorState
-		return m, tea.Quit
+		return m, m.quit
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			m.state = doneState
-			return m, tea.Quit
+			return m, m.quit
 		}
 	}
 	if m.state == configLoadedState || m.state == requestState {
@@ -210,6 +211,13 @@ func (m *Mods) FormattedOutput() string {
 	}
 
 	return out
+}
+
+func (m *Mods) quit() tea.Msg {
+	if m.cancelRequest != nil {
+		m.cancelRequest()
+	}
+	return tea.Quit()
 }
 
 func (m *Mods) retry(content string, err modsError) tea.Msg {
@@ -317,7 +325,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		client := openai.NewClientWithConfig(ccfg)
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		m.cancelRequest = cancel
 		prefix := cfg.Prefix
 		if cfg.Format || cfg.Glamour {
 			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
