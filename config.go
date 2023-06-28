@@ -15,6 +15,29 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var help = map[string]string{
+	"api":             "OpenAI compatible REST API (openai, localai).",
+	"apis":            "Aliases and endpoints for OpenAI compatible REST API.",
+	"model":           "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
+	"max-input-chars": "Default character limit on input to model.",
+	"format":          "Ask for the response to be formatted as markdown (default).",
+	"format-text":     "Text to append when using the -f flag.",
+	"prompt":          "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
+	"prompt-args":     "Include the prompt from the arguments in the response.",
+	"quiet":           "Quiet mode (hide the spinner while loading).",
+	"help":            "Show help and exit.",
+	"version":         "Show version and exit.",
+	"max-retries":     "Maximum number of times to retry API calls.",
+	"no-limit":        "Turn off the client-side limit on the size of the input into the model.",
+	"max-tokens":      "Maximum number of tokens in response.",
+	"temp":            "Temperature (randomness) of results, from 0.0 to 2.0.",
+	"topp":            "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
+	"fanciness":       "Number of cycling characters in the 'generating' animation.",
+	"status-text":     "Text to show while generating.",
+	"settings":        "Open settings in your $EDITOR.",
+	"reset-settings":  "Reset settings to the defaults, your old settings file will be backed up.",
+}
+
 // Model represents the LLM model used in the API call.
 type Model struct {
 	Name     string
@@ -68,6 +91,7 @@ type Config struct {
 	API               string
 	Models            map[string]Model
 	ShowHelp          bool
+	ResetSettings     bool
 	Prefix            string
 	Version           bool
 	Settings          bool
@@ -76,71 +100,22 @@ type Config struct {
 
 func newConfig() (Config, error) {
 	var c Config
-	var content []byte
-
-	help := map[string]string{
-		"api":             "OpenAI compatible REST API (openai, localai).",
-		"apis":            "Aliases and endpoints for OpenAI compatible REST API.",
-		"model":           "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
-		"max-input-chars": "Default character limit on input to model.",
-		"format":          "Ask for the response to be formatted as markdown (default).",
-		"format-text":     "Text to append when using the -f flag.",
-		"prompt":          "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
-		"prompt-args":     "Include the prompt from the arguments in the response.",
-		"quiet":           "Quiet mode (hide the spinner while loading).",
-		"help":            "Show help and exit.",
-		"version":         "Show version and exit.",
-		"max-retries":     "Maximum number of times to retry API calls.",
-		"no-limit":        "Turn off the client-side limit on the size of the input into the model.",
-		"max-tokens":      "Maximum number of tokens in response.",
-		"temp":            "Temperature (randomness) of results, from 0.0 to 2.0.",
-		"topp":            "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
-		"fanciness":       "Number of cycling characters in the 'generating' animation.",
-		"status-text":     "Text to show while generating.",
-		"settings":        "Open settings in your $EDITOR.",
-	}
-
 	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
 	if err != nil {
-		return c, err
+		return c, fmt.Errorf("can't find settings path: %s", err)
 	}
 	c.SettingsPath = sp
-	if _, err := os.Stat(sp); os.IsNotExist(err) {
-		tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
-		if err != nil {
-			return c, err
-		}
-		if err := os.MkdirAll(filepath.Dir(sp), 0o700); err != nil {
-			return c, err
-		}
-
-		f, err := os.Create(sp)
-		if err != nil {
-			return c, err
-		}
-		defer func() { _ = f.Close() }()
-
-		m := struct {
-			Config Config
-			Help   map[string]string
-		}{
-			Config: c,
-			Help:   help,
-		}
-		if err := tmpl.Execute(f, m); err != nil {
-			return c, err
-		}
-	} else if err != nil {
-		return c, err
-	}
-	content, err = os.ReadFile(sp)
+	err = writeConfigFile(sp)
 	if err != nil {
 		return c, err
+	}
+	content, err := os.ReadFile(sp)
+	if err != nil {
+		return c, fmt.Errorf("can't read settings file: %s", err)
 	}
 	if err := yaml.Unmarshal(content, &c); err != nil {
 		return c, fmt.Errorf("%s: %w", sp, err)
 	}
-
 	ms := make(map[string]Model)
 	for _, api := range c.APIs {
 		for mk, mv := range api.Models {
@@ -182,6 +157,7 @@ func newConfig() (Config, error) {
 	flag.Float32Var(&c.TopP, "topp", c.TopP, help["topp"])
 	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, help["fanciness"])
 	flag.StringVar(&c.StatusText, "status-text", c.StatusText, help["status-text"])
+	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
@@ -192,6 +168,39 @@ func newConfig() (Config, error) {
 	c.Prefix = strings.Join(flag.Args(), " ")
 
 	return c, nil
+}
+
+func writeConfigFile(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		var c Config
+		tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			return err
+		}
+
+		f, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = f.Close() }()
+
+		m := struct {
+			Config Config
+			Help   map[string]string
+		}{
+			Config: c,
+			Help:   help,
+		}
+		if err := tmpl.Execute(f, m); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+	return nil
 }
 
 func usage() {

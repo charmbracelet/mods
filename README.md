@@ -180,6 +180,12 @@ Your desired level of fanciness.
 
 Output nothing to standard err.
 
+#### Reset Settings
+
+`--reset-settings`
+
+Backup your old settings file and reset everything to the defaults.
+
 ## Whatcha Think?
 
 We’d love to hear your thoughts on this project. Feel free to drop us a note.

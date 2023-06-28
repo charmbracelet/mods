@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 
@@ -72,6 +73,12 @@ func buildVersion() string {
 	return result
 }
 
+func exitError(mods *Mods, err error, reason string) {
+	mods.Error = &modsError{reason: reason, err: err}
+	fmt.Println(mods.ErrorView())
+	os.Exit(1)
+}
+
 func main() {
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
@@ -95,11 +102,40 @@ func main() {
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 		if err := c.Run(); err != nil {
-			mods.Error = &modsError{reason: "Missing $EDITOR", err: err}
-			fmt.Println(mods.ErrorView())
-			os.Exit(1)
+			exitError(mods, err, "Missing $EDITOR")
 		}
 		fmt.Println("Wrote config file to:", mods.Config.SettingsPath)
+		os.Exit(0)
+	}
+	if mods.Config.ResetSettings {
+		_, err := os.Stat(mods.Config.SettingsPath)
+		if err != nil {
+			exitError(mods, err, "Couldn't read config file.")
+		}
+		inputFile, err := os.Open(mods.Config.SettingsPath)
+		if err != nil {
+			exitError(mods, err, "Couldn't open config file.")
+		}
+		defer inputFile.Close() //nolint:errcheck
+		outputFile, err := os.Create(mods.Config.SettingsPath + ".bak")
+		if err != nil {
+			exitError(mods, err, "Couldn't backup config file.")
+		}
+		defer outputFile.Close() //nolint:errcheck
+		_, err = io.Copy(outputFile, inputFile)
+		if err != nil {
+			exitError(mods, err, "Couldn't write config file.")
+		}
+		// The copy was successful, so now delete the original file
+		err = os.Remove(mods.Config.SettingsPath)
+		if err != nil {
+			exitError(mods, err, "Couldn't remove config file.")
+		}
+		err = writeConfigFile(mods.Config.SettingsPath)
+		if err != nil {
+			exitError(mods, err, "Couldn't write new config file.")
+		}
+		fmt.Printf("Settings restored to defaults! Your old settings are backed up at: %s.bak\n", mods.Config.SettingsPath)
 		os.Exit(0)
 	}
 	if mods.Config.Version {
