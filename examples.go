@@ -24,12 +24,12 @@ func cheapHighlighting(s styles, code string) string {
 	code = regexp.
 		MustCompile(`"([^"\\]|\\.)*"`).
 		ReplaceAllStringFunc(code, func(x string) string {
-			return s.quote.Render(x)
+			return s.Quote.Render(x)
 		})
 	code = regexp.
 		MustCompile(`\|`).
 		ReplaceAllStringFunc(code, func(x string) string {
-			return s.pipe.Render(x)
+			return s.Pipe.Render(x)
 		})
 	return code
 }

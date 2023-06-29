@@ -209,37 +209,37 @@ func usage() {
 	appName := filepath.Base(os.Args[0])
 
 	if r.ColorProfile() == termenv.TrueColor {
-		appName = makeGradientText(s.appName, appName)
+		appName = makeGradientText(s.AppName, appName)
 	}
 
 	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
 	fmt.Printf(
 		"Usage:\n  %s %s\n\n",
 		appName,
-		s.cliArgs.Render("[OPTIONS] [PREFIX TERM]"),
+		s.CliArgs.Render("[OPTIONS] [PREFIX TERM]"),
 	)
 	fmt.Println("Options:")
 	flag.VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
 			fmt.Printf(
 				"  %-42s %s\n",
-				s.flag.Render("--"+f.Name),
-				s.flagDesc.Render(f.Usage),
+				s.Flag.Render("--"+f.Name),
+				s.FlagDesc.Render(f.Usage),
 			)
 		} else {
 			fmt.Printf(
 				"  %s%s %-38s %s\n",
-				s.flag.Render("-"+f.Shorthand),
-				s.flagComma,
-				s.flag.Render("--"+f.Name),
-				s.flagDesc.Render(f.Usage),
+				s.Flag.Render("-"+f.Shorthand),
+				s.FlagComma,
+				s.Flag.Render("--"+f.Name),
+				s.FlagDesc.Render(f.Usage),
 			)
 		}
 	})
 	desc, example := randomExample()
 	fmt.Printf(
 		"\nExample:\n  %s\n  %s\n",
-		s.comment.Render("# "+desc),
+		s.Comment.Render("# "+desc),
 		cheapHighlighting(s, example),
 	)
 }

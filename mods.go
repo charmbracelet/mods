@@ -33,10 +33,10 @@ type Mods struct {
 	Config   Config
 	Output   string
 	Input    string
+	Styles   styles
 	Error    *modsError
 	state    state
 	retries  int
-	styles   styles
 	renderer *lipgloss.Renderer
 	anim     tea.Model
 	width    int
@@ -44,11 +44,10 @@ type Mods struct {
 }
 
 func newMods(r *lipgloss.Renderer) *Mods {
-	s := makeStyles(r)
 	return &Mods{
+		Styles:   makeStyles(r),
 		state:    startState,
 		renderer: r,
-		styles:   s,
 	}
 }
 
@@ -82,7 +81,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
 			return m, tea.Quit
 		}
-		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.styles)
+		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
 		return m, tea.Batch(readStdinCmd, m.anim.Init())
 	case completionInput:
 		if msg.content == "" && m.Config.Prefix == "" {
@@ -141,8 +140,8 @@ func (m Mods) ErrorView() string {
 	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalPadding)
 	return fmt.Sprintf(
 		"\n%s\n\n%s\n\n",
-		s.Render(m.styles.errorHeader.String(), m.Error.reason),
-		s.Render(m.styles.errorDetails.Render(m.Error.Error())),
+		s.Render(m.Styles.ErrorHeader.String(), m.Error.reason),
+		s.Render(m.Styles.ErrorDetails.Render(m.Error.Error())),
 	)
 }
 
@@ -213,8 +212,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !ok {
 			if cfg.API == "" {
 				return modsError{
-					reason: "Model " + m.styles.inlineCode.Render(cfg.Model) + " is not in the settings file.",
-					err:    fmt.Errorf("Please specify an API endpoint with %s or configure the model in the settings: %s", m.styles.inlineCode.Render("--api"), m.styles.inlineCode.Render("mods -s")),
+					reason: "Model " + m.Styles.InlineCode.Render(cfg.Model) + " is not in the settings file.",
+					err:    fmt.Errorf("Please specify an API endpoint with %s or configure the model in the settings: %s", m.Styles.InlineCode.Render("--api"), m.Styles.InlineCode.Render("mods -s")),
 				}
 			}
 			mod.Name = cfg.Model
@@ -230,10 +229,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if api.Name == "" {
 			eps := make([]string, 0)
 			for _, a := range cfg.APIs {
-				eps = append(eps, m.styles.inlineCode.Render(a.Name))
+				eps = append(eps, m.Styles.InlineCode.Render(a.Name))
 			}
 			return modsError{
-				reason: fmt.Sprintf("The API endpoint %s is not configured ", m.styles.inlineCode.Render(cfg.API)),
+				reason: fmt.Sprintf("The API endpoint %s is not configured ", m.Styles.InlineCode.Render(cfg.API)),
 				err:    fmt.Errorf("Your configured API endpoints are: %s", eps),
 			}
 		}
@@ -248,8 +247,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			if key == "" {
 				return modsError{
-					reason: m.styles.inlineCode.Render("OPENAI_API_KEY") + " environment variable is required.",
-					err:    fmt.Errorf("You can grab one at %s", m.styles.link.Render("https://platform.openai.com/account/api-keys.")),
+					reason: m.Styles.InlineCode.Render("OPENAI_API_KEY") + " environment variable is required.",
+					err:    fmt.Errorf("You can grab one at %s", m.Styles.Link.Render("https://platform.openai.com/account/api-keys.")),
 				}
 			}
 			ccfg = openai.DefaultConfig(key)
@@ -262,8 +261,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			if key == "" {
 				return modsError{
-					reason: m.styles.inlineCode.Render("AZURE_OPENAI_KEY") + " environment variable is required.",
-					err:    fmt.Errorf("You can apply for one at %s", m.styles.link.Render("https://aka.ms/oai/access")),
+					reason: m.Styles.InlineCode.Render("AZURE_OPENAI_KEY") + " environment variable is required.",
+					err:    fmt.Errorf("You can apply for one at %s", m.Styles.Link.Render("https://aka.ms/oai/access")),
 				}
 			}
 			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
