@@ -194,7 +194,16 @@ func (m *Mods) retry(content string, err modsError) tea.Msg {
 func (m *Mods) loadConfigCmd() tea.Msg {
 	cfg, err := newConfig()
 	if err != nil {
-		return modsError{err, "There was an error in your config file."}
+		var fpe flagParseError
+		switch {
+		case errors.As(err, &fpe):
+			me := modsError{}
+			me.reason = fmt.Sprintf("Missing flag: %s", m.Styles.InlineCode.Render(fpe.Flag()))
+			me.err = fmt.Errorf("Check out %s %s", m.Styles.InlineCode.Render("mods -h"), m.Styles.Comment.Render("for help."))
+			return me
+		default:
+			return modsError{err, "There was an error loading your config file."}
+		}
 	}
 	return cfg
 }

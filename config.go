@@ -98,6 +98,26 @@ type Config struct {
 	SettingsPath      string
 }
 
+type flagParseError struct {
+	err error
+}
+
+func (f flagParseError) Error() string {
+	return fmt.Sprintf("missing flag: %s", f.Flag())
+}
+
+func (f flagParseError) Flag() string {
+	ps := strings.Split(f.err.Error(), "-")
+	switch len(ps) {
+	case 2:
+		return "-" + ps[len(ps)-1]
+	case 3:
+		return "--" + ps[len(ps)-1]
+	default:
+		return ""
+	}
+}
+
 func newConfig() (Config, error) {
 	var c Config
 	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
@@ -161,7 +181,10 @@ func newConfig() (Config, error) {
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
-	flag.Parse()
+	flag.CommandLine.Init("", flag.ContinueOnError)
+	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
+		return c, flagParseError{err}
+	}
 	if c.Format && c.FormatText == "" {
 		c.FormatText = "Format the response as markdown without enclosing backticks."
 	}
