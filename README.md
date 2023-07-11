@@ -197,7 +197,7 @@ Backup your old settings file and reset everything to the defaults.
 
 #### No Cache
 
-`--no-cache`, `MODS_NO_LIMIT`
+`--no-cache`, `MODS_NO_CACHE`
 
 Disable saving and reading the most recent prompt/response.
 
