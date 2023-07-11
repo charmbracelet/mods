@@ -110,13 +110,15 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = doneState
 			return m, m.quit
 		}
-		m.Output += msg.content
-		if m.Config.Glamour {
-			out, _ := m.glam.Render(m.Output)
-			m.renderedOutput = out
+		if msg.content != "" {
+			m.Output += msg.content
+			if m.Config.Glamour {
+				out, _ := m.glam.Render(m.Output)
+				m.renderedOutput = out
+			}
+			m.state = responseState
+			msg.content = ""
 		}
-		m.state = responseState
-		msg.content = ""
 		return m, m.receiveCompletionStreamCmd(msg)
 	case modsError:
 		m.Error = &msg
