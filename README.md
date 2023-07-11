@@ -108,6 +108,15 @@ You can add new models to the settings with `mods -s`. You can also specify a
 model and an API endpoint with `-m` and `-a` to use models not in the settings
 file.
 
+#### Continue
+
+`-c`, `--continue`
+
+Continue from the last response. 
+
+Additional instances of `-c` will continue the conversation. Once a prompt is
+sent without `-c` the previous context is lost.
+
 #### Format As Markdown
 
 `-f`, `--format`, `MODS_FORMAT`
@@ -185,6 +194,12 @@ Output nothing to standard err.
 `--reset-settings`
 
 Backup your old settings file and reset everything to the defaults.
+
+#### No Cache
+
+`--no-cache`, `MODS_NO_LIMIT`
+
+Disable saving and reading the most recent prompt/response.
 
 ## Whatcha Think?
 
