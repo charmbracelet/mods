@@ -3,12 +3,14 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -302,6 +304,16 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
+		messages := []openai.ChatCompletionMessage{}
+		if cfg.Continue != "" && !cfg.NoCache {
+			readCache(cfg.Continue, &messages, cfg)
+		}
+
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleUser,
+			Content: content,
+		})
+
 		resp, err := client.CreateChatCompletion(
 			ctx,
 			openai.ChatCompletionRequest{
@@ -309,12 +321,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				Temperature: noOmitFloat(cfg.Temperature),
 				TopP:        noOmitFloat(cfg.TopP),
 				MaxTokens:   cfg.MaxTokens,
-				Messages: []openai.ChatCompletionMessage{
-					{
-						Role:    openai.ChatMessageRoleUser,
-						Content: content,
-					},
-				},
+				Messages:    messages,
 			},
 		)
 		ae := &openai.APIError{}
@@ -355,8 +362,55 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if err != nil {
 			return modsError{err: err, reason: fmt.Sprintf("There was a problem with the %s API request.", mod.API)}
 		}
-		return completionOutput{resp.Choices[0].Message.Content}
+
+		respMessage := resp.Choices[0].Message
+		if !cfg.NoCache {
+			messages = append(messages, respMessage)
+			writeCache(cfg.Continue, &messages, cfg)
+			if cfg.Continue != "_current.gob" {
+				writeCache("_current.gob", &messages, cfg)
+			}
+		}
+
+		return completionOutput{respMessage.Content}
 	}
+}
+
+func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
+	file, err := os.Open(filepath.Join(cfg.CachePath, name))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	decoder := gob.NewDecoder(file)
+	err = decoder.Decode(messages)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func writeCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
+	err := os.MkdirAll(cfg.CachePath, 0o700)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(filepath.Join(cfg.CachePath, name))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := gob.NewEncoder(file)
+	err = encoder.Encode(messages)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func readStdinCmd() tea.Msg {

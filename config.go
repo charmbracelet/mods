@@ -36,6 +36,9 @@ var help = map[string]string{
 	"status-text":     "Text to show while generating.",
 	"settings":        "Open settings in your $EDITOR.",
 	"reset-settings":  "Reset settings to the defaults, your old settings file will be backed up.",
+	"continue":        "Continue from the last response or a given save name.",
+	"no-cache":        "Disables caching of the prompt/response.",
+	"save":            "Saves the current conversation with the given name.",
 }
 
 // Model represents the LLM model used in the API call.
@@ -81,6 +84,7 @@ type Config struct {
 	Temperature       float32 `yaml:"temp" env:"TEMP"`
 	TopP              float32 `yaml:"topp" env:"TOPP"`
 	NoLimit           bool    `yaml:"no-limit" env:"NO_LIMIT"`
+	NoCache           bool    `yaml:"no-cache" env:"NO_CACHE"`
 	IncludePromptArgs bool    `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
 	IncludePrompt     int     `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
 	MaxRetries        int     `yaml:"max-retries" env:"MAX_RETRIES"`
@@ -96,6 +100,9 @@ type Config struct {
 	Version           bool
 	Settings          bool
 	SettingsPath      string
+	CachePath         string
+	Continue          string
+	Save              string
 }
 
 type flagParseError struct {
@@ -120,6 +127,7 @@ func (f flagParseError) Flag() string {
 
 func newConfig() (Config, error) {
 	var c Config
+	c.CachePath = filepath.Join(xdg.Home, "mods", "conversations")
 	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
 	if err != nil {
 		return c, fmt.Errorf("can't find settings path: %s", err)
@@ -170,6 +178,7 @@ func newConfig() (Config, error) {
 	flag.BoolVarP(&c.Settings, "settings", "s", false, help["settings"])
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
 	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
+	flag.StringVarP(&c.Continue, "continue", "c", "", help["continue"])
 	flag.IntVar(&c.MaxRetries, "max-retries", c.MaxRetries, help["max-retries"])
 	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, help["no-limit"])
 	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, help["max-tokens"])
@@ -178,7 +187,10 @@ func newConfig() (Config, error) {
 	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, help["fanciness"])
 	flag.StringVar(&c.StatusText, "status-text", c.StatusText, help["status-text"])
 	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
+	flag.StringVar(&c.Save, "save", c.Save, help["save"])
+	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
+	flag.Lookup("continue").NoOptDefVal = "_current.gob"
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
 	flag.CommandLine.Init("", flag.ContinueOnError)
@@ -189,6 +201,10 @@ func newConfig() (Config, error) {
 		c.FormatText = "Format the response as markdown without enclosing backticks."
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
+
+	if c.Continue != "" && !strings.HasSuffix(c.Continue, ".gob") {
+		c.Continue += ".gob"
+	}
 
 	return c, nil
 }
