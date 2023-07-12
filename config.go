@@ -36,7 +36,7 @@ var help = map[string]string{
 	"status-text":     "Text to show while generating.",
 	"settings":        "Open settings in your $EDITOR.",
 	"reset-settings":  "Reset settings to the defaults, your old settings file will be backed up.",
-	"continue":        "Continue from the last response.",
+	"continue":        "Continue from the last response or a given save name.",
 	"no-cache":        "Disables caching of the prompt/response.",
 	"save":            "Saves the current conversation with the given name.",
 }
@@ -101,7 +101,7 @@ type Config struct {
 	Settings          bool
 	SettingsPath      string
 	CachePath         string
-	Continue          bool
+	Continue          string
 	Save              string
 }
 
@@ -178,7 +178,7 @@ func newConfig() (Config, error) {
 	flag.BoolVarP(&c.Settings, "settings", "s", false, help["settings"])
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
 	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
-	flag.BoolVarP(&c.Continue, "continue", "c", c.Continue, help["continue"]) // TODO: allow continuing by name
+	flag.StringVarP(&c.Continue, "continue", "c", "", help["continue"])
 	flag.IntVar(&c.MaxRetries, "max-retries", c.MaxRetries, help["max-retries"])
 	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, help["no-limit"])
 	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, help["max-tokens"])
@@ -190,6 +190,7 @@ func newConfig() (Config, error) {
 	flag.StringVar(&c.Save, "save", c.Save, help["save"])
 	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
+	flag.Lookup("continue").NoOptDefVal = "_current.gob"
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
 	flag.CommandLine.Init("", flag.ContinueOnError)
@@ -200,6 +201,10 @@ func newConfig() (Config, error) {
 		c.FormatText = "Format the response as markdown without enclosing backticks."
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
+
+	if c.Continue != "" && !strings.HasSuffix(c.Continue, ".gob") {
+		c.Continue += ".gob"
+	}
 
 	return c, nil
 }

@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/adrg/xdg"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
@@ -305,12 +304,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		tmpDir := filepath.Join(xdg.Home, "mods", "conversations")
-		filePath := filepath.Join(tmpDir, "_current.gob")
-
 		messages := []openai.ChatCompletionMessage{}
-		if cfg.Continue && !cfg.NoCache {
-			readCache(filePath, &messages)
+		if cfg.Continue != "" && !cfg.NoCache {
+			readCache(filepath.Join(cfg.CachePath, cfg.Continue), &messages)
 		}
 
 		messages = append(messages, openai.ChatCompletionMessage{
@@ -370,7 +366,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		respMessage := resp.Choices[0].Message
 		if !cfg.NoCache {
 			messages = append(messages, respMessage)
-			writeCache(filePath, &messages)
+			writeCache(filepath.Join(cfg.CachePath, cfg.Continue), &messages)
+			if cfg.Continue != "_current.gob" {
+				writeCache(filepath.Join(cfg.CachePath, "_current.gob"), &messages)
+			}
 		}
 
 		return completionOutput{respMessage.Content}

@@ -108,14 +108,25 @@ You can add new models to the settings with `mods -s`. You can also specify a
 model and an API endpoint with `-m` and `-a` to use models not in the settings
 file.
 
+#### Save
+
+`--save`
+
+Saves the conversation with the given name. Continue the conversation back with
+`-c` and pass the name.
+
+
 #### Continue
 
 `-c`, `--continue`
 
-Continue from the last response. 
+Continue from the last response or a given name.
 
 Additional instances of `-c` will continue the conversation. Once a prompt is
-sent without `-c` the previous context is lost.
+sent without `-c`.
+
+Providing a name will automatically save the conversation with that name if it
+doesn't already exist.
 
 #### Format As Markdown
 
