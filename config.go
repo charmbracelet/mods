@@ -38,6 +38,7 @@ var help = map[string]string{
 	"reset-settings":  "Reset settings to the defaults, your old settings file will be backed up.",
 	"continue":        "Continue from the last response.",
 	"no-cache":        "Disables caching of the prompt/response.",
+	"save":            "Saves the current conversation with the given name.",
 }
 
 // Model represents the LLM model used in the API call.
@@ -99,7 +100,9 @@ type Config struct {
 	Version           bool
 	Settings          bool
 	SettingsPath      string
+	CachePath         string
 	Continue          bool
+	Save              string
 }
 
 type flagParseError struct {
@@ -124,6 +127,7 @@ func (f flagParseError) Flag() string {
 
 func newConfig() (Config, error) {
 	var c Config
+	c.CachePath = filepath.Join(xdg.Home, "mods", "conversations")
 	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
 	if err != nil {
 		return c, fmt.Errorf("can't find settings path: %s", err)
@@ -174,7 +178,7 @@ func newConfig() (Config, error) {
 	flag.BoolVarP(&c.Settings, "settings", "s", false, help["settings"])
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
 	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
-	flag.BoolVarP(&c.Continue, "continue", "c", c.Continue, help["continue"])
+	flag.BoolVarP(&c.Continue, "continue", "c", c.Continue, help["continue"]) // TODO: allow continuing by name
 	flag.IntVar(&c.MaxRetries, "max-retries", c.MaxRetries, help["max-retries"])
 	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, help["no-limit"])
 	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, help["max-tokens"])
@@ -183,6 +187,7 @@ func newConfig() (Config, error) {
 	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, help["fanciness"])
 	flag.StringVar(&c.StatusText, "status-text", c.StatusText, help["status-text"])
 	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
+	flag.StringVar(&c.Save, "save", c.Save, help["save"])
 	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Usage = usage
