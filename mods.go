@@ -306,7 +306,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		messages := []openai.ChatCompletionMessage{}
 		if cfg.Continue != "" && !cfg.NoCache {
-			readCache(filepath.Join(cfg.CachePath, cfg.Continue), &messages)
+			readCache(cfg.Continue, &messages, cfg)
 		}
 
 		messages = append(messages, openai.ChatCompletionMessage{
@@ -366,9 +366,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		respMessage := resp.Choices[0].Message
 		if !cfg.NoCache {
 			messages = append(messages, respMessage)
-			writeCache(filepath.Join(cfg.CachePath, cfg.Continue), &messages)
+			writeCache(cfg.Continue, &messages, cfg)
 			if cfg.Continue != "_current.gob" {
-				writeCache(filepath.Join(cfg.CachePath, "_current.gob"), &messages)
+				writeCache("_current.gob", &messages, cfg)
 			}
 		}
 
@@ -376,8 +376,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	}
 }
 
-func readCache(path string, messages *[]openai.ChatCompletionMessage) error {
-	file, err := os.Open(path)
+func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
+	file, err := os.Open(filepath.Join(cfg.CachePath, name))
 	if err != nil {
 		return err
 	}
@@ -392,13 +392,13 @@ func readCache(path string, messages *[]openai.ChatCompletionMessage) error {
 	return nil
 }
 
-func writeCache(path string, messages *[]openai.ChatCompletionMessage) error {
-	err := os.MkdirAll(filepath.Dir(path), 0o700)
+func writeCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
+	err := os.MkdirAll(cfg.CachePath, 0o700)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Create(path)
+	file, err := os.Create(filepath.Join(cfg.CachePath, name))
 	if err != nil {
 		return err
 	}
