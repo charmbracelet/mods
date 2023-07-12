@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrg/xdg"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
@@ -304,8 +306,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		tmpDir := os.TempDir()
-		filePath := filepath.Join(tmpDir, "mods.gob")
+		tmpDir := filepath.Join(xdg.Home, "mods", "conversations")
+		filePath := filepath.Join(tmpDir, "_current.gob")
 
 		messages := []openai.ChatCompletionMessage{}
 		if cfg.Continue && !cfg.NoCache {
@@ -393,6 +395,11 @@ func readCache(path string, messages *[]openai.ChatCompletionMessage) error {
 }
 
 func writeCache(path string, messages *[]openai.ChatCompletionMessage) error {
+	err := os.MkdirAll(filepath.Dir(path), fs.ModePerm)
+	if err != nil {
+		return err
+	}
+
 	file, err := os.Create(path)
 	if err != nil {
 		return err
