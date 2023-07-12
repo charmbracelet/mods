@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"math"
 	"net/http"
 	"os"
@@ -395,7 +394,7 @@ func readCache(path string, messages *[]openai.ChatCompletionMessage) error {
 }
 
 func writeCache(path string, messages *[]openai.ChatCompletionMessage) error {
-	err := os.MkdirAll(filepath.Dir(path), fs.ModePerm)
+	err := os.MkdirAll(filepath.Dir(path), 0o700)
 	if err != nil {
 		return err
 	}
