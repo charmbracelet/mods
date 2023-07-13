@@ -127,7 +127,7 @@ func (f flagParseError) Flag() string {
 
 func newConfig() (Config, error) {
 	var c Config
-	c.CachePath = filepath.Join(xdg.Home, "mods", "conversations")
+	c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
 	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
 	if err != nil {
 		return c, fmt.Errorf("can't find settings path: %s", err)
