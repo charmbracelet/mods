@@ -306,7 +306,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		messages := []openai.ChatCompletionMessage{}
 		if cfg.Continue != "" && !cfg.NoCache {
-			readCache(cfg.Continue, &messages, cfg)
+			err := readCache(cfg.Continue, &messages, cfg)
+			if err != nil {
+				return modsError{err: err, reason: "There was a problem writing to the cache. Use `--no-cache`/`MODS_NO_CACHE` to disable it."}
+			}
 		}
 
 		messages = append(messages, openai.ChatCompletionMessage{
@@ -366,9 +369,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		respMessage := resp.Choices[0].Message
 		if !cfg.NoCache {
 			messages = append(messages, respMessage)
-			writeCache(cfg.Continue, &messages, cfg)
+			err = writeCache(cfg.Continue, &messages, cfg)
+			if err != nil {
+				return modsError{err: err, reason: "There was a problem writing to the cache. Use `--no-cache`/`MODS_NO_CACHE` to disable it."}
+			}
 			if cfg.Continue != "_current.gob" {
 				writeCache("_current.gob", &messages, cfg)
+				if err != nil {
+					return modsError{err: err, reason: "There was a problem writing to the cache. Use `--no-cache`/`MODS_NO_CACHE` to disable it."}
+				}
 			}
 		}
 
