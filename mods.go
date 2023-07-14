@@ -123,10 +123,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.glamOutput, _ = m.glam.Render(m.Output)
 				m.glamViewport.SetContent(m.glamOutput)
 				m.glamLines = strings.Count(m.glamOutput, "\n")
-				if m.glamLines > m.height {
-					m.glamViewport.Height = m.height
-				}
-				m.glamViewport.Height = m.glamLines
+				m.glamViewport.Height = clamp(m.height, 0, m.glamLines)
 			}
 			m.state = responseState
 		}
@@ -138,10 +135,8 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.glamViewport.Width = msg.Width
-		if m.glamLines > m.height {
-			m.glamViewport.Height = m.height
-		}
-		m.glamViewport.Height = m.glamLines
+		m.glamViewport.Height = clamp(m.height, 0, m.glamLines)
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -493,4 +488,29 @@ func noOmitFloat(f float32) float32 {
 		return math.SmallestNonzeroFloat32
 	}
 	return f
+}
+
+type number interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
+}
+
+func min[N number](a, b N) N {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max[N number](a, b N) N {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func clamp[N number](n, low, high N) N {
+	if low > high {
+		low, high = high, low
+	}
+	return max(low, min(high, n))
 }
