@@ -133,12 +133,13 @@ func (m *Mods) View() string {
 // ErrorView renders the currently set modsError.
 func (m Mods) ErrorView() string {
 	const maxWidth = 120
-	const horizontalPadding = 2
-	w := m.width - (horizontalPadding * 2)
+	const horizontalEdgePadding = 2
+	const totalHorizontalPadding = horizontalEdgePadding * 2
+	w := m.width - totalHorizontalPadding
 	if w > maxWidth {
 		w = maxWidth
 	}
-	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalPadding)
+	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalEdgePadding)
 	return fmt.Sprintf(
 		"\n%s\n\n%s\n\n",
 		s.Render(m.Styles.ErrorHeader.String(), m.Error.reason),
