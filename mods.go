@@ -166,12 +166,8 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Mods) glamHeight() int {
-	return strings.Count(m.glamOutput, "\n")
-}
-
 func (m Mods) viewportNeeded() bool {
-	return m.Config.Glamour && m.glamHeight() > m.height
+	return m.Config.Glamour && lipgloss.Height(m.glamOutput) > m.height
 }
 
 // View implements tea.Model.
