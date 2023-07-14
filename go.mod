@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/charmbracelet/glow v1.5.1
 	github.com/charmbracelet/lipgloss v0.7.1
+	github.com/charmbracelet/x/exp/ordered v0.0.0-20230707174939-50fb4f48b5b3
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-isatty v0.0.19
 	github.com/muesli/termenv v0.15.2
@@ -35,6 +36,7 @@ require (
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/yuin/goldmark v1.5.4 // indirect
 	github.com/yuin/goldmark-emoji v1.0.2 // indirect
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
