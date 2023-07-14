@@ -194,10 +194,7 @@ func (m Mods) ErrorView() string {
 	const maxWidth = 120
 	const horizontalEdgePadding = 2
 	const totalHorizontalPadding = horizontalEdgePadding * 2
-	w := m.width - totalHorizontalPadding
-	if w > maxWidth {
-		w = maxWidth
-	}
+	w := ordered.Max(maxWidth, m.width-totalHorizontalPadding)
 	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalEdgePadding)
 	return fmt.Sprintf(
 		"\n%s\n\n%s\n\n",
