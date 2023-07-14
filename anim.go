@@ -102,7 +102,9 @@ func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles
 	// color the cycling characters with a gradient ramp.
 	const minRampSize = 3
 	if n >= minRampSize && r.ColorProfile() == termenv.TrueColor {
-		c.ramp = make([]lipgloss.Style, n, n*2) // double capacity for color cycling
+		// Note: double capacity for color cycling as we'll need to reverse and
+		// append the ramp for seamless transitions.
+		c.ramp = make([]lipgloss.Style, n, n*2) //nolint:gomnd
 		ramp := makeGradientRamp(n)
 		for i, color := range ramp {
 			c.ramp[i] = r.NewStyle().Foreground(color)
