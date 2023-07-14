@@ -3,14 +3,12 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -306,7 +304,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		messages := []openai.ChatCompletionMessage{}
 		if cfg.Continue != "" && !cfg.NoCache {
-			err := readCache(cfg.Continue, &messages, cfg)
+			err := ReadCache(cfg.Continue, &messages, cfg)
 			if err != nil {
 				return modsError{err: err, reason: "There was a problem reading the cache. Use --no-cache / MODS_NO_CACHE to disable it."}
 			}
@@ -370,13 +368,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !cfg.NoCache {
 			messages = append(messages, respMessage)
 			if cfg.Continue != "" {
-				err = writeCache(cfg.Continue, &messages, cfg)
+				err = WriteCache(cfg.Continue, &messages, cfg)
 				if err != nil {
 					return modsError{err: err, reason: fmt.Sprintf("There was a problem writing %s to the cache. Use --no-cache / MODS_NO_CACHE to disable it.", cfg.Continue)}
 				}
 			}
-			if cfg.Continue != "_current.gob" {
-				writeCache("_current.gob", &messages, cfg)
+			if cfg.Continue != defaultCacheName {
+				WriteCache(defaultCacheName, &messages, cfg)
 				if err != nil {
 					return modsError{err: err, reason: fmt.Sprintf("There was a problem writing %s to the cache. Use --no-cache / MODS_NO_CACHE to disable it.", cfg.Continue)}
 				}
@@ -385,43 +383,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		return completionOutput{respMessage.Content}
 	}
-}
-
-func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
-	file, err := os.Open(filepath.Join(cfg.CachePath, name))
-	if err != nil {
-		return err
-	}
-	defer file.Close() //nolint:errcheck
-
-	decoder := gob.NewDecoder(file)
-	err = decoder.Decode(messages)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func writeCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
-	err := os.MkdirAll(cfg.CachePath, 0o700)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(filepath.Join(cfg.CachePath, name))
-	if err != nil {
-		return err
-	}
-	defer file.Close() //nolint:errcheck
-
-	encoder := gob.NewEncoder(file)
-	err = encoder.Encode(messages)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func readStdinCmd() tea.Msg {

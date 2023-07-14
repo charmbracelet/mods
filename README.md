@@ -128,6 +128,18 @@ sent without `-c`.
 Providing a name will automatically save the conversation with that name if it
 doesn't already exist.
 
+#### List
+
+`-l`, `--list`
+
+Lists all saved conversations.
+
+#### Delete
+
+`--delete`
+
+Deletes the saved conversation with the given name.
+
 #### Format As Markdown
 
 `-f`, `--format`, `MODS_FORMAT`

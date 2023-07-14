@@ -39,6 +39,8 @@ var help = map[string]string{
 	"continue":        "Continue from the last response or a given save name.",
 	"no-cache":        "Disables caching of the prompt/response.",
 	"save":            "Saves the current conversation with the given name.",
+	"list":            "Lists saved conversations.",
+	"delete":          "Deletes a saved conversation with the given name.",
 }
 
 // Model represents the LLM model used in the API call.
@@ -103,6 +105,8 @@ type Config struct {
 	CachePath         string
 	Continue          string
 	Save              string
+	List              bool
+	Delete            string
 }
 
 type flagParseError struct {
@@ -179,6 +183,7 @@ func newConfig() (Config, error) {
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
 	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
 	flag.StringVarP(&c.Continue, "continue", "c", "", help["continue"])
+	flag.BoolVarP(&c.List, "list", "l", c.List, help["list"])
 	flag.IntVar(&c.MaxRetries, "max-retries", c.MaxRetries, help["max-retries"])
 	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, help["no-limit"])
 	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, help["max-tokens"])
@@ -188,9 +193,10 @@ func newConfig() (Config, error) {
 	flag.StringVar(&c.StatusText, "status-text", c.StatusText, help["status-text"])
 	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
 	flag.StringVar(&c.Save, "save", c.Save, help["save"])
+	flag.StringVar(&c.Delete, "delete", c.Delete, help["delete"])
 	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
-	flag.Lookup("continue").NoOptDefVal = "_current.gob"
+	flag.Lookup("continue").NoOptDefVal = defaultCacheName
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
 	flag.CommandLine.Init("", flag.ContinueOnError)
@@ -201,10 +207,6 @@ func newConfig() (Config, error) {
 		c.FormatText = "Format the response as markdown without enclosing backticks."
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
-
-	if c.Continue != "" && !strings.HasSuffix(c.Continue, ".gob") {
-		c.Continue += ".gob"
-	}
 
 	return c, nil
 }

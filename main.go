@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -111,22 +110,37 @@ func main() {
 		os.Exit(0)
 	}
 	if mods.Config.Save != "" {
-		inputFile, err := os.Open(filepath.Join(mods.Config.CachePath, "_current.gob"))
+		err := SaveCache(mods.Config)
 		if err != nil {
-			exitError(mods, err, "Couldn't read current conversation.")
-		}
-		defer inputFile.Close() //nolint:errcheck
-		outputFile, err := os.Create(filepath.Join(mods.Config.CachePath, mods.Config.Save+".gob"))
-		if err != nil {
-			exitError(mods, err, "Couldn't create save.")
-		}
-		defer outputFile.Close() //nolint:errcheck
-		_, err = io.Copy(outputFile, inputFile)
-		if err != nil {
-			exitError(mods, err, "Couldn't write to save.")
+			exitError(mods, err, "Couldn't save conversation.")
 		}
 
-		fmt.Println("Conversation saved:", mods.Config.Save)
+		fmt.Println("  Conversation saved:", mods.Config.Save)
+
+		os.Exit(0)
+	}
+	if mods.Config.List {
+		conversations, err := ListCache(mods.Config)
+		if err != nil {
+			exitError(mods, err, "Couldn't list saves.")
+		}
+
+		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
+		for _, conversation := range conversations {
+			fmt.Printf("  %s %s\n",
+				mods.Styles.Comment.Render("•"),
+				conversation,
+			)
+		}
+		os.Exit(0)
+	}
+	if mods.Config.Delete != "" {
+		err := DeleteCache(mods.Config)
+		if err != nil {
+			exitError(mods, err, "Couldn't delete conversation.")
+		}
+
+		fmt.Println("  Conversation deleted:", mods.Config.Delete)
 
 		os.Exit(0)
 	}
