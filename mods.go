@@ -306,7 +306,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if cfg.Continue != "" && !cfg.NoCache {
 			err := ReadCache(cfg.Continue, &messages, cfg)
 			if err != nil {
-				return modsError{err: err, reason: "There was a problem reading the cache. Use --no-cache / MODS_NO_CACHE to disable it."}
+				return modsError{
+					err:    err,
+					reason: fmt.Sprintf("There was a problem reading the cache. Use %s / %s to disable it.", m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+				}
 			}
 		}
 
@@ -370,13 +373,19 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if cfg.Continue != "" {
 				err = WriteCache(cfg.Continue, &messages, cfg)
 				if err != nil {
-					return modsError{err: err, reason: fmt.Sprintf("There was a problem writing %s to the cache. Use --no-cache / MODS_NO_CACHE to disable it.", cfg.Continue)}
+					return modsError{
+						err:    err,
+						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", cfg.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+					}
 				}
 			}
 			if cfg.Continue != defaultCacheName {
 				WriteCache(defaultCacheName, &messages, cfg)
 				if err != nil {
-					return modsError{err: err, reason: fmt.Sprintf("There was a problem writing %s to the cache. Use --no-cache / MODS_NO_CACHE to disable it.", cfg.Continue)}
+					return modsError{
+						err:    err,
+						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", cfg.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+					}
 				}
 			}
 		}
