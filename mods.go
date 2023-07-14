@@ -47,7 +47,6 @@ type Mods struct {
 	glam          *glamour.TermRenderer
 	glamViewport  viewport.Model
 	glamOutput    string
-	glamLines     int
 	messages      []openai.ChatCompletionMessage
 	cancelRequest context.CancelFunc
 	anim          tea.Model
@@ -125,11 +124,10 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.Config.Glamour {
 				m.glamOutput, _ = m.glam.Render(m.Output)
 				m.glamViewport.SetContent(m.glamOutput)
-				m.glamLines = strings.Count(m.glamOutput, "\n")
 				if m.glamViewport.Height < m.height {
 					m.glamViewport.GotoBottom()
 				}
-				m.glamViewport.Height = ordered.Clamp(m.height, 0, m.glamLines)
+				m.glamViewport.Height = ordered.Clamp(m.height, 0, m.glamourHeight())
 			}
 			if wasAtBottom && strings.Contains(msg.content, "\n") {
 				// If the viewport's at the bottom and we've received a new
@@ -147,7 +145,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.glamViewport.Width = msg.Width
-		m.glamViewport.Height = ordered.Clamp(m.height, 0, m.glamLines)
+		m.glamViewport.Height = ordered.Clamp(m.height, 0, m.glamourHeight())
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -167,6 +165,10 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
+}
+
+func (m Mods) glamourHeight() int {
+	return strings.Count(m.glamOutput, "\n")
 }
 
 // View implements tea.Model.
