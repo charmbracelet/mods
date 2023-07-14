@@ -120,11 +120,15 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.content != "" {
 			m.Output += msg.content
+			wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
 			if m.Config.Glamour {
 				m.glamOutput, _ = m.glam.Render(m.Output)
 				m.glamViewport.SetContent(m.glamOutput)
 				m.glamLines = strings.Count(m.glamOutput, "\n")
 				m.glamViewport.Height = clamp(m.height, 0, m.glamLines)
+			}
+			if wasAtBottom {
+				m.glamViewport.GotoBottom()
 			}
 			m.state = responseState
 		}
