@@ -308,7 +308,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if cfg.Continue != "" && !cfg.NoCache {
 			err := readCache(cfg.Continue, &messages, cfg)
 			if err != nil {
-				return modsError{err: err, reason: "There was a problem writing to the cache. Use `--no-cache`/`MODS_NO_CACHE` to disable it."}
+				return modsError{err: err, reason: "There was a problem reading the cache. Use --no-cache / MODS_NO_CACHE to disable it."}
 			}
 		}
 
@@ -371,12 +371,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			messages = append(messages, respMessage)
 			err = writeCache(cfg.Continue, &messages, cfg)
 			if err != nil {
-				return modsError{err: err, reason: "There was a problem writing to the cache. Use `--no-cache`/`MODS_NO_CACHE` to disable it."}
+				return modsError{err: err, reason: fmt.Sprintf("There was a problem writing %s to the cache. Use --no-cache / MODS_NO_CACHE to disable it.", cfg.Continue)}
 			}
 			if cfg.Continue != "_current.gob" {
 				writeCache("_current.gob", &messages, cfg)
 				if err != nil {
-					return modsError{err: err, reason: "There was a problem writing to the cache. Use `--no-cache`/`MODS_NO_CACHE` to disable it."}
+					return modsError{err: err, reason: fmt.Sprintf("There was a problem writing %s to the cache. Use --no-cache / MODS_NO_CACHE to disable it.", cfg.Continue)}
 				}
 			}
 		}
