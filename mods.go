@@ -152,7 +152,11 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.anim, cmd = m.anim.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-	m.glamViewport, cmd = m.glamViewport.Update(msg)
+	if m.glamViewport.Height >= m.height {
+		// Only respond to keypresses when the viewport (i.e. the content) is
+		// taller than the window.
+		m.glamViewport, cmd = m.glamViewport.Update(msg)
+	}
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
