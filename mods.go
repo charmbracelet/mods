@@ -121,17 +121,19 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.content != "" {
 			m.Output += msg.content
-			wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
 			if m.Config.Glamour {
+				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
+				oldHeight := lipgloss.Height(m.glamOutput)
 				m.glamOutput, _ = m.glam.Render(m.Output)
 				m.glamOutput = strings.TrimRight(m.glamOutput, "\n")
+				newHeight := lipgloss.Height(m.glamOutput)
 				m.glamViewport.SetContent(m.glamOutput)
-			}
-			if wasAtBottom && strings.Contains(msg.content, "\n") {
-				// If the viewport's at the bottom and we've received a new
-				// line of content, follow the output by auto scrolling to the
-				// bottom.
-				m.glamViewport.GotoBottom()
+				if newHeight > oldHeight && wasAtBottom {
+					// If the viewport's at the bottom and we've received a new
+					// line of content, follow the output by auto scrolling to
+					// the bottom.
+					m.glamViewport.GotoBottom()
+				}
 			}
 			m.state = responseState
 		}
@@ -166,7 +168,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Mods) viewportNeeded() bool {
-	return m.Config.Glamour && lipgloss.Height(m.glamOutput) > m.height
+	return lipgloss.Height(m.glamOutput) > m.height
 }
 
 // View implements tea.Model.
