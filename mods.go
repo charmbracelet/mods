@@ -126,9 +126,15 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.glamOutput, _ = m.glam.Render(m.Output)
 				m.glamViewport.SetContent(m.glamOutput)
 				m.glamLines = strings.Count(m.glamOutput, "\n")
+				if m.glamViewport.Height < m.height {
+					m.glamViewport.GotoBottom()
+				}
 				m.glamViewport.Height = ordered.Clamp(m.height, 0, m.glamLines)
 			}
-			if wasAtBottom {
+			if wasAtBottom && strings.Contains(msg.content, "\n") {
+				// If the viewport's at the bottom and we've received a new
+				// line of content, follow the output by auto scrolling to the
+				// bottom.
 				m.glamViewport.GotoBottom()
 			}
 			m.state = responseState
