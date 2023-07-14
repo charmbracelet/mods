@@ -122,6 +122,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
 			if m.Config.Glamour {
 				m.glamOutput, _ = m.glam.Render(m.Output)
+				m.glamOutput = strings.TrimRight(m.glamOutput, "\n")
 				m.glamViewport.SetContent(m.glamOutput)
 				if m.glamViewport.Height < m.height {
 					m.glamViewport.GotoBottom()
