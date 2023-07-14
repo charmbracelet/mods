@@ -86,6 +86,7 @@ type Config struct {
 	Temperature       float32 `yaml:"temp" env:"TEMP"`
 	TopP              float32 `yaml:"topp" env:"TOPP"`
 	NoLimit           bool    `yaml:"no-limit" env:"NO_LIMIT"`
+	CachePath         string  `yaml:"cache-path" env:"CACHE_PATH"`
 	NoCache           bool    `yaml:"no-cache" env:"NO_CACHE"`
 	IncludePromptArgs bool    `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
 	IncludePrompt     int     `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
@@ -102,7 +103,6 @@ type Config struct {
 	Version           bool
 	Settings          bool
 	SettingsPath      string
-	CachePath         string
 	Continue          string
 	Save              string
 	List              bool
@@ -131,7 +131,6 @@ func (f flagParseError) Flag() string {
 
 func newConfig() (Config, error) {
 	var c Config
-	c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
 	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
 	if err != nil {
 		return c, fmt.Errorf("can't find settings path: %s", err)
@@ -205,6 +204,9 @@ func newConfig() (Config, error) {
 	}
 	if c.Format && c.FormatText == "" {
 		c.FormatText = "Format the response as markdown without enclosing backticks."
+	}
+	if c.CachePath == "" {
+		c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
 
