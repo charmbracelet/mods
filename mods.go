@@ -56,12 +56,14 @@ type Mods struct {
 
 func newMods(r *lipgloss.Renderer) *Mods {
 	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
+	vp := viewport.New(0, 0)
+	vp.GotoBottom()
 	return &Mods{
 		Styles:       makeStyles(r),
 		glam:         gr,
 		state:        startState,
 		renderer:     r,
-		glamViewport: viewport.New(0, 0),
+		glamViewport: vp,
 	}
 }
 
@@ -125,10 +127,6 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.glamOutput, _ = m.glam.Render(m.Output)
 				m.glamOutput = strings.TrimRight(m.glamOutput, "\n")
 				m.glamViewport.SetContent(m.glamOutput)
-				if m.glamViewport.Height < m.height {
-					m.glamViewport.GotoBottom()
-				}
-				m.glamViewport.Height = ordered.Clamp(m.height, 0, m.glamourHeight())
 			}
 			if wasAtBottom && strings.Contains(msg.content, "\n") {
 				// If the viewport's at the bottom and we've received a new
@@ -145,8 +143,8 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.quit
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		m.glamViewport.Width = msg.Width
-		m.glamViewport.Height = ordered.Clamp(m.height, 0, m.glamourHeight())
+		m.glamViewport.Width = m.width
+		m.glamViewport.Height = m.height
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -159,7 +157,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.anim, cmd = m.anim.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-	if m.glamViewport.Height >= m.height {
+	if m.viewportNeeded() {
 		// Only respond to keypresses when the viewport (i.e. the content) is
 		// taller than the window.
 		m.glamViewport, cmd = m.glamViewport.Update(msg)
@@ -168,8 +166,12 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Mods) glamourHeight() int {
+func (m Mods) glamHeight() int {
 	return strings.Count(m.glamOutput, "\n")
+}
+
+func (m Mods) viewportNeeded() bool {
+	return m.Config.Glamour && m.glamHeight() > m.height
 }
 
 // View implements tea.Model.
@@ -184,7 +186,11 @@ func (m *Mods) View() string {
 		}
 	case responseState:
 		if m.Config.Glamour {
-			return m.glamViewport.View()
+			if m.viewportNeeded() {
+				return m.glamViewport.View()
+			}
+			// We don't need the viewport yet.
+			return m.glamOutput
 		}
 		return m.Output
 	}
