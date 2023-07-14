@@ -123,9 +123,9 @@ func (f flagParseError) Error() string {
 func (f flagParseError) Flag() string {
 	ps := strings.Split(f.err.Error(), "-")
 	switch len(ps) {
-	case 2:
+	case 2: //nolint:gomnd
 		return "-" + ps[len(ps)-1]
-	case 3:
+	case 3: //nolint:gomnd
 		return "--" + ps[len(ps)-1]
 	default:
 		return ""
@@ -172,7 +172,7 @@ func newConfig() (Config, error) {
 
 	err = env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"})
 	if err != nil {
-		return c, err
+		return c, fmt.Errorf("could not parse environment into config: %s", err)
 	}
 
 	flag.StringVarP(&c.Model, "model", "m", c.Model, help["model"])
@@ -223,15 +223,16 @@ func writeConfigFile(path string) error {
 		var c Config
 		tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
 		if err != nil {
-			return err
+			return fmt.Errorf("could not parse config template: %w", err)
 		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-			return err
+		dir := filepath.Dir(path)
+		if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gomnd
+			return fmt.Errorf("could not create directory '%s': %w", dir, err)
 		}
 
 		f, err := os.Create(path)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not create file '%s': %w", path, err)
 		}
 		defer func() { _ = f.Close() }()
 
@@ -243,10 +244,10 @@ func writeConfigFile(path string) error {
 			Help:   help,
 		}
 		if err := tmpl.Execute(f, m); err != nil {
-			return err
+			return fmt.Errorf("could not render template: %w", err)
 		}
 	} else if err != nil {
-		return err
+		return fmt.Errorf("could not stat path '%s': %w", path, err)
 	}
 	return nil
 }
