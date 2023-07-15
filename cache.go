@@ -13,7 +13,7 @@ import (
 var cacheExt = ".gob"
 var defaultCacheName = "_current" + cacheExt
 
-func ReadCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
+func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
 	if !strings.HasSuffix(name, cacheExt) {
 		name += cacheExt
 	}
@@ -33,7 +33,7 @@ func ReadCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config
 	return nil
 }
 
-func WriteCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
+func writeCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
 	if !strings.HasSuffix(name, cacheExt) {
 		name += cacheExt
 	}
@@ -58,7 +58,7 @@ func WriteCache(name string, messages *[]openai.ChatCompletionMessage, cfg Confi
 	return nil
 }
 
-func SaveCache(cfg Config) error {
+func saveCache(cfg Config) error {
 	inputFile, err := os.Open(filepath.Join(cfg.CachePath, defaultCacheName))
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func SaveCache(cfg Config) error {
 	return nil
 }
 
-func ListCache(cfg Config) ([]string, error) {
+func listCache(cfg Config) ([]string, error) {
 	entries, err := os.ReadDir(cfg.CachePath)
 	if err != nil {
 		return nil, err
@@ -95,6 +95,6 @@ func ListCache(cfg Config) ([]string, error) {
 	return files, nil
 }
 
-func DeleteCache(cfg Config) error {
+func deleteCache(cfg Config) error {
 	return os.Remove(filepath.Join(cfg.CachePath, cfg.Delete+cacheExt))
 }

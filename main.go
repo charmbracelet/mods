@@ -110,7 +110,7 @@ func main() {
 		os.Exit(0)
 	}
 	if mods.Config.Save != "" {
-		err := SaveCache(mods.Config)
+		err := saveCache(mods.Config)
 		if err != nil {
 			exitError(mods, err, "Couldn't save conversation.")
 		}
@@ -120,7 +120,7 @@ func main() {
 		os.Exit(0)
 	}
 	if mods.Config.List {
-		conversations, err := ListCache(mods.Config)
+		conversations, err := listCache(mods.Config)
 		if err != nil {
 			exitError(mods, err, "Couldn't list saves.")
 		}
@@ -135,7 +135,7 @@ func main() {
 		os.Exit(0)
 	}
 	if mods.Config.Delete != "" {
-		err := DeleteCache(mods.Config)
+		err := deleteCache(mods.Config)
 		if err != nil {
 			exitError(mods, err, "Couldn't delete conversation.")
 		}

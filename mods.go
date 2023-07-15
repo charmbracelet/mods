@@ -304,7 +304,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		messages := []openai.ChatCompletionMessage{}
 		if cfg.Continue != "" && !cfg.NoCache {
-			err := ReadCache(cfg.Continue, &messages, cfg)
+			err := readCache(cfg.Continue, &messages, cfg)
 			if err != nil {
 				return modsError{
 					err:    err,
@@ -371,7 +371,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !cfg.NoCache {
 			messages = append(messages, respMessage)
 			if cfg.Continue != "" {
-				err = WriteCache(cfg.Continue, &messages, cfg)
+				err = writeCache(cfg.Continue, &messages, cfg)
 				if err != nil {
 					return modsError{
 						err:    err,
@@ -380,7 +380,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				}
 			}
 			if cfg.Continue != defaultCacheName {
-				WriteCache(defaultCacheName, &messages, cfg)
+				err = writeCache(defaultCacheName, &messages, cfg)
 				if err != nil {
 					return modsError{
 						err:    err,
