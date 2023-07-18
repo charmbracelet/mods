@@ -109,6 +109,41 @@ func main() {
 		)
 		os.Exit(0)
 	}
+	if mods.Config.Save != "" {
+		err := saveCache(mods.Config)
+		if err != nil {
+			exitError(mods, err, "Couldn't save conversation.")
+		}
+
+		fmt.Println("  Conversation saved:", mods.Config.Save)
+
+		os.Exit(0)
+	}
+	if mods.Config.List {
+		conversations, err := listCache(mods.Config)
+		if err != nil {
+			exitError(mods, err, "Couldn't list saves.")
+		}
+
+		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
+		for _, conversation := range conversations {
+			fmt.Printf("  %s %s\n",
+				mods.Styles.Comment.Render("•"),
+				conversation,
+			)
+		}
+		os.Exit(0)
+	}
+	if mods.Config.Delete != "" {
+		err := deleteCache(mods.Config)
+		if err != nil {
+			exitError(mods, err, "Couldn't delete conversation.")
+		}
+
+		fmt.Println("  Conversation deleted:", mods.Config.Delete)
+
+		os.Exit(0)
+	}
 	if mods.Config.Version {
 		fmt.Println(buildVersion())
 		os.Exit(0)

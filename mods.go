@@ -302,6 +302,22 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
+		messages := []openai.ChatCompletionMessage{}
+		if cfg.Continue != "" && !cfg.NoCache {
+			err := readCache(cfg.Continue, &messages, cfg)
+			if err != nil {
+				return modsError{
+					err:    err,
+					reason: fmt.Sprintf("There was a problem reading the cache. Use %s / %s to disable it.", m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+				}
+			}
+		}
+
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleUser,
+			Content: content,
+		})
+
 		resp, err := client.CreateChatCompletion(
 			ctx,
 			openai.ChatCompletionRequest{
@@ -309,12 +325,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				Temperature: noOmitFloat(cfg.Temperature),
 				TopP:        noOmitFloat(cfg.TopP),
 				MaxTokens:   cfg.MaxTokens,
-				Messages: []openai.ChatCompletionMessage{
-					{
-						Role:    openai.ChatMessageRoleUser,
-						Content: content,
-					},
-				},
+				Messages:    messages,
 			},
 		)
 		ae := &openai.APIError{}
@@ -355,7 +366,31 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if err != nil {
 			return modsError{err: err, reason: fmt.Sprintf("There was a problem with the %s API request.", mod.API)}
 		}
-		return completionOutput{resp.Choices[0].Message.Content}
+
+		respMessage := resp.Choices[0].Message
+		if !cfg.NoCache {
+			messages = append(messages, respMessage)
+			if cfg.Continue != "" {
+				err = writeCache(cfg.Continue, &messages, cfg)
+				if err != nil {
+					return modsError{
+						err:    err,
+						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", cfg.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+					}
+				}
+			}
+			if cfg.Continue != defaultCacheName {
+				err = writeCache(defaultCacheName, &messages, cfg)
+				if err != nil {
+					return modsError{
+						err:    err,
+						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", cfg.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+					}
+				}
+			}
+		}
+
+		return completionOutput{respMessage.Content}
 	}
 }
 
