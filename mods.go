@@ -47,6 +47,7 @@ type Mods struct {
 	glam          *glamour.TermRenderer
 	glamViewport  viewport.Model
 	glamOutput    string
+	glamHeight    int
 	messages      []openai.ChatCompletionMessage
 	cancelRequest context.CancelFunc
 	anim          tea.Model
@@ -124,13 +125,13 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Output += msg.content
 			if m.Config.Glamour {
 				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
-				oldHeight := lipgloss.Height(m.glamOutput)
 				m.glamOutput, _ = m.glam.Render(m.Output)
-				m.glamOutput = strings.TrimRight(m.glamOutput, "\n")
-				newHeight := lipgloss.Height(m.glamOutput)
+				m.glamOutput = strings.TrimRight(m.glamOutput, "\n\t ")
+				oldHeight := m.glamHeight
+				m.glamHeight = lipgloss.Height(m.glamOutput)
 				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
 				m.glamViewport.SetContent(truncatedGlamOutput)
-				if newHeight > oldHeight && wasAtBottom {
+				if oldHeight < m.glamHeight && wasAtBottom {
 					// If the viewport's at the bottom and we've received a new
 					// line of content, follow the output by auto scrolling to
 					// the bottom.
@@ -170,7 +171,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Mods) viewportNeeded() bool {
-	return lipgloss.Height(m.glamOutput) > m.height
+	return m.glamHeight > m.height
 }
 
 // View implements tea.Model.
