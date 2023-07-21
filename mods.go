@@ -128,7 +128,8 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.glamOutput, _ = m.glam.Render(m.Output)
 				m.glamOutput = strings.TrimRight(m.glamOutput, "\n")
 				newHeight := lipgloss.Height(m.glamOutput)
-				m.glamViewport.SetContent(m.glamOutput)
+				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
+				m.glamViewport.SetContent(truncatedGlamOutput)
 				if newHeight > oldHeight && wasAtBottom {
 					// If the viewport's at the bottom and we've received a new
 					// line of content, follow the output by auto scrolling to
