@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -283,6 +284,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
+		}
+
+		if cfg.HTTPProxy != "" {
+			proxyURL, err := url.Parse(cfg.HTTPProxy)
+			if err != nil {
+				return modsError{err, "There was an error parsing your proxy URL."}
+			}
+			httpClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)}}
+			ccfg.HTTPClient = httpClient
 		}
 
 		client := openai.NewClientWithConfig(ccfg)
