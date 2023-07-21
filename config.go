@@ -18,6 +18,7 @@ import (
 var help = map[string]string{
 	"api":             "OpenAI compatible REST API (openai, localai).",
 	"apis":            "Aliases and endpoints for OpenAI compatible REST API.",
+	"http-proxy":      "HTTP proxy to use for API requests.",
 	"model":           "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
 	"max-input-chars": "Default character limit on input to model.",
 	"format":          "Ask for the response to be formatted as markdown (default).",
@@ -94,6 +95,7 @@ type Config struct {
 	Fanciness         uint    `yaml:"fanciness" env:"FANCINESS"`
 	StatusText        string  `yaml:"status-text" env:"STATUS_TEXT"`
 	FormatText        string  `yaml:"format-text" env:"FORMAT_TEXT"`
+	HTTPProxy         string  `yaml:"http-proxy" env:"HTTP_PROXY"`
 	APIs              APIs    `yaml:"apis"`
 	API               string
 	Models            map[string]Model
@@ -174,6 +176,7 @@ func newConfig() (Config, error) {
 
 	flag.StringVarP(&c.Model, "model", "m", c.Model, help["model"])
 	flag.StringVarP(&c.API, "api", "a", c.API, help["api"])
+	flag.StringVarP(&c.HTTPProxy, "http-proxy", "x", c.HTTPProxy, help["http-proxy"])
 	flag.BoolVarP(&c.Format, "format", "f", c.Format, help["format"])
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, help["prompt"])
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, help["prompt-args"])

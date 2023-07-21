@@ -224,6 +224,12 @@ Backup your old settings file and reset everything to the defaults.
 
 Disable saving and reading the most recent prompt/response.
 
+
+#### HTTP Proxy
+`-x`, `--http-proxy`, `MODS_HTTP_PROXY`
+
+Use the HTTP proxy to the connect the API endpoints.
+
 ## Whatcha Think?
 
 We’d love to hear your thoughts on this project. Feel free to drop us a note.
