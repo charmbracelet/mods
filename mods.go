@@ -124,10 +124,12 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.content != "" {
 			m.Output += msg.content
 			if m.Config.Glamour {
+				const tabWidth = 4
 				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
+				oldHeight := m.glamHeight
 				m.glamOutput, _ = m.glam.Render(m.Output)
 				m.glamOutput = strings.TrimRight(m.glamOutput, "\n\t ")
-				oldHeight := m.glamHeight
+				m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
 				m.glamHeight = lipgloss.Height(m.glamOutput)
 				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
 				m.glamViewport.SetContent(truncatedGlamOutput)
