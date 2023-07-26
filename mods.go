@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -128,7 +129,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
 				oldHeight := m.glamHeight
 				m.glamOutput, _ = m.glam.Render(m.Output)
-				m.glamOutput = strings.TrimRight(m.glamOutput, "\n\t ")
+				m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
 				m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
 				m.glamHeight = lipgloss.Height(m.glamOutput)
 				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
