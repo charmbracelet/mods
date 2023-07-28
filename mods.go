@@ -184,6 +184,7 @@ func (m Mods) viewportNeeded() bool {
 
 // View implements tea.Model.
 func (m *Mods) View() string {
+	//nolint:exhaustive
 	switch m.state {
 	case errorState:
 		return m.ErrorView()
