@@ -69,10 +69,13 @@ func main() {
 	if err != nil {
 		exitError(mods, err, "Couldn't start Bubble Tea program.")
 	}
+
 	mods = m.(*Mods)
+
 	if mods.Error != nil {
 		os.Exit(1)
 	}
+
 	if mods.Config.Settings {
 		c := editor.Cmd(mods.Config.SettingsPath)
 		c.Stdin = os.Stdin
@@ -118,6 +121,9 @@ func main() {
 			mods.Styles.Comment.Render("Your old settings are have been saved to:"),
 			mods.Styles.Link.Render(mods.Config.SettingsPath+".bak"),
 		)
+		os.Exit(0)
+	}
+	if mods.Config.Show != "" {
 		os.Exit(0)
 	}
 	if mods.Config.Save != "" {
