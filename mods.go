@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -540,8 +539,6 @@ func (m *Mods) readFromCache() tea.Cmd {
 		if err := readCache(m.Config.Show, &messages, m.Config); err != nil {
 			return modsError{err, "There was an error loading the conversation."}
 		}
-
-		log.Println("loaded", m.Config.Show, len(messages))
 
 		return m.receiveCompletionStreamCmd(completionOutput{
 			stream: &cachedCompletionStream{

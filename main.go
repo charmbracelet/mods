@@ -60,8 +60,6 @@ func init() {
 }
 
 func main() {
-	f, _ := tea.LogToFile("mods.log", "")
-	defer func() { _ = f.Close() }()
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
