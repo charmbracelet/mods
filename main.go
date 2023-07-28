@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"runtime/debug"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -12,6 +14,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
+	"github.com/sashabaranov/go-openai"
 	flag "github.com/spf13/pflag"
 )
 
@@ -58,6 +61,8 @@ func init() {
 }
 
 func main() {
+	f, _ := tea.LogToFile("mods.log", "")
+	defer func() { _ = f.Close() }()
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
@@ -69,7 +74,9 @@ func main() {
 	if err != nil {
 		exitError(mods, err, "Couldn't start Bubble Tea program.")
 	}
+
 	mods = m.(*Mods)
+
 	if mods.Error != nil {
 		os.Exit(1)
 	}
@@ -164,4 +171,36 @@ func main() {
 		os.Exit(0)
 	}
 	fmt.Println(mods.FormattedOutput())
+}
+
+var _ chatCompletionReceiver = &cachedCompletionStream{}
+
+type cachedCompletionStream struct {
+	messages []openai.ChatCompletionMessage
+	read     int
+	m        sync.Mutex
+}
+
+func (c *cachedCompletionStream) Close() { /* noop */ }
+func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, error) {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	log.Println("READING HERE", c.read)
+
+	if len(c.messages) == c.read {
+		return openai.ChatCompletionStreamResponse{}, io.EOF
+	}
+
+	c.read++
+
+	return openai.ChatCompletionStreamResponse{
+		Choices: []openai.ChatCompletionStreamChoice{
+			{
+				Delta: openai.ChatCompletionStreamChoiceDelta{
+					Content: c.messages[c.read-1].Content,
+				},
+			},
+		},
+	}, nil
 }

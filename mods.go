@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -77,7 +78,12 @@ type completionInput struct {
 // completionOutput a tea.Msg that wraps the content returned from openai.
 type completionOutput struct {
 	content string
-	stream  *openai.ChatCompletionStream
+	stream  chatCompletionReceiver
+}
+
+type chatCompletionReceiver interface {
+	Recv() (openai.ChatCompletionStreamResponse, error)
+	Close()
 }
 
 // modsError is a wrapper around an error that adds additional context.
@@ -109,7 +115,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = configLoadedState
 		cmds = append(cmds, readStdinCmd, m.anim.Init())
 	case completionInput:
-		if msg.content == "" && m.Config.Prefix == "" {
+		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" {
 			return m, m.quit
 		}
 		if msg.content != "" {
@@ -288,6 +294,11 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 }
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
+	if m.Config.Show != "" {
+		log.Println("FROM CACHE")
+		return m.readFromCache()
+	}
+
 	return func() tea.Msg {
 		var ok bool
 		var mod Model
@@ -462,6 +473,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
+		log.Println("recvvvv")
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, io.EOF) {
 			msg.stream.Close()
@@ -523,4 +535,22 @@ func noOmitFloat(f float32) float32 {
 		return math.SmallestNonzeroFloat32
 	}
 	return f
+}
+
+func (m *Mods) readFromCache() tea.Cmd {
+	return func() tea.Msg {
+		log.Println("aqui", m.Config.Show)
+		var messages []openai.ChatCompletionMessage
+		if err := readCache(m.Config.Show, &messages, m.Config); err != nil {
+			return modsError{err, "There was an error loading the conversation."}
+		}
+
+		log.Println("loaded", m.Config.Show, len(messages))
+
+		return m.receiveCompletionStreamCmd(completionOutput{
+			stream: &cachedCompletionStream{
+				messages: messages,
+			},
+		})()
+	}
 }

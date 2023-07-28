@@ -10,8 +10,10 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-var cacheExt = ".gob"
-var defaultCacheName = "_current" + cacheExt
+var (
+	cacheExt         = ".gob"
+	defaultCacheName = "_current" + cacheExt
+)
 
 func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
 	if !strings.HasSuffix(name, cacheExt) {
