@@ -185,7 +185,6 @@ func (m Mods) viewportNeeded() bool {
 
 // View implements tea.Model.
 func (m *Mods) View() string {
-	//nolint:exhaustive
 	switch m.state {
 	case errorState:
 		return m.ErrorView()
@@ -193,7 +192,7 @@ func (m *Mods) View() string {
 		if !m.Config.Quiet {
 			return m.anim.View()
 		}
-	case responseState:
+	case responseState, doneState:
 		if m.Config.Glamour {
 			if m.viewportNeeded() {
 				return m.glamViewport.View()
@@ -295,7 +294,6 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	if m.Config.Show != "" {
-		log.Println("FROM CACHE")
 		return m.readFromCache()
 	}
 
@@ -473,7 +471,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
-		log.Println("recvvvv")
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, io.EOF) {
 			msg.stream.Close()
@@ -539,7 +536,6 @@ func noOmitFloat(f float32) float32 {
 
 func (m *Mods) readFromCache() tea.Cmd {
 	return func() tea.Msg {
-		log.Println("aqui", m.Config.Show)
 		var messages []openai.ChatCompletionMessage
 		if err := readCache(m.Config.Show, &messages, m.Config); err != nil {
 			return modsError{err, "There was an error loading the conversation."}

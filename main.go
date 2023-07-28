@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"runtime/debug"
 	"sync"
@@ -80,6 +79,7 @@ func main() {
 	if mods.Error != nil {
 		os.Exit(1)
 	}
+
 	if mods.Config.Settings {
 		c := editor.Cmd(mods.Config.SettingsPath)
 		c.Stdin = os.Stdin
@@ -125,6 +125,9 @@ func main() {
 			mods.Styles.Comment.Render("Your old settings are have been saved to:"),
 			mods.Styles.Link.Render(mods.Config.SettingsPath+".bak"),
 		)
+		os.Exit(0)
+	}
+	if mods.Config.Show != "" {
 		os.Exit(0)
 	}
 	if mods.Config.Save != "" {
@@ -186,19 +189,22 @@ func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, er
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	log.Println("READING HERE", c.read)
-
-	if len(c.messages) == c.read {
+	if c.read == len(c.messages) {
 		return openai.ChatCompletionStreamResponse{}, io.EOF
 	}
 
+	content := c.messages[c.read].Content
+
+	if c.read == 0 {
+		content = "Prompt: " + content
+	}
 	c.read++
 
 	return openai.ChatCompletionStreamResponse{
 		Choices: []openai.ChatCompletionStreamChoice{
 			{
 				Delta: openai.ChatCompletionStreamChoiceDelta{
-					Content: c.messages[c.read-1].Content,
+					Content: content + "\n",
 				},
 			},
 		},
