@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/adrg/xdg v0.4.0
-	github.com/caarlos0/env/v8 v8.0.0
+	github.com/caarlos0/env/v9 v9.0.0
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.24.2
 	github.com/charmbracelet/glamour v0.6.0

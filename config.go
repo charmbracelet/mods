@@ -8,8 +8,9 @@ import (
 	"text/template"
 
 	"github.com/adrg/xdg"
-	"github.com/caarlos0/env/v8"
+	"github.com/caarlos0/env/v9"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
@@ -82,7 +83,7 @@ func (apis *APIs) UnmarshalYAML(node *yaml.Node) error {
 type Config struct {
 	Model             string  `yaml:"default-model" env:"MODEL"`
 	Format            bool    `yaml:"format" env:"FORMAT"`
-	Glamour           bool    `yaml:"glamour" env:"GLAMOUR"`
+	Glamour           bool    `yaml:"glamour" env:"GLAMOUR,expand" envDefault:"${__MODS_GLAMOUR}"`
 	Quiet             bool    `yaml:"quiet" env:"QUIET"`
 	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
 	MaxInputChars     int     `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
@@ -172,8 +173,8 @@ func newConfig() (Config, error) {
 	}
 	c.Models = ms
 
-	err = env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"})
-	if err != nil {
+	os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isatty.IsTerminal(os.Stdin.Fd())))
+	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
 		return c, fmt.Errorf("could not parse environment into config: %s", err)
 	}
 
