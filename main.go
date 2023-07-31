@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
-	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -13,7 +12,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
-	"github.com/sashabaranov/go-openai"
 	flag "github.com/spf13/pflag"
 )
 
@@ -172,39 +170,4 @@ func main() {
 		os.Exit(0)
 	}
 	fmt.Println(mods.FormattedOutput())
-}
-
-var _ chatCompletionReceiver = &cachedCompletionStream{}
-
-type cachedCompletionStream struct {
-	messages []openai.ChatCompletionMessage
-	read     int
-	m        sync.Mutex
-}
-
-func (c *cachedCompletionStream) Close() { /* noop */ }
-func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, error) {
-	c.m.Lock()
-	defer c.m.Unlock()
-
-	if c.read == len(c.messages) {
-		return openai.ChatCompletionStreamResponse{}, io.EOF
-	}
-
-	content := c.messages[c.read].Content
-
-	if c.read == 0 {
-		content = "Prompt: " + content
-	}
-	c.read++
-
-	return openai.ChatCompletionStreamResponse{
-		Choices: []openai.ChatCompletionStreamChoice{
-			{
-				Delta: openai.ChatCompletionStreamChoiceDelta{
-					Content: content + "\n",
-				},
-			},
-		},
-	}, nil
 }
