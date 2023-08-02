@@ -470,8 +470,8 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 					Role:    openai.ChatMessageRoleSystem,
 					Content: m.Output,
 				})
-				if m.Config.Continue != "" {
-					err = writeCache(m.Config.Continue, &messages, m.Config)
+				if m.Config.Save != "" {
+					err = writeCache(m.Config.Save, &messages, m.Config)
 					if err != nil {
 						return modsError{
 							err:    err,
@@ -479,8 +479,8 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 						}
 					}
 				}
-				if m.Config.Continue != defaultCacheName {
-					err = writeCache(defaultCacheName, &messages, m.Config)
+				if m.Config.Continue != "" {
+					err = writeCache(m.Config.Continue, &messages, m.Config)
 					if err != nil {
 						return modsError{
 							err:    err,

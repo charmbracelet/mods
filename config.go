@@ -200,13 +200,13 @@ func newConfig() (Config, error) {
 	flag.StringVar(&c.Delete, "delete", c.Delete, help["delete"])
 	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
-	flag.Lookup("continue").NoOptDefVal = defaultCacheName
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
 	flag.CommandLine.Init("", flag.ContinueOnError)
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return c, flagParseError{err}
 	}
+
 	if c.Format && c.FormatText == "" {
 		c.FormatText = "Format the response as markdown without enclosing backticks."
 	}
@@ -214,6 +214,17 @@ func newConfig() (Config, error) {
 		c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
+
+	if c.Continue == "" && !c.List && c.Save == "" {
+		c.Save = newConversationID()
+	}
+
+	if c.Continue != "" {
+		c.Continue, err = findCache(c, c.Continue)
+		if err != nil {
+			return c, err
+		}
+	}
 
 	return c, nil
 }

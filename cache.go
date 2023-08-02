@@ -1,17 +1,90 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/sha1" //nolint:gosec
 	"encoding/gob"
-	"io"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 
 	openai "github.com/sashabaranov/go-openai"
 )
 
-var cacheExt = ".gob"
-var defaultCacheName = "_current" + cacheExt
+const (
+	cacheExt  = ".gob"
+	sha1short = 7
+)
+
+var sha1reg = regexp.MustCompile(`\b[0-9a-f]{40}\b`)
+
+func newConversationID() string {
+	b := make([]byte, 1024)
+	_, _ = rand.Read(b)
+	return fmt.Sprintf("%x", sha1.Sum(b)) //nolint: gosec
+}
+
+func perfectMatchOrMostRecentCache(cfg Config, input string) (string, error) {
+	name := input
+	if !strings.HasSuffix(name, cacheExt) {
+		name += cacheExt
+	}
+
+	if _, err := os.Stat(filepath.Join(cfg.CachePath, name)); err == nil {
+		return input, nil
+	}
+
+	entries, err := listCache(cfg)
+	if err != nil {
+		return "", err
+	}
+
+	var recent time.Time
+	var result string
+	for _, entry := range entries {
+		st, err := os.Stat(filepath.Join(cfg.CachePath, entry+cacheExt))
+		if err != nil {
+			return "", err
+		}
+		if st.ModTime().After(recent) {
+			recent = st.ModTime()
+			result = entry
+		}
+	}
+	return result, nil
+}
+
+func findCache(cfg Config, input string) (string, error) {
+	if len(input) < 4 {
+		return perfectMatchOrMostRecentCache(cfg, input)
+	}
+	if sha1reg.MatchString(input) {
+		return input, nil
+	}
+	entries, err := listCache(cfg)
+	if err != nil {
+		return "", err
+	}
+	var results []string
+	for _, entry := range entries {
+		if !sha1reg.MatchString(entry) {
+			continue
+		}
+		if strings.HasPrefix(entry, input) {
+			results = append(results, entry)
+		}
+	}
+	if len(results) == 0 {
+		return perfectMatchOrMostRecentCache(cfg, input)
+	}
+	if len(results) == 1 {
+		return results[0], nil
+	}
+	return "", fmt.Errorf("multiple conversations matched %q: %s", input, strings.Join(results, ", "))
+}
 
 func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
 	if !strings.HasSuffix(name, cacheExt) {
@@ -58,25 +131,6 @@ func writeCache(name string, messages *[]openai.ChatCompletionMessage, cfg Confi
 	return nil
 }
 
-func saveCache(cfg Config) error {
-	inputFile, err := os.Open(filepath.Join(cfg.CachePath, defaultCacheName))
-	if err != nil {
-		return err
-	}
-	defer inputFile.Close() //nolint:errcheck
-	outputFile, err := os.Create(filepath.Join(cfg.CachePath, cfg.Save+cacheExt))
-	if err != nil {
-		return err
-	}
-	defer outputFile.Close() //nolint:errcheck
-	_, err = io.Copy(outputFile, inputFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func listCache(cfg Config) ([]string, error) {
 	entries, err := os.ReadDir(cfg.CachePath)
 	if err != nil {
@@ -85,7 +139,7 @@ func listCache(cfg Config) ([]string, error) {
 
 	files := []string{}
 	for _, entry := range entries {
-		if entry.IsDir() || entry.Name() == defaultCacheName {
+		if entry.IsDir() {
 			continue
 		}
 

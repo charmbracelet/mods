@@ -60,6 +60,7 @@ func init() {
 func main() {
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
+
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		opts = append(opts, tea.WithInput(nil))
 	}
@@ -121,12 +122,10 @@ func main() {
 		os.Exit(0)
 	}
 	if mods.Config.Save != "" {
-		err := saveCache(mods.Config)
-		if err != nil {
-			exitError(mods, err, "Couldn't save conversation.")
+		if sha1reg.MatchString(mods.Config.Save) {
+			mods.Config.Save = mods.Config.Save[:sha1short]
 		}
-
-		fmt.Println("  Conversation saved:", mods.Config.Save)
+		fmt.Println("\n  Conversation saved:", mods.Config.Save)
 
 		os.Exit(0)
 	}
@@ -136,8 +135,16 @@ func main() {
 			exitError(mods, err, "Couldn't list saves.")
 		}
 
+		if len(conversations) == 0 {
+			fmt.Printf("  No conversations found.")
+			os.Exit(0)
+		}
+
 		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
 		for _, conversation := range conversations {
+			if sha1reg.MatchString((conversation)) {
+				conversation = conversation[:sha1short]
+			}
 			fmt.Printf("  %s %s\n",
 				mods.Styles.Comment.Render("•"),
 				conversation,
