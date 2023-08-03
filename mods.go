@@ -132,6 +132,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
 				m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
 				m.glamHeight = lipgloss.Height(m.glamOutput)
+				m.glamOutput += "\n"
 				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
 				m.glamViewport.SetContent(truncatedGlamOutput)
 				if oldHeight < m.glamHeight && wasAtBottom {
