@@ -6,10 +6,12 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -157,4 +159,51 @@ func listCache(cfg Config) ([]string, error) {
 
 func deleteCache(cfg Config) error {
 	return os.Remove(filepath.Join(cfg.CachePath, cfg.Delete+cacheExt))
+}
+
+var _ chatCompletionReceiver = &cachedCompletionStream{}
+
+type cachedCompletionStream struct {
+	messages []openai.ChatCompletionMessage
+	read     int
+	m        sync.Mutex
+}
+
+func (c *cachedCompletionStream) Close() { /* noop */ }
+func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, error) {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	if c.read == len(c.messages) {
+		return openai.ChatCompletionStreamResponse{}, io.EOF
+	}
+
+	msg := c.messages[c.read]
+	prefix := ""
+
+	switch msg.Role {
+	case openai.ChatMessageRoleSystem:
+		prefix += "\n **Response**: "
+	case openai.ChatMessageRoleUser:
+		if c.read > 0 {
+			prefix = "\n---\n"
+		}
+		prefix += "\n**Prompt**: "
+	case openai.ChatMessageRoleAssistant:
+		prefix += "\n**Assistant**: "
+	case openai.ChatMessageRoleFunction:
+		prefix += "\n**Function**: "
+	}
+
+	c.read++
+	return openai.ChatCompletionStreamResponse{
+		Choices: []openai.ChatCompletionStreamChoice{
+			{
+				Delta: openai.ChatCompletionStreamChoiceDelta{
+					Content: prefix + msg.Content + "\n",
+					Role:    msg.Role,
+				},
+			},
+		},
+	}, nil
 }

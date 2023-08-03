@@ -121,14 +121,11 @@ func main() {
 		)
 		os.Exit(0)
 	}
-	if mods.Config.saveTo != "" {
-		if sha1reg.MatchString(mods.Config.saveTo) {
-			mods.Config.saveTo = mods.Config.saveTo[:sha1short]
-		}
-		fmt.Println("\n  Conversation saved:", mods.Config.saveTo)
 
+	if mods.Config.Show != "" {
 		os.Exit(0)
 	}
+
 	if mods.Config.List {
 		conversations, err := listCache(mods.Config)
 		if err != nil {
@@ -152,6 +149,7 @@ func main() {
 		}
 		os.Exit(0)
 	}
+
 	if mods.Config.Delete != "" {
 		err := deleteCache(mods.Config)
 		if err != nil {
@@ -162,6 +160,16 @@ func main() {
 
 		os.Exit(0)
 	}
+
+	if mods.Config.saveTo != "" {
+		if sha1reg.MatchString(mods.Config.saveTo) {
+			mods.Config.saveTo = mods.Config.saveTo[:sha1short]
+		}
+		fmt.Println("\n  Conversation saved:", mods.Config.saveTo)
+
+		os.Exit(0)
+	}
+
 	if mods.Config.Version {
 		fmt.Println(buildVersion())
 		os.Exit(0)

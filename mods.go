@@ -77,7 +77,12 @@ type completionInput struct {
 // completionOutput a tea.Msg that wraps the content returned from openai.
 type completionOutput struct {
 	content string
-	stream  *openai.ChatCompletionStream
+	stream  chatCompletionReceiver
+}
+
+type chatCompletionReceiver interface {
+	Recv() (openai.ChatCompletionStreamResponse, error)
+	Close()
 }
 
 // modsError is a wrapper around an error that adds additional context.
@@ -109,11 +114,11 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = configLoadedState
 		cmds = append(cmds, readStdinCmd, m.anim.Init())
 	case completionInput:
-		if msg.content == "" && m.Config.Prefix == "" {
-			return m, m.quit
-		}
 		if msg.content != "" {
 			m.Input = msg.content
+		}
+		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" {
+			return m, m.quit
 		}
 		m.state = requestState
 		cmds = append(cmds, m.startCompletionCmd(msg.content))
@@ -188,7 +193,7 @@ func (m *Mods) View() string {
 		if !m.Config.Quiet {
 			return m.anim.View()
 		}
-	case responseState:
+	case responseState, doneState:
 		if m.Config.Glamour {
 			if m.viewportNeeded() {
 				return m.glamViewport.View()
@@ -289,6 +294,10 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 }
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
+	if m.Config.Show != "" {
+		return m.readFromCache()
+	}
+
 	return func() tea.Msg {
 		var ok bool
 		var mod Model
@@ -511,4 +520,19 @@ func noOmitFloat(f float32) float32 {
 		return math.SmallestNonzeroFloat32
 	}
 	return f
+}
+
+func (m *Mods) readFromCache() tea.Cmd {
+	return func() tea.Msg {
+		var messages []openai.ChatCompletionMessage
+		if err := readCache(&messages, m.Config); err != nil {
+			return modsError{err, "There was an error loading the conversation."}
+		}
+
+		return m.receiveCompletionStreamCmd(completionOutput{
+			stream: &cachedCompletionStream{
+				messages: messages,
+			},
+		})()
+	}
 }

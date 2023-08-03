@@ -43,6 +43,7 @@ var help = map[string]string{
 	"save":            "Saves the current conversation with the given name.",
 	"list":            "Lists saved conversations.",
 	"delete":          "Deletes a saved conversation with the given name.",
+	"show":            "Show a saved conversation with the given name",
 }
 
 // Model represents the LLM model used in the API call.
@@ -109,6 +110,7 @@ type Config struct {
 	SettingsPath      string
 	Continue          string
 	Save              string
+	Show              string
 	List              bool
 	Delete            string
 
@@ -201,6 +203,7 @@ func newConfig() (Config, error) {
 	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
 	flag.StringVar(&c.Save, "save", c.Save, help["save"])
 	flag.StringVar(&c.Delete, "delete", c.Delete, help["delete"])
+	flag.StringVar(&c.Show, "show", c.Show, help["show"])
 	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Usage = usage
@@ -218,12 +221,12 @@ func newConfig() (Config, error) {
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
 
-	if !c.List {
+	if !c.List && c.Show == "" {
 		c.saveTo = firstNonEmpty(c.Save, c.Continue, newConversationID())
 	}
 
-	if c.Continue != "" {
-		c.loadFrom, err = findCache(c, c.Continue)
+	if c.Continue != "" || c.Show != "" {
+		c.loadFrom, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
 		if err != nil {
 			return c, err
 		}
