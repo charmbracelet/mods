@@ -114,7 +114,7 @@ type Config struct {
 	List              bool
 	Delete            string
 
-	loadFrom, saveTo string
+	cacheReadFrom, cacheWriteTo string
 }
 
 type flagParseError struct {
@@ -222,11 +222,18 @@ func newConfig() (Config, error) {
 	c.Prefix = strings.Join(flag.Args(), " ")
 
 	if !c.List && c.Show == "" {
-		c.saveTo = firstNonEmpty(c.Save, c.Continue, newConversationID())
+		c.cacheWriteTo = firstNonEmpty(c.Save, c.Continue, newConversationID())
+	}
+
+	if c.Delete != "" {
+		c.cacheWriteTo, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
+		if err != nil {
+			return c, err
+		}
 	}
 
 	if c.Continue != "" || c.Show != "" {
-		c.loadFrom, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
+		c.cacheReadFrom, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
 		if err != nil {
 			return c, err
 		}

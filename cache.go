@@ -90,7 +90,7 @@ func findCache(cfg Config, input string) (string, error) {
 }
 
 func readCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
-	name := cfg.loadFrom
+	name := cfg.cacheReadFrom
 	if name == "" {
 		return nil
 	}
@@ -114,7 +114,7 @@ func readCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
 }
 
 func writeCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
-	name := cfg.saveTo
+	name := cfg.cacheWriteTo
 	if !strings.HasSuffix(name, cacheExt) {
 		name += cacheExt
 	}
@@ -158,7 +158,7 @@ func listCache(cfg Config) ([]string, error) {
 }
 
 func deleteCache(cfg Config) error {
-	return os.Remove(filepath.Join(cfg.CachePath, cfg.Delete+cacheExt))
+	return os.Remove(filepath.Join(cfg.CachePath, cfg.cacheWriteTo+cacheExt))
 }
 
 var _ chatCompletionReceiver = &cachedCompletionStream{}

@@ -74,6 +74,18 @@ func main() {
 	if mods.Error != nil {
 		os.Exit(1)
 	}
+
+	if mods.Config.Version {
+		fmt.Println(buildVersion())
+		os.Exit(0)
+	}
+
+	if mods.Config.ShowHelp || (mods.Input == "" && mods.Config.Prefix == "" &&
+		mods.Config.Show == "" && mods.Config.Delete == "" && !mods.Config.List) {
+		flag.Usage()
+		os.Exit(0)
+	}
+
 	if mods.Config.Settings {
 		c := editor.Cmd(mods.Config.SettingsPath)
 		c.Stdin = os.Stdin
@@ -85,6 +97,7 @@ func main() {
 		fmt.Println("Wrote config file to:", mods.Config.SettingsPath)
 		os.Exit(0)
 	}
+
 	if mods.Config.ResetSettings {
 		_, err := os.Stat(mods.Config.SettingsPath)
 		if err != nil {
@@ -157,26 +170,16 @@ func main() {
 		}
 
 		fmt.Println("  Conversation deleted:", mods.Config.Delete)
-
 		os.Exit(0)
 	}
 
-	if mods.Config.saveTo != "" {
-		if sha1reg.MatchString(mods.Config.saveTo) {
-			mods.Config.saveTo = mods.Config.saveTo[:sha1short]
+	if mods.Config.cacheWriteTo != "" {
+		if sha1reg.MatchString(mods.Config.cacheWriteTo) {
+			mods.Config.cacheWriteTo = mods.Config.cacheWriteTo[:sha1short]
 		}
-		fmt.Println("\n  Conversation saved:", mods.Config.saveTo)
-
+		fmt.Println("\n  Conversation saved:", mods.Config.cacheWriteTo)
 		os.Exit(0)
 	}
 
-	if mods.Config.Version {
-		fmt.Println(buildVersion())
-		os.Exit(0)
-	}
-	if mods.Config.ShowHelp || (mods.Input == "" && mods.Config.Prefix == "") {
-		flag.Usage()
-		os.Exit(0)
-	}
 	fmt.Println(mods.FormattedOutput())
 }
