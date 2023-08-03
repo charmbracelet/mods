@@ -115,6 +115,9 @@ func readCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
 
 func writeCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
 	name := cfg.cacheWriteTo
+	if name == "" {
+		return fmt.Errorf("missing cache name")
+	}
 	if !strings.HasSuffix(name, cacheExt) {
 		name += cacheExt
 	}

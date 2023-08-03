@@ -221,19 +221,19 @@ func newConfig() (Config, error) {
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
 
+	if c.Continue != "" || c.Show != "" {
+		c.cacheReadFrom, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
+		if err != nil {
+			return c, err
+		}
+	}
+
 	if !c.List && c.Show == "" {
 		c.cacheWriteTo = firstNonEmpty(c.Save, c.Continue, newConversationID())
 	}
 
 	if c.Delete != "" {
 		c.cacheWriteTo, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
-		if err != nil {
-			return c, err
-		}
-	}
-
-	if c.Continue != "" || c.Show != "" {
-		c.cacheReadFrom, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
 		if err != nil {
 			return c, err
 		}
