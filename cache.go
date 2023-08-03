@@ -89,6 +89,25 @@ func findCache(cfg Config, input string) (string, error) {
 	return "", fmt.Errorf("multiple conversations matched %q: %s", input, strings.Join(results, ", "))
 }
 
+func lastPrompt(name string, cfg Config) (string, error) {
+	if !strings.HasSuffix(name, cacheExt) {
+		name += cacheExt
+	}
+	var msgs []openai.ChatCompletionMessage
+	if err := doReadCache(&msgs, filepath.Join(cfg.CachePath, name)); err != nil {
+		return "", err
+	}
+
+	var result string
+	for _, msg := range msgs {
+		if msg.Role != openai.ChatMessageRoleUser {
+			continue
+		}
+		result = msg.Content
+	}
+	return result, nil
+}
+
 func readCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
 	name := cfg.cacheReadFrom
 	if name == "" {
@@ -97,8 +116,11 @@ func readCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
 	if !strings.HasSuffix(name, cacheExt) {
 		name += cacheExt
 	}
+	return doReadCache(messages, filepath.Join(cfg.CachePath, name))
+}
 
-	file, err := os.Open(filepath.Join(cfg.CachePath, name))
+func doReadCache(messages *[]openai.ChatCompletionMessage, path string) error {
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}

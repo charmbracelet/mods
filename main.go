@@ -152,12 +152,23 @@ func main() {
 
 		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
 		for _, conversation := range conversations {
+			prompt, err := lastPrompt(conversation, mods.Config)
+			if err != nil {
+				// either
+				continue
+			}
+			if len(prompt) > 25 {
+				prompt = prompt[:23] + "..."
+			}
+
 			if sha1reg.MatchString((conversation)) {
 				conversation = conversation[:sha1short]
 			}
-			fmt.Printf("  %s %s\n",
+
+			fmt.Printf("  %s %s %s\n",
 				mods.Styles.Comment.Render("•"),
 				conversation,
+				mods.Styles.Comment.Render(prompt),
 			)
 		}
 		os.Exit(0)
