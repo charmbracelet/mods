@@ -136,7 +136,7 @@ func main() {
 		}
 
 		if len(conversations) == 0 {
-			fmt.Printf("  No conversations found.")
+			fmt.Printf("  No conversations found.\n")
 			os.Exit(0)
 		}
 

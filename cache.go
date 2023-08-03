@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha1" //nolint:gosec
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -138,7 +139,7 @@ func writeCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
 
 func listCache(cfg Config) ([]string, error) {
 	entries, err := os.ReadDir(cfg.CachePath)
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
