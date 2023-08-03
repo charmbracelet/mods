@@ -136,6 +136,11 @@ func main() {
 			exitError(mods, err, "Couldn't list saves.")
 		}
 
+		if len(conversations) == 0 {
+			fmt.Printf("  No conversations found.\n")
+			os.Exit(0)
+		}
+
 		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
 		for _, conversation := range conversations {
 			fmt.Printf("  %s %s\n",

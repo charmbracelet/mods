@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -79,7 +80,7 @@ func saveCache(cfg Config) error {
 
 func listCache(cfg Config) ([]string, error) {
 	entries, err := os.ReadDir(cfg.CachePath)
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
