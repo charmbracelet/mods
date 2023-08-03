@@ -121,11 +121,11 @@ func main() {
 		)
 		os.Exit(0)
 	}
-	if mods.Config.Save != "" {
-		if sha1reg.MatchString(mods.Config.Save) {
-			mods.Config.Save = mods.Config.Save[:sha1short]
+	if mods.Config.saveTo != "" {
+		if sha1reg.MatchString(mods.Config.saveTo) {
+			mods.Config.saveTo = mods.Config.saveTo[:sha1short]
 		}
-		fmt.Println("\n  Conversation saved:", mods.Config.Save)
+		fmt.Println("\n  Conversation saved:", mods.Config.saveTo)
 
 		os.Exit(0)
 	}

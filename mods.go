@@ -391,9 +391,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		m.messages = []openai.ChatCompletionMessage{}
-		if cfg.Continue != "" && !cfg.NoCache {
-			err := readCache(cfg.Continue, &m.messages, cfg)
-			if err != nil {
+		if !cfg.NoCache {
+			if err := readCache(&m.messages, cfg); err != nil {
 				return modsError{
 					err:    err,
 					reason: fmt.Sprintf("There was a problem reading the cache. Use %s / %s to disable it.", m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
@@ -470,22 +469,10 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 					Role:    openai.ChatMessageRoleSystem,
 					Content: m.Output,
 				})
-				if m.Config.Save != "" {
-					err = writeCache(m.Config.Save, &messages, m.Config)
-					if err != nil {
-						return modsError{
-							err:    err,
-							reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
-						}
-					}
-				}
-				if m.Config.Continue != "" {
-					err = writeCache(m.Config.Continue, &messages, m.Config)
-					if err != nil {
-						return modsError{
-							err:    err,
-							reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.Continue, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
-						}
+				if err := writeCache(&messages, m.Config); err != nil {
+					return modsError{
+						err:    err,
+						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.saveTo, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
 					}
 				}
 			}

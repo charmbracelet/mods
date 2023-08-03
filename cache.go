@@ -86,7 +86,11 @@ func findCache(cfg Config, input string) (string, error) {
 	return "", fmt.Errorf("multiple conversations matched %q: %s", input, strings.Join(results, ", "))
 }
 
-func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
+func readCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
+	name := cfg.loadFrom
+	if name == "" {
+		return nil
+	}
 	if !strings.HasSuffix(name, cacheExt) {
 		name += cacheExt
 	}
@@ -106,7 +110,8 @@ func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config
 	return nil
 }
 
-func writeCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
+func writeCache(messages *[]openai.ChatCompletionMessage, cfg Config) error {
+	name := cfg.saveTo
 	if !strings.HasSuffix(name, cacheExt) {
 		name += cacheExt
 	}

@@ -110,6 +110,8 @@ type Config struct {
 	Save              string
 	List              bool
 	Delete            string
+
+	loadFrom, saveTo string
 }
 
 type flagParseError struct {
@@ -215,18 +217,27 @@ func newConfig() (Config, error) {
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
 
-	if c.Continue == "" && !c.List && c.Save == "" {
-		c.Save = newConversationID()
+	if !c.List {
+		c.saveTo = firstNonEmpty(c.Save, c.Continue, newConversationID())
 	}
 
 	if c.Continue != "" {
-		c.Continue, err = findCache(c, c.Continue)
+		c.loadFrom, err = findCache(c, c.Continue)
 		if err != nil {
 			return c, err
 		}
 	}
 
 	return c, nil
+}
+
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if strings.TrimSpace(s) != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 func writeConfigFile(path string) error {
