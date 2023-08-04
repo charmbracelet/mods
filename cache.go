@@ -13,43 +13,63 @@ import (
 
 const cacheExt = ".gob"
 
-func readCache(messages *[]openai.ChatCompletionMessage, cfg Config, id string) error {
+type convoCache struct {
+	dir string
+}
+
+func newCache(cfg Config) (*convoCache, error) {
+	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil {
+		return nil, err
+	}
+	return &convoCache{
+		dir: cfg.CachePath,
+	}, nil
+}
+
+func (c *convoCache) read(id string, messages *[]openai.ChatCompletionMessage) error {
 	if id == "" {
 		return fmt.Errorf("cannot read empty cache id")
 	}
-	file, err := os.Open(filepath.Join(cfg.CachePath, id+cacheExt))
+	file, err := os.Open(filepath.Join(c.dir, id+cacheExt))
 	if err != nil {
-		return err
+		return fmt.Errorf("could not read cache: %w", err)
 	}
 	defer file.Close() //nolint:errcheck
 
 	decoder := gob.NewDecoder(file)
-	return decoder.Decode(messages)
+	if err := decoder.Decode(messages); err != nil {
+		return fmt.Errorf("could not decode cache: %w", err)
+	}
+	return nil
 }
 
-func writeCache(messages *[]openai.ChatCompletionMessage, cfg Config, id string) error {
+func (c *convoCache) write(id string, messages *[]openai.ChatCompletionMessage) error {
 	if id == "" {
 		return fmt.Errorf("cannot write empty cache id")
 	}
-	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil {
-		return err
-	}
 
-	file, err := os.Create(filepath.Join(cfg.CachePath, id+cacheExt))
+	file, err := os.Create(filepath.Join(c.dir, id+cacheExt))
 	if err != nil {
-		return err
+		return fmt.Errorf("could not create cache file: %w", err)
 	}
 	defer file.Close() //nolint:errcheck
 
 	encoder := gob.NewEncoder(file)
-	return encoder.Encode(messages)
+	if err := encoder.Encode(messages); err != nil {
+		return fmt.Errorf("failed to encode cache: %w", err)
+	}
+
+	return nil
 }
 
-func deleteCache(cfg Config, id string) error {
+func (c *convoCache) delete(id string) error {
 	if id == "" {
 		return fmt.Errorf("cannot delete empty cache id")
 	}
-	return os.Remove(filepath.Join(cfg.CachePath, id+cacheExt))
+	if err := os.Remove(filepath.Join(c.dir, id+cacheExt)); err != nil {
+		return fmt.Errorf("failed to delete cache: %w", err)
+	}
+	return nil
 }
 
 var _ chatCompletionReceiver = &cachedCompletionStream{}

@@ -147,7 +147,7 @@ func main() {
 	}
 
 	if mods.Config.List {
-		conversations, err := mods.DB.List()
+		conversations, err := mods.db.List()
 		if err != nil {
 			exitError(mods, err, "Couldn't list saves.")
 		}
@@ -169,16 +169,16 @@ func main() {
 	}
 
 	if mods.Config.Delete != "" {
-		id, err := mods.DB.Find(mods.Config.Delete)
+		id, err := mods.db.Find(mods.Config.Delete)
 		if err != nil {
 			exitError(mods, err, "Couldn't delete conversation.")
 		}
 
-		if err := mods.DB.Delete(id); err != nil {
+		if err := mods.db.Delete(id); err != nil {
 			exitError(mods, err, "Couldn't delete conversation.")
 		}
 
-		if err := deleteCache(mods.Config, id); err != nil {
+		if err := mods.cache.delete(id); err != nil {
 			exitError(mods, err, "Couldn't delete conversation.")
 		}
 
@@ -191,7 +191,7 @@ func main() {
 			mods.Config.cacheWriteToTitle = firstLine(lastPrompt(mods.messages))
 		}
 
-		if err := mods.DB.Save(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle); err != nil {
+		if err := mods.db.Save(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle); err != nil {
 			exitError(mods, err, "Couldn't save conversation.")
 		}
 		fmt.Println("\n  Conversation saved:", mods.Config.cacheWriteToID[:sha1short])
