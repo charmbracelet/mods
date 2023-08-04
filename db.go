@@ -3,8 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,9 +11,6 @@ import (
 )
 
 func openDB(path string) (*convoDB, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return nil, fmt.Errorf("could not create db: %w", err)
-	}
 	db, err := sqlx.Open("sqlite", "file://"+path)
 	if err != nil {
 		return nil, fmt.Errorf("could not create db: %w", err)
@@ -85,7 +80,7 @@ func (c *convoDB) FindHEAD() (string, error) {
 func (c *convoDB) Find(in string) (string, error) {
 	var ids []string
 	q := fmt.Sprintf(`select id from conversations where id like %q or title = %q`, in+"%", in)
-	if len(in) < 4 {
+	if len(in) < sha1minLen {
 		q = fmt.Sprintf(`select id from conversations where title = %q`, in)
 	}
 	if err := c.db.Select(&ids, q); err != nil {
