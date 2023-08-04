@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
@@ -302,7 +303,7 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 			return modsError{err, "There was an error loading your config file."}
 		}
 	}
-	db, err := dbForConfig(cfg)
+	db, err := openDB(filepath.Join(cfg.CachePath, "db.sqlite"))
 	if err != nil {
 		return modsError{
 			reason: "Could not open db",
@@ -535,6 +536,8 @@ func (m *Mods) findCachePaths() tea.Cmd {
 			writeID = newConversationID()
 		}
 
+		// TODO: when using only continue from a previous id, it is creating a new conversation id
+
 		if readID != "" {
 			id, err := m.DB.Find(readID)
 			if err == nil {
@@ -544,14 +547,14 @@ func (m *Mods) findCachePaths() tea.Cmd {
 				if err != nil {
 					return modsError{
 						err:    err,
-						reason: "Could not find the given conversation",
+						reason: "Could not find the conversation",
 					}
 				}
 				readID = id
 			} else {
 				return modsError{
 					err:    err,
-					reason: "Could not find the given conversation",
+					reason: "Could not find the conversation",
 				}
 			}
 		}

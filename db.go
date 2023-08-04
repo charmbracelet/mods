@@ -12,11 +12,11 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func dbForConfig(cfg Config) (*convoDB, error) {
-	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil {
+func openDB(path string) (*convoDB, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("could not create db: %w", err)
 	}
-	db, err := sqlx.Open("sqlite", "file://"+filepath.Join(cfg.CachePath, "db.sqlite"))
+	db, err := sqlx.Open("sqlite", "file://"+path)
 	if err != nil {
 		return nil, fmt.Errorf("could not create db: %w", err)
 	}
