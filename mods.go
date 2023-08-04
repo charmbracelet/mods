@@ -532,11 +532,20 @@ func (m *Mods) findCachePaths() tea.Cmd {
 		writeID := firstNonEmpty(m.Config.Save, m.Config.Continue)
 		title := writeID
 
-		if !sha1reg.Match([]byte(writeID)) || writeID == "" {
+		if writeID == "" {
 			writeID = newConversationID()
 		}
 
-		// TODO: when using only continue from a previous id, it is creating a new conversation id
+		if !sha1reg.Match([]byte(writeID)) {
+			id, err := m.DB.Find(writeID)
+			if err != nil {
+				return modsError{
+					err:    err,
+					reason: "Could not find the conversation",
+				}
+			}
+			writeID = id
+		}
 
 		if readID != "" {
 			id, err := m.DB.Find(readID)
