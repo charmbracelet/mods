@@ -11,8 +11,10 @@ require (
 	github.com/charmbracelet/glow v1.5.1
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/charmbracelet/x/exp/ordered v0.0.0-20230707174939-50fb4f48b5b3
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-isatty v0.0.19
+	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/muesli/termenv v0.15.2
 	github.com/sashabaranov/go-openai v1.14.1
 	github.com/spf13/pflag v1.0.5

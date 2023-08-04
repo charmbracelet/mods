@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -58,6 +59,12 @@ func init() {
 }
 
 func main() {
+	f, err := tea.LogToFile("/tmp/mods.log", "")
+	if err != nil {
+		os.Exit(1)
+	}
+	defer f.Close()
+
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
 
@@ -140,7 +147,7 @@ func main() {
 	}
 
 	if mods.Config.List {
-		conversations, err := listCache(mods.Config)
+		conversations, err := mods.DB.List()
 		if err != nil {
 			exitError(mods, err, "Couldn't list saves.")
 		}
@@ -152,31 +159,26 @@ func main() {
 
 		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
 		for _, conversation := range conversations {
-			prompt, err := lastPrompt(conversation, mods.Config)
-			if err != nil {
-				// either
-				continue
-			}
-			if len(prompt) > 25 {
-				prompt = prompt[:23] + "..."
-			}
-
-			if sha1reg.MatchString((conversation)) {
-				conversation = conversation[:sha1short]
-			}
-
-			fmt.Printf("  %s %s %s\n",
+			fmt.Printf("  %s %s: %s\n",
 				mods.Styles.Comment.Render("•"),
-				conversation,
-				mods.Styles.Comment.Render(prompt),
+				conversation.ID[:sha1short],
+				mods.Styles.Comment.Render(conversation.Title),
 			)
 		}
 		os.Exit(0)
 	}
 
 	if mods.Config.Delete != "" {
-		err := deleteCache(mods.Config)
+		id, err := mods.DB.Find(mods.Config.Delete)
 		if err != nil {
+			exitError(mods, err, "Couldn't delete conversation.")
+		}
+
+		if err := mods.DB.Delete(id); err != nil {
+			exitError(mods, err, "Couldn't delete conversation.")
+		}
+
+		if err := deleteCache(mods.Config, id); err != nil {
 			exitError(mods, err, "Couldn't delete conversation.")
 		}
 
@@ -184,11 +186,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	if mods.Config.cacheWriteTo != "" {
-		if sha1reg.MatchString(mods.Config.cacheWriteTo) {
-			mods.Config.cacheWriteTo = mods.Config.cacheWriteTo[:sha1short]
+	if mods.Config.cacheWriteToID != "" {
+		if strings.HasPrefix(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle) {
+			mods.Config.cacheWriteToTitle = lastPrompt(mods.messages)
 		}
-		fmt.Println("\n  Conversation saved:", mods.Config.cacheWriteTo)
+
+		if err := mods.DB.Save(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle); err != nil {
+			exitError(mods, err, "Couldn't save conversation.")
+		}
+		fmt.Println("\n  Conversation saved:", mods.Config.cacheWriteToID[:sha1short])
 		os.Exit(0)
 	}
 

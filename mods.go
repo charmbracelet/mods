@@ -54,6 +54,7 @@ type Mods struct {
 	anim          tea.Model
 	width         int
 	height        int
+	DB            *convoDB
 }
 
 func newMods(r *lipgloss.Renderer) *Mods {
@@ -105,14 +106,25 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case Config:
-		m.Config = msg
-		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
-			return m, m.quit
-		}
+	case cachePathsMsg:
+		m.Config.cacheWriteToID = msg.WriteID
+		m.Config.cacheWriteToTitle = msg.WriteTitle
+		m.Config.cacheReadFromID = msg.ReadID
+
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
 		m.state = configLoadedState
 		cmds = append(cmds, readStdinCmd, m.anim.Init())
+
+	case configDBMsg:
+		m.Config = msg.config
+		m.DB = msg.db
+
+		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
+			return m, m.quit
+		}
+
+		cmds = append(cmds, m.findCachePaths())
+
 	case completionInput:
 		if msg.content != "" {
 			m.Input = msg.content
@@ -290,7 +302,19 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 			return modsError{err, "There was an error loading your config file."}
 		}
 	}
-	return cfg
+	db, err := dbForConfig(cfg)
+	if err != nil {
+		return modsError{
+			reason: "Could not open db",
+			err:    err,
+		}
+	}
+	return configDBMsg{config: cfg, db: db}
+}
+
+type configDBMsg struct {
+	config Config
+	db     *convoDB
 }
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
@@ -401,8 +425,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		m.messages = []openai.ChatCompletionMessage{}
-		if !cfg.NoCache {
-			if err := readCache(&m.messages, cfg); err != nil {
+		if !cfg.NoCache && cfg.cacheReadFromID != "" {
+			if err := readCache(&m.messages, cfg, cfg.cacheReadFromID); err != nil {
 				return modsError{
 					err:    err,
 					reason: fmt.Sprintf("There was a problem reading the cache. Use %s / %s to disable it.", m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
@@ -474,15 +498,15 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, io.EOF) {
 			msg.stream.Close()
-			if !m.Config.NoCache && m.Config.cacheWriteTo != "" {
+			if !m.Config.NoCache && m.Config.cacheWriteToID != "" {
 				messages := append(m.messages, openai.ChatCompletionMessage{
 					Role:    openai.ChatMessageRoleSystem,
 					Content: m.Output,
 				})
-				if err := writeCache(&messages, m.Config); err != nil {
+				if err := writeCache(&messages, m.Config, m.Config.cacheWriteToID); err != nil {
 					return modsError{
 						err:    err,
-						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.cacheWriteTo, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.cacheWriteToID, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
 					}
 				}
 			}
@@ -494,6 +518,49 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		}
 		msg.content = resp.Choices[0].Delta.Content
 		return msg
+	}
+}
+
+type cachePathsMsg struct {
+	WriteID, WriteTitle, ReadID string
+}
+
+func (m *Mods) findCachePaths() tea.Cmd {
+	return func() tea.Msg {
+		readID := firstNonEmpty(m.Config.Continue, m.Config.Show)
+		writeID := firstNonEmpty(m.Config.Save, m.Config.Continue)
+		title := writeID
+
+		if !sha1reg.Match([]byte(writeID)) || writeID == "" {
+			writeID = newConversationID()
+		}
+
+		if readID != "" {
+			id, err := m.DB.Find(readID)
+			if err == nil {
+				readID = id
+			} else if errors.Is(err, ErrNoMatches) && m.Config.Show == "" {
+				id, err := m.DB.FindHEAD()
+				if err != nil {
+					return modsError{
+						err:    err,
+						reason: "Could not find the given conversation",
+					}
+				}
+				readID = id
+			} else {
+				return modsError{
+					err:    err,
+					reason: "Could not find the given conversation",
+				}
+			}
+		}
+
+		return cachePathsMsg{
+			WriteID:    writeID,
+			WriteTitle: title,
+			ReadID:     readID,
+		}
 	}
 }
 
@@ -525,7 +592,7 @@ func noOmitFloat(f float32) float32 {
 func (m *Mods) readFromCache() tea.Cmd {
 	return func() tea.Msg {
 		var messages []openai.ChatCompletionMessage
-		if err := readCache(&messages, m.Config); err != nil {
+		if err := readCache(&messages, m.Config, m.Config.cacheReadFromID); err != nil {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 

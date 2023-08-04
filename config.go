@@ -114,7 +114,7 @@ type Config struct {
 	List              bool
 	Delete            string
 
-	cacheReadFrom, cacheWriteTo string
+	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
 }
 
 type flagParseError struct {
@@ -220,24 +220,6 @@ func newConfig() (Config, error) {
 		c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
 	}
 	c.Prefix = strings.Join(flag.Args(), " ")
-
-	if c.Continue != "" || c.Show != "" {
-		c.cacheReadFrom, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
-		if err != nil {
-			return c, err
-		}
-	}
-
-	if !c.List && c.Show == "" {
-		c.cacheWriteTo = firstNonEmpty(c.Save, c.Continue, newConversationID())
-	}
-
-	if c.Delete != "" {
-		c.cacheWriteTo, err = findCache(c, firstNonEmpty(c.Continue, c.Show))
-		if err != nil {
-			return c, err
-		}
-	}
 
 	return c, nil
 }
