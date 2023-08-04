@@ -1,9 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
 	"crypto/sha1"
 	"fmt"
-	"math/rand"
 	"regexp"
 )
 

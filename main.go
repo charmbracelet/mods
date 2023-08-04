@@ -63,7 +63,7 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	defer f.Close()
+	defer f.Close() //nolint: errcheck
 
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
