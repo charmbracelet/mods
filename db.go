@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func dbForConfig(cfg Config) (*convoDB, error) {
 	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil {
 		return nil, fmt.Errorf("could not create db: %w", err)
 	}
-	db, err := sqlx.Open("sqlite3", "file://"+filepath.Join(cfg.CachePath, "db.sqlite"))
+	db, err := sqlx.Open("sqlite", "file://"+filepath.Join(cfg.CachePath, "db.sqlite"))
 	if err != nil {
 		return nil, fmt.Errorf("could not create db: %w", err)
 	}
