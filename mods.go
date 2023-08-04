@@ -474,7 +474,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, io.EOF) {
 			msg.stream.Close()
-			if !m.Config.NoCache {
+			if !m.Config.NoCache && m.Config.cacheWriteTo != "" {
 				messages := append(m.messages, openai.ChatCompletionMessage{
 					Role:    openai.ChatMessageRoleSystem,
 					Content: m.Output,
