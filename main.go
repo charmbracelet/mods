@@ -188,7 +188,7 @@ func main() {
 
 	if mods.Config.cacheWriteToID != "" {
 		if strings.HasPrefix(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle) {
-			mods.Config.cacheWriteToTitle = lastPrompt(mods.messages)
+			mods.Config.cacheWriteToTitle = firstLine(lastPrompt(mods.messages))
 		}
 
 		if err := mods.DB.Save(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle); err != nil {
