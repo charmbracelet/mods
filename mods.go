@@ -305,7 +305,7 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 			return modsError{err, "There was an error loading your config file."}
 		}
 	}
-	cache, err := newCache(cfg)
+	cache, err := newCache(cfg.CachePath)
 	if err != nil {
 		return modsError{
 			reason: "Could not init cache",

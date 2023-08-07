@@ -1,7 +1,8 @@
 package main
 
 import (
-	"encoding/gob" //nolint:gosec
+	//nolint:gosec
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,50 +14,50 @@ import (
 
 const cacheExt = ".gob"
 
+var ErrInvalidID = errors.New("invalid id")
+
 type convoCache struct {
 	dir string
 }
 
-func newCache(cfg Config) (*convoCache, error) {
-	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil {
+func newCache(dir string) (*convoCache, error) {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
 	}
 	return &convoCache{
-		dir: cfg.CachePath,
+		dir: dir,
 	}, nil
 }
 
 func (c *convoCache) read(id string, messages *[]openai.ChatCompletionMessage) error {
 	if id == "" {
-		return fmt.Errorf("cannot read empty cache id")
+		return fmt.Errorf("read: %w", ErrInvalidID)
 	}
 	file, err := os.Open(filepath.Join(c.dir, id+cacheExt))
 	if err != nil {
-		return fmt.Errorf("could not read cache: %w", err)
+		return fmt.Errorf("read: %w", err)
 	}
 	defer file.Close() //nolint:errcheck
 
-	decoder := gob.NewDecoder(file)
-	if err := decoder.Decode(messages); err != nil {
-		return fmt.Errorf("could not decode cache: %w", err)
+	if err := decode(file, messages); err != nil {
+		return fmt.Errorf("read: %w", err)
 	}
 	return nil
 }
 
 func (c *convoCache) write(id string, messages *[]openai.ChatCompletionMessage) error {
 	if id == "" {
-		return fmt.Errorf("cannot write empty cache id")
+		return fmt.Errorf("write: %w", ErrInvalidID)
 	}
 
 	file, err := os.Create(filepath.Join(c.dir, id+cacheExt))
 	if err != nil {
-		return fmt.Errorf("could not create cache file: %w", err)
+		return fmt.Errorf("write: %w", err)
 	}
 	defer file.Close() //nolint:errcheck
 
-	encoder := gob.NewEncoder(file)
-	if err := encoder.Encode(messages); err != nil {
-		return fmt.Errorf("failed to encode cache: %w", err)
+	if err := encode(file, messages); err != nil {
+		return fmt.Errorf("write: %w", err)
 	}
 
 	return nil
@@ -64,10 +65,10 @@ func (c *convoCache) write(id string, messages *[]openai.ChatCompletionMessage) 
 
 func (c *convoCache) delete(id string) error {
 	if id == "" {
-		return fmt.Errorf("cannot delete empty cache id")
+		return fmt.Errorf("delete: %w", ErrInvalidID)
 	}
 	if err := os.Remove(filepath.Join(c.dir, id+cacheExt)); err != nil {
-		return fmt.Errorf("failed to delete cache: %w", err)
+		return fmt.Errorf("delete: %w", err)
 	}
 	return nil
 }
@@ -94,7 +95,7 @@ func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, er
 
 	switch msg.Role {
 	case openai.ChatMessageRoleSystem:
-		prefix += "\n **Response**: "
+		prefix += "\n**Response**: "
 	case openai.ChatMessageRoleUser:
 		if c.read > 0 {
 			prefix = "\n---\n"
