@@ -161,7 +161,7 @@ func main() {
 
 		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
 		for _, conversation := range conversations {
-			fmt.Printf("  %s %s: %s\n",
+			fmt.Printf("  %s %s %s\n",
 				mods.Styles.Comment.Render("•"),
 				conversation.ID[:sha1short],
 				mods.Styles.Comment.Render(conversation.Title),
