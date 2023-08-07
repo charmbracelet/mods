@@ -171,16 +171,16 @@ func main() {
 	}
 
 	if mods.Config.Delete != "" {
-		id, err := mods.db.Find(mods.Config.Delete)
+		convo, err := mods.db.Find(mods.Config.Delete)
 		if err != nil {
 			exitError(mods, err, "Couldn't delete conversation.")
 		}
 
-		if err := mods.db.Delete(id); err != nil {
+		if err := mods.db.Delete(convo.ID); err != nil {
 			exitError(mods, err, "Couldn't delete conversation.")
 		}
 
-		if err := mods.cache.delete(id); err != nil {
+		if err := mods.cache.delete(convo.ID); err != nil {
 			exitError(mods, err, "Couldn't delete conversation.")
 		}
 

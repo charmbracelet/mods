@@ -551,29 +551,29 @@ func (m *Mods) findCachePaths() tea.Cmd {
 		}
 
 		if !sha1reg.Match([]byte(writeID)) {
-			id, err := m.db.Find(writeID)
+			convo, err := m.db.Find(writeID)
 			if err != nil {
 				return modsError{
 					err:    err,
 					reason: "Could not find the conversation",
 				}
 			}
-			writeID = id
+			writeID = convo.ID
 		}
 
 		if readID != "" {
-			id, err := m.db.Find(readID)
+			convo, err := m.db.Find(readID)
 			if err == nil {
-				readID = id
+				readID = convo.ID
 			} else if errors.Is(err, ErrNoMatches) && m.Config.Show == "" {
-				id, err := m.db.FindHEAD()
+				convo, err := m.db.FindHEAD()
 				if err != nil {
 					return modsError{
 						err:    err,
 						reason: "Could not find the conversation",
 					}
 				}
-				readID = id
+				readID = convo.ID
 			} else {
 				return modsError{
 					err:    err,
