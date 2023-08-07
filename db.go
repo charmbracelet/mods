@@ -3,11 +3,15 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
+)
+
+var (
+	ErrNoMatches   = errors.New("no conversations found")
+	ErrManyMatches = errors.New("multiple conversations matched the input")
 )
 
 func openDB(path string) (*convoDB, error) {
@@ -22,7 +26,7 @@ func openDB(path string) (*convoDB, error) {
 		create table if not exists conversations(
 			id string not null primary key,
 			title string not null,
-			updated_at datetime not null default current_timestamp
+			updated_at datetime not null default(strftime('%Y-%m-%d %H:%M:%f', 'now'))
 		);
 	`); err != nil {
 		return nil, fmt.Errorf("could not migrate db: %w", err)
@@ -34,7 +38,7 @@ type convoDB struct {
 	db *sqlx.DB
 }
 
-type dbConvo struct {
+type Conversation struct {
 	ID        string    `db:"id"`
 	Title     string    `db:"title"`
 	UpdatedAt time.Time `db:"updated_at"`
@@ -50,13 +54,13 @@ func (c *convoDB) Save(id, title string) error {
 		set title = $2, updated_at = current_timestamp
 		where id = $1
 	`, id, title); err != nil {
-		return fmt.Errorf("could not save conversation: %w", err)
+		return fmt.Errorf("Save: %w", err)
 	}
 	if _, err := c.db.Exec(`
 		insert or ignore into conversations (id, title)
 		values ($1, $2)
 	`, id, title); err != nil {
-		return fmt.Errorf("could not save conversation: %w", err)
+		return fmt.Errorf("Save: %w", err)
 	}
 
 	return nil
@@ -66,45 +70,42 @@ func (c *convoDB) Delete(id string) error {
 	if _, err := c.db.Exec(`
 		delete from conversations
 		where id = $1
-		limit 1
 	`, id); err != nil {
-		return fmt.Errorf("could not delete conversation: %w", err)
+		return fmt.Errorf("Delete: %w", err)
 	}
 	return nil
 }
 
-func (c *convoDB) FindHEAD() (string, error) {
-	var results string
-	if err := c.db.Get(&results, "select id from conversations order by updated_at desc limit 1"); err != nil {
-		return "", fmt.Errorf("could not find last conversation: %w", err)
+func (c *convoDB) FindHEAD() (*Conversation, error) {
+	var convo Conversation
+	if err := c.db.Get(&convo, "select * from conversations order by updated_at desc limit 1"); err != nil {
+		return nil, fmt.Errorf("FindHead: %w", err)
 	}
-	return results, nil
+	return &convo, nil
 }
 
-func (c *convoDB) Find(in string) (string, error) {
-	var ids []string
-	q := fmt.Sprintf(`select id from conversations where id like %q or title = %q`, in+"%", in)
+func (c *convoDB) Find(in string) (*Conversation, error) {
+	var conversations []Conversation
+	q := fmt.Sprintf(`select * from conversations where id like %q or title = %q`, in+"%", in)
 	if len(in) < sha1minLen {
-		q = fmt.Sprintf(`select id from conversations where title = %q`, in)
+		q = fmt.Sprintf(`select * from conversations where title = %q`, in)
 	}
-	if err := c.db.Select(&ids, q); err != nil {
-		return "", err
+	if err := c.db.Select(&conversations, q); err != nil {
+		return nil, fmt.Errorf("Find: %w", err)
 	}
-	if len(ids) > 1 {
-		return "", fmt.Errorf("multiple conversations matched %q: %s", in, strings.Join(ids, ", "))
+	if len(conversations) > 1 {
+		return nil, ErrManyMatches
 	}
-	if len(ids) == 1 {
-		return ids[0], nil
+	if len(conversations) == 1 {
+		return &conversations[0], nil
 	}
-	return "", ErrNoMatches
+	return nil, ErrNoMatches
 }
 
-var ErrNoMatches = errors.New("no conversations matched the given input")
-
-func (c *convoDB) List() ([]dbConvo, error) {
-	var convos []dbConvo
+func (c *convoDB) List() ([]Conversation, error) {
+	var convos []Conversation
 	if err := c.db.Select(&convos, "select * from conversations order by updated_at desc"); err != nil {
-		return convos, fmt.Errorf("could not list conversations: %w", err)
+		return convos, fmt.Errorf("List: %w", err)
 	}
 	return convos, nil
 }
