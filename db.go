@@ -40,6 +40,10 @@ type dbConvo struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+func (c *convoDB) Close() error {
+	return c.db.Close()
+}
+
 func (c *convoDB) Save(id, title string) error {
 	if _, err := c.db.Exec(`
 		update conversations

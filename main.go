@@ -45,7 +45,15 @@ func buildVersion() string {
 func exitError(mods *Mods, err error, reason string) {
 	mods.Error = &modsError{reason: reason, err: err}
 	fmt.Println(mods.ErrorView())
-	os.Exit(1)
+	exit(mods, 1)
+}
+
+func exit(mods *Mods, status int) {
+	if mods.db == nil {
+		os.Exit(status)
+	}
+	_ = mods.db.Close()
+	os.Exit(status)
 }
 
 func init() {
@@ -59,12 +67,6 @@ func init() {
 }
 
 func main() {
-	f, err := tea.LogToFile("/tmp/mods.log", "")
-	if err != nil {
-		os.Exit(1)
-	}
-	defer f.Close() //nolint: errcheck
-
 	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
 
@@ -79,18 +81,18 @@ func main() {
 	}
 	mods = m.(*Mods)
 	if mods.Error != nil {
-		os.Exit(1)
+		exit(mods, 1)
 	}
 
 	if mods.Config.Version {
 		fmt.Println(buildVersion())
-		os.Exit(0)
+		exit(mods, 0)
 	}
 
 	if mods.Config.ShowHelp || (mods.Input == "" && mods.Config.Prefix == "" &&
 		mods.Config.Show == "" && mods.Config.Delete == "" && !mods.Config.List) {
 		flag.Usage()
-		os.Exit(0)
+		exit(mods, 0)
 	}
 
 	if mods.Config.Settings {
@@ -102,7 +104,7 @@ func main() {
 			exitError(mods, err, "Missing $EDITOR")
 		}
 		fmt.Println("Wrote config file to:", mods.Config.SettingsPath)
-		os.Exit(0)
+		exit(mods, 0)
 	}
 
 	if mods.Config.ResetSettings {
@@ -139,11 +141,11 @@ func main() {
 			mods.Styles.Comment.Render("Your old settings are have been saved to:"),
 			mods.Styles.Link.Render(mods.Config.SettingsPath+".bak"),
 		)
-		os.Exit(0)
+		exit(mods, 0)
 	}
 
 	if mods.Config.Show != "" {
-		os.Exit(0)
+		exit(mods, 0)
 	}
 
 	if mods.Config.List {
@@ -154,7 +156,7 @@ func main() {
 
 		if len(conversations) == 0 {
 			fmt.Printf("  No conversations found.\n")
-			os.Exit(0)
+			exit(mods, 0)
 		}
 
 		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
@@ -165,7 +167,7 @@ func main() {
 				mods.Styles.Comment.Render(conversation.Title),
 			)
 		}
-		os.Exit(0)
+		exit(mods, 0)
 	}
 
 	if mods.Config.Delete != "" {
@@ -183,7 +185,7 @@ func main() {
 		}
 
 		fmt.Println("  Conversation deleted:", mods.Config.Delete)
-		os.Exit(0)
+		exit(mods, 0)
 	}
 
 	if mods.Config.cacheWriteToID != "" {
@@ -195,8 +197,9 @@ func main() {
 			exitError(mods, err, "Couldn't save conversation.")
 		}
 		fmt.Println("\n  Conversation saved:", mods.Config.cacheWriteToID[:sha1short])
-		os.Exit(0)
+		exit(mods, 0)
 	}
 
 	fmt.Println(mods.FormattedOutput())
+	exit(mods, 0)
 }
