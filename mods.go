@@ -216,7 +216,7 @@ func (m *Mods) View() string {
 			// We don't need the viewport yet.
 			return m.glamOutput
 		}
-		return m.Output
+		return m.Output + "\n"
 	}
 	return ""
 }
