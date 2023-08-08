@@ -406,6 +406,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if mod.API == "azure-ad" {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
+
+		// TODO: fake openai thingy for testing?
+
 		default:
 			ccfg = openai.DefaultConfig(key)
 			if api.BaseURL != "" {
@@ -562,24 +565,14 @@ func (m *Mods) findCachePaths() tea.Cmd {
 		}
 
 		if readID != "" {
-			convo, err := m.db.Find(readID)
-			if err == nil {
-				readID = convo.ID
-			} else if errors.Is(err, ErrNoMatches) && m.Config.Show == "" {
-				convo, err := m.db.FindHEAD()
-				if err != nil {
-					return modsError{
-						err:    err,
-						reason: "Could not find the conversation",
-					}
-				}
-				readID = convo.ID
-			} else {
+			found, err := m.findReadID(readID)
+			if err != nil {
 				return modsError{
 					err:    err,
 					reason: "Could not find the conversation",
 				}
 			}
+			readID = found
 		}
 
 		return cachePathsMsg{
@@ -588,6 +581,21 @@ func (m *Mods) findCachePaths() tea.Cmd {
 			ReadID:     readID,
 		}
 	}
+}
+
+func (m *Mods) findReadID(in string) (string, error) {
+	convo, err := m.db.Find(in)
+	if err == nil {
+		return convo.ID, nil
+	}
+	if errors.Is(err, errNoMatches) && m.Config.Show == "" {
+		convo, err := m.db.FindHEAD()
+		if err != nil {
+			return "", err
+		}
+		return convo.ID, nil
+	}
+	return "", err
 }
 
 func readStdinCmd() tea.Msg {

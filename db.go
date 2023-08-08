@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrNoMatches   = errors.New("no conversations found")
-	ErrManyMatches = errors.New("multiple conversations matched the input")
+	errNoMatches   = errors.New("no conversations found")
+	errManyMatches = errors.New("multiple conversations matched the input")
 )
 
 func openDB(path string) (*convoDB, error) {
@@ -38,6 +38,7 @@ type convoDB struct {
 	db *sqlx.DB
 }
 
+// Conversation in the database.
 type Conversation struct {
 	ID        string    `db:"id"`
 	Title     string    `db:"title"`
@@ -45,7 +46,7 @@ type Conversation struct {
 }
 
 func (c *convoDB) Close() error {
-	return c.db.Close()
+	return c.db.Close() //nolint: wrapcheck
 }
 
 func (c *convoDB) Save(id, title string) error {
@@ -94,12 +95,12 @@ func (c *convoDB) Find(in string) (*Conversation, error) {
 		return nil, fmt.Errorf("Find: %w", err)
 	}
 	if len(conversations) > 1 {
-		return nil, ErrManyMatches
+		return nil, errManyMatches
 	}
 	if len(conversations) == 1 {
 		return &conversations[0], nil
 	}
-	return nil, ErrNoMatches
+	return nil, errNoMatches
 }
 
 func (c *convoDB) List() ([]Conversation, error) {

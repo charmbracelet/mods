@@ -79,14 +79,14 @@ func TestConvoDB(t *testing.T) {
 
 	t.Run("find match nothing", func(t *testing.T) {
 		_, err := db.Find("message")
-		require.ErrorIs(t, err, ErrNoMatches)
+		require.ErrorIs(t, err, errNoMatches)
 	})
 
 	t.Run("find match many", func(t *testing.T) {
 		const testid2 = "df31ae23ab9b75b5641c2f846c571000edc71315"
 		require.NoError(t, db.Save(testid2, "message 4"))
 		_, err := db.Find("df31ae")
-		require.ErrorIs(t, err, ErrManyMatches)
+		require.ErrorIs(t, err, errManyMatches)
 	})
 
 	t.Run("delete", func(t *testing.T) {
