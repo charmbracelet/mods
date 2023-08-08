@@ -5,11 +5,4 @@
 
 includes:
   - from_url:
-      url: charmbracelet/meta/main/goreleaser-simple.yaml
-
-variables:
-  description: "GPT-4 on the command line"
-  github_url: "https://github.com/charmbracelet/mods"
-  maintainer: "Toby Padilla <toby@charm.sh>"
-  brew_commit_author_name: "Toby Padilla"
-  brew_commit_author_email: "toby@charm.sh"
+      url: charmbracelet/meta/main/goreleaser-mods.yaml
