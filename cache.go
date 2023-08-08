@@ -1,7 +1,6 @@
 package main
 
 import (
-	//nolint:gosec
 	"errors"
 	"fmt"
 	"io"
