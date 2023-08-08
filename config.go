@@ -1,11 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"html/template"
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/adrg/xdg"
 	"github.com/caarlos0/env/v9"
@@ -234,35 +235,40 @@ func firstNonEmpty(ss ...string) string {
 }
 
 func writeConfigFile(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		var c Config
-		tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
-		if err != nil {
-			return fmt.Errorf("could not parse config template: %w", err)
-		}
-		dir := filepath.Dir(path)
-		if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gomnd
-			return fmt.Errorf("could not create directory '%s': %w", dir, err)
-		}
-
-		f, err := os.Create(path)
-		if err != nil {
-			return fmt.Errorf("could not create file '%s': %w", path, err)
-		}
-		defer func() { _ = f.Close() }()
-
-		m := struct {
-			Config Config
-			Help   map[string]string
-		}{
-			Config: c,
-			Help:   help,
-		}
-		if err := tmpl.Execute(f, m); err != nil {
-			return fmt.Errorf("could not render template: %w", err)
-		}
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return createConfigFile(path)
 	} else if err != nil {
 		return fmt.Errorf("could not stat path '%s': %w", path, err)
+	}
+	return nil
+}
+
+func createConfigFile(path string) error {
+	var c Config
+	tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
+	if err != nil {
+		return fmt.Errorf("could not parse config template: %w", err)
+	}
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gomnd
+		return fmt.Errorf("could not create directory '%s': %w", dir, err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("could not create file '%s': %w", path, err)
+	}
+	defer func() { _ = f.Close() }()
+
+	m := struct {
+		Config Config
+		Help   map[string]string
+	}{
+		Config: c,
+		Help:   help,
+	}
+	if err := tmpl.Execute(f, m); err != nil {
+		return fmt.Errorf("could not render template: %w", err)
 	}
 	return nil
 }

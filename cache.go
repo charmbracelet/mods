@@ -14,15 +14,15 @@ import (
 
 const cacheExt = ".gob"
 
-var ErrInvalidID = errors.New("invalid id")
+var errInvalidID = errors.New("invalid id")
 
 type convoCache struct {
 	dir string
 }
 
 func newCache(dir string) (*convoCache, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, err
+	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint: gomnd
+		return nil, fmt.Errorf("newCache: %w", err)
 	}
 	return &convoCache{
 		dir: dir,
@@ -31,7 +31,7 @@ func newCache(dir string) (*convoCache, error) {
 
 func (c *convoCache) read(id string, messages *[]openai.ChatCompletionMessage) error {
 	if id == "" {
-		return fmt.Errorf("read: %w", ErrInvalidID)
+		return fmt.Errorf("read: %w", errInvalidID)
 	}
 	file, err := os.Open(filepath.Join(c.dir, id+cacheExt))
 	if err != nil {
@@ -47,7 +47,7 @@ func (c *convoCache) read(id string, messages *[]openai.ChatCompletionMessage) e
 
 func (c *convoCache) write(id string, messages *[]openai.ChatCompletionMessage) error {
 	if id == "" {
-		return fmt.Errorf("write: %w", ErrInvalidID)
+		return fmt.Errorf("write: %w", errInvalidID)
 	}
 
 	file, err := os.Create(filepath.Join(c.dir, id+cacheExt))
@@ -65,7 +65,7 @@ func (c *convoCache) write(id string, messages *[]openai.ChatCompletionMessage) 
 
 func (c *convoCache) delete(id string) error {
 	if id == "" {
-		return fmt.Errorf("delete: %w", ErrInvalidID)
+		return fmt.Errorf("delete: %w", errInvalidID)
 	}
 	if err := os.Remove(filepath.Join(c.dir, id+cacheExt)); err != nil {
 		return fmt.Errorf("delete: %w", err)

@@ -51,13 +51,13 @@ func TestCache(t *testing.T) {
 
 	t.Run("invalid id", func(t *testing.T) {
 		t.Run("write", func(t *testing.T) {
-			require.ErrorIs(t, cache.write("", nil), ErrInvalidID)
+			require.ErrorIs(t, cache.write("", nil), errInvalidID)
 		})
 		t.Run("delete", func(t *testing.T) {
-			require.ErrorIs(t, cache.delete(""), ErrInvalidID)
+			require.ErrorIs(t, cache.delete(""), errInvalidID)
 		})
 		t.Run("read", func(t *testing.T) {
-			require.ErrorIs(t, cache.read("", nil), ErrInvalidID)
+			require.ErrorIs(t, cache.read("", nil), errInvalidID)
 		})
 	})
 }
