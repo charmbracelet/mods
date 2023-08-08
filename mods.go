@@ -108,9 +108,9 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
-	case cachePathsMsg:
+	case cacheDetailsMsg:
 		m.Config.cacheWriteToID = msg.WriteID
-		m.Config.cacheWriteToTitle = msg.WriteTitle
+		m.Config.cacheWriteToTitle = msg.Title
 		m.Config.cacheReadFromID = msg.ReadID
 
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
@@ -126,7 +126,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.quit
 		}
 
-		cmds = append(cmds, m.findCachePaths())
+		cmds = append(cmds, m.findCacheOpsDetails())
 
 	case completionInput:
 		if msg.content != "" {
@@ -539,11 +539,11 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	}
 }
 
-type cachePathsMsg struct {
-	WriteID, WriteTitle, ReadID string
+type cacheDetailsMsg struct {
+	WriteID, Title, ReadID string
 }
 
-func (m *Mods) findCachePaths() tea.Cmd {
+func (m *Mods) findCacheOpsDetails() tea.Cmd {
 	return func() tea.Msg {
 		readID := firstNonEmpty(m.Config.Continue, m.Config.Show)
 		writeID := firstNonEmpty(m.Config.Save, m.Config.Continue)
@@ -556,12 +556,11 @@ func (m *Mods) findCachePaths() tea.Cmd {
 		if !sha1reg.Match([]byte(writeID)) {
 			convo, err := m.db.Find(writeID)
 			if err != nil {
-				return modsError{
-					err:    err,
-					reason: "Could not find the conversation",
-				}
+				// its a new conversation with a title
+				writeID = newConversationID()
+			} else {
+				writeID = convo.ID
 			}
-			writeID = convo.ID
 		}
 
 		if readID != "" {
@@ -575,10 +574,10 @@ func (m *Mods) findCachePaths() tea.Cmd {
 			readID = found
 		}
 
-		return cachePathsMsg{
-			WriteID:    writeID,
-			WriteTitle: title,
-			ReadID:     readID,
+		return cacheDetailsMsg{
+			WriteID: writeID,
+			Title:   title,
+			ReadID:  readID,
 		}
 	}
 }
