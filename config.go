@@ -3,10 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/adrg/xdg"
 	"github.com/caarlos0/env/v9"
