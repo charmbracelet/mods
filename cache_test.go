@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -105,7 +106,11 @@ func TestCachedCompletionStream(t *testing.T) {
 	}
 
 	golden := filepath.Join("testdata", t.Name()+".md.golden")
-	content := strings.Join(output, "\n")
+	linebreak := "\n"
+	if runtime.GOOS == "windows" {
+		linebreak = "\r\n"
+	}
+	content := strings.Join(output, linebreak)
 	if *update {
 		require.NoError(t, os.WriteFile(golden, []byte(content), 0o644))
 	}
