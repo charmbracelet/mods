@@ -11,7 +11,6 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/caarlos0/env/v9"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
@@ -176,7 +175,7 @@ func newConfig() (Config, error) {
 	}
 	c.Models = ms
 
-	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isatty.IsTerminal(os.Stdin.Fd())))
+	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isOutputToTerminal()))
 	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
 		return c, fmt.Errorf("could not parse environment into config: %s", err)
 	}

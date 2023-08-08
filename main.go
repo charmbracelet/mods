@@ -43,7 +43,7 @@ func buildVersion() string {
 
 func exitError(mods *Mods, err error, reason string) {
 	mods.Error = &modsError{reason: reason, err: err}
-	fmt.Fprintln(os.Stderr, mods.ErrorView())
+	fmt.Fprintln(os.Stderr, "  "+mods.ErrorView())
 	exit(mods, 1)
 }
 
@@ -122,7 +122,7 @@ func main() {
 		deleteConversation(mods)
 	}
 
-	if isOutputPiped() {
+	if !isOutputToTerminal() {
 		fmt.Println(mods.FormattedOutput())
 	}
 
@@ -133,13 +133,13 @@ func main() {
 	exit(mods, 0)
 }
 
-func isOutputPiped() bool {
+func isOutputToTerminal() bool {
 	stat, err := os.Stdout.Stat()
 	if err != nil {
 		return false
 	}
 
-	return (stat.Mode() & os.ModeNamedPipe) == os.ModeNamedPipe
+	return (stat.Mode() & os.ModeCharDevice) == os.ModeCharDevice
 }
 
 func resetSettings(mods *Mods) {
