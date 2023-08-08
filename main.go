@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -44,7 +43,7 @@ func buildVersion() string {
 
 func exitError(mods *Mods, err error, reason string) {
 	mods.Error = &modsError{reason: reason, err: err}
-	fmt.Println(mods.ErrorView())
+	fmt.Fprintln(os.Stderr, mods.ErrorView())
 	exit(mods, 1)
 }
 
@@ -85,7 +84,7 @@ func main() {
 	}
 
 	if mods.Config.Version {
-		fmt.Println(buildVersion())
+		fmt.Fprintln(os.Stderr, buildVersion())
 		exit(mods, 0)
 	}
 
@@ -103,7 +102,7 @@ func main() {
 		if err := c.Run(); err != nil {
 			exitError(mods, err, "Missing $EDITOR")
 		}
-		fmt.Println("Wrote config file to:", mods.Config.SettingsPath)
+		fmt.Fprintln(os.Stderr, "  Wrote config file to:", mods.Config.SettingsPath)
 		exit(mods, 0)
 	}
 
@@ -116,59 +115,31 @@ func main() {
 	}
 
 	if mods.Config.List {
-		conversations, err := mods.db.List()
-		if err != nil {
-			exitError(mods, err, "Couldn't list saves.")
-		}
-
-		if len(conversations) == 0 {
-			fmt.Printf("  No conversations found.\n")
-			exit(mods, 0)
-		}
-
-		fmt.Printf("  Saved conversations %s:\n", mods.Styles.Comment.Render("("+fmt.Sprint(len(conversations))+")"))
-		for _, conversation := range conversations {
-			fmt.Printf("  %s %s %s\n",
-				mods.Styles.Comment.Render("•"),
-				conversation.ID[:sha1short],
-				mods.Styles.Comment.Render(conversation.Title),
-			)
-		}
-		exit(mods, 0)
+		listConversations(mods)
 	}
 
 	if mods.Config.Delete != "" {
-		convo, err := mods.db.Find(mods.Config.Delete)
-		if err != nil {
-			exitError(mods, err, "Couldn't delete conversation.")
-		}
+		deleteConversation(mods)
+	}
 
-		if err := mods.db.Delete(convo.ID); err != nil {
-			exitError(mods, err, "Couldn't delete conversation.")
-		}
-
-		if err := mods.cache.delete(convo.ID); err != nil {
-			exitError(mods, err, "Couldn't delete conversation.")
-		}
-
-		fmt.Println("  Conversation deleted:", mods.Config.Delete)
-		exit(mods, 0)
+	if isOutputPiped() {
+		fmt.Println(mods.FormattedOutput())
 	}
 
 	if mods.Config.cacheWriteToID != "" {
-		if strings.HasPrefix(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle) {
-			mods.Config.cacheWriteToTitle = firstLine(lastPrompt(mods.messages))
-		}
-
-		if err := mods.db.Save(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle); err != nil {
-			exitError(mods, err, "Couldn't save conversation.")
-		}
-		fmt.Println("\n  Conversation saved:", mods.Config.cacheWriteToID[:sha1short])
-		exit(mods, 0)
+		writeConversation(mods)
 	}
 
-	fmt.Println(mods.FormattedOutput())
 	exit(mods, 0)
+}
+
+func isOutputPiped() bool {
+	stat, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+
+	return (stat.Mode() & os.ModeNamedPipe) == os.ModeNamedPipe
 }
 
 func resetSettings(mods *Mods) {
@@ -199,11 +170,72 @@ func resetSettings(mods *Mods) {
 	if err != nil {
 		exitError(mods, err, "Couldn't write new config file.")
 	}
-	fmt.Println("\n  Settings restored to defaults!")
-	fmt.Printf(
+	fmt.Fprintln(os.Stderr, "\n  Settings restored to defaults!")
+	fmt.Fprintf(os.Stderr,
 		"\n  %s %s\n\n",
 		mods.Styles.Comment.Render("Your old settings are have been saved to:"),
 		mods.Styles.Link.Render(mods.Config.SettingsPath+".bak"),
 	)
 	exit(mods, 0)
+}
+
+func deleteConversation(mods *Mods) {
+	convo, err := mods.db.Find(mods.Config.Delete)
+	if err != nil {
+		exitError(mods, err, "Couldn't delete conversation.")
+	}
+
+	if err := mods.db.Delete(convo.ID); err != nil {
+		exitError(mods, err, "Couldn't delete conversation.")
+	}
+
+	if err := mods.cache.delete(convo.ID); err != nil {
+		exitError(mods, err, "Couldn't delete conversation.")
+	}
+
+	fmt.Fprintln(os.Stderr, "  Conversation deleted:", mods.Config.Delete)
+	exit(mods, 0)
+}
+
+func listConversations(mods *Mods) {
+	conversations, err := mods.db.List()
+	if err != nil {
+		exitError(mods, err, "Couldn't list saves.")
+	}
+
+	if len(conversations) == 0 {
+		fmt.Fprintln(os.Stderr, "  No conversations found.")
+		exit(mods, 0)
+	}
+
+	fmt.Fprintf(
+		os.Stderr,
+		"  Saved conversations %s:\n",
+		mods.Styles.Comment.Render(
+			"("+fmt.Sprint(len(conversations))+")",
+		),
+	)
+	for _, conversation := range conversations {
+		fmt.Fprintf(os.Stderr, "  %s %s %s\n",
+			mods.Styles.Comment.Render("•"),
+			conversation.ID[:sha1short],
+			mods.Styles.Comment.Render(conversation.Title),
+		)
+	}
+	exit(mods, 0)
+}
+
+func writeConversation(mods *Mods) {
+	// if message is a sha1, use the last prompt instead.
+	if sha1reg.MatchString(mods.Config.cacheWriteToTitle) {
+		mods.Config.cacheWriteToTitle = firstLine(lastPrompt(mods.messages))
+	}
+
+	// conversation would already have been written to the file storage, just
+	// need to write to db too.
+	if err := mods.db.Save(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle); err != nil {
+		exitError(mods, err, "Couldn't save conversation.")
+	}
+
+	fmt.Fprintln(os.Stderr, "\n  Conversation saved:", mods.Config.cacheWriteToID[:sha1short])
 }
