@@ -59,6 +59,7 @@ type Mods struct {
 
 	content      []string
 	contentMutex *sync.Mutex
+	clearOnce    *sync.Once
 }
 
 func newMods(r *lipgloss.Renderer) *Mods {
@@ -72,6 +73,7 @@ func newMods(r *lipgloss.Renderer) *Mods {
 		renderer:     r,
 		glamViewport: vp,
 		contentMutex: &sync.Mutex{},
+		clearOnce:    &sync.Once{},
 	}
 }
 
@@ -216,7 +218,7 @@ func (m *Mods) View() string {
 		if !m.Config.Quiet {
 			return m.anim.View()
 		}
-	case responseState, doneState:
+	case responseState:
 		if m.Config.Glamour {
 			if m.viewportNeeded() {
 				return m.glamViewport.View()
@@ -224,16 +226,21 @@ func (m *Mods) View() string {
 			// We don't need the viewport yet.
 			return m.glamOutput
 		}
-		if isOutputTerminal() {
-			return m.Output + "\n"
-		}
 
+		m.clearOnce.Do(func() {
+			m.renderer.Output().ClearLine()
+		})
 		m.contentMutex.Lock()
 		for _, c := range m.content {
 			fmt.Print(c)
 		}
 		m.content = []string{}
 		m.contentMutex.Unlock()
+	case doneState:
+		if isOutputTerminal() {
+			return m.Output + "\n"
+		}
+		fmt.Print("\n")
 	}
 	return ""
 }

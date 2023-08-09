@@ -63,3 +63,5 @@ require (
 	modernc.org/strutil v1.1.3 // indirect
 	modernc.org/token v1.0.1 // indirect
 )
+
+replace github.com/charmbracelet/bubbletea => ../bubbletea
