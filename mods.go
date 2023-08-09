@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
@@ -272,7 +271,7 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 			err:    err,
 		}
 	}
-	db, err := openDB(filepath.Join(cfg.CachePath, "db.sqlite"))
+	db, err := openDB(cfg.CachePath)
 	if err != nil {
 		return modsError{
 			reason: "Could not open db",

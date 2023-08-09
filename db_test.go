@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,8 +8,7 @@ import (
 
 func TestConvoDB(t *testing.T) {
 	const testid = "df31ae23ab8b75b5643c2f846c570997edc71333"
-	path := filepath.Join(t.TempDir(), "sqlite.db")
-	db, err := openDB(path)
+	db, err := openDB(t.TempDir())
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, db.Close())

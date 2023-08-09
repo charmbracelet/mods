@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,7 +8,7 @@ import (
 
 func TestFindCacheOpsDetails(t *testing.T) {
 	newMods := func(t *testing.T) *Mods {
-		db, err := openDB(filepath.Join(t.TempDir(), "sqlite.db"))
+		db, err := openDB(t.TempDir())
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, db.Close()) })
 		return &Mods{

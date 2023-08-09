@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -15,7 +16,10 @@ var (
 )
 
 func openDB(path string) (*convoDB, error) {
-	db, err := sqlx.Open("sqlite", "file://"+path)
+	db, err := sqlx.Open(
+		"sqlite",
+		"file://"+filepath.Join(path, "mods.db"),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create db: %w", err)
 	}
