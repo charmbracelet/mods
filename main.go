@@ -72,7 +72,6 @@ func main() {
 	renderer := lipgloss.NewRenderer(output, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{
 		tea.WithOutput(renderer.Output()),
-		tea.WithoutEmptyRenders(),
 	}
 
 	if !isInputTTY() {
