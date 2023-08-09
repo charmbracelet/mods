@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"sync/atomic"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -65,7 +66,10 @@ func init() {
 }
 
 func main() {
-	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
+	output := &modsOutput{
+		loadingDone: &atomic.Bool{},
+	}
+	renderer := lipgloss.NewRenderer(output, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{
 		tea.WithOutput(renderer.Output()),
 		tea.WithoutEmptyRenders(),
@@ -75,7 +79,7 @@ func main() {
 		opts = append(opts, tea.WithInput(nil))
 	}
 
-	mods := newMods(renderer)
+	mods := newMods(renderer, output)
 	p := tea.NewProgram(mods, opts...)
 	m, err := p.Run()
 	if err != nil {

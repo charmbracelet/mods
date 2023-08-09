@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -57,12 +56,10 @@ type Mods struct {
 	db            *convoDB
 	cache         *convoCache
 
-	content      []string
-	contentMutex *sync.Mutex
-	clearOnce    *sync.Once
+	output *modsOutput
 }
 
-func newMods(r *lipgloss.Renderer) *Mods {
+func newMods(r *lipgloss.Renderer, output *modsOutput) *Mods {
 	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
 	vp := viewport.New(0, 0)
 	vp.GotoBottom()
@@ -72,8 +69,7 @@ func newMods(r *lipgloss.Renderer) *Mods {
 		state:        startState,
 		renderer:     r,
 		glamViewport: vp,
-		contentMutex: &sync.Mutex{},
-		clearOnce:    &sync.Once{},
+		output:       output,
 	}
 }
 
@@ -147,13 +143,9 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = doneState
 			return m, m.quit
 		}
+		m.output.loadingDone.Store(true)
 		if msg.content != "" {
 			m.Output += msg.content
-			if !isOutputTerminal() {
-				m.contentMutex.Lock()
-				m.content = append(m.content, msg.content)
-				m.contentMutex.Unlock()
-			}
 			if m.Config.Glamour {
 				const tabWidth = 4
 				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
@@ -218,29 +210,7 @@ func (m *Mods) View() string {
 		if !m.Config.Quiet {
 			return m.anim.View()
 		}
-	case responseState:
-		if m.Config.Glamour {
-			if m.viewportNeeded() {
-				return m.glamViewport.View()
-			}
-			// We don't need the viewport yet.
-			return m.glamOutput
-		}
-
-		if isOutputTerminal() {
-			return m.Output
-		}
-
-		m.clearOnce.Do(func() {
-			m.renderer.Output().ClearLine()
-		})
-		m.contentMutex.Lock()
-		for _, c := range m.content {
-			fmt.Print(c)
-		}
-		m.content = []string{}
-		m.contentMutex.Unlock()
-	case doneState:
+	case responseState, doneState:
 		if m.Config.Glamour {
 			if m.viewportNeeded() {
 				return m.glamViewport.View()
@@ -249,11 +219,7 @@ func (m *Mods) View() string {
 			return m.glamOutput + "\n"
 		}
 
-		if isOutputTerminal() {
-			return m.Output + "\n"
-		}
-
-		fmt.Print("\n")
+		return m.Output + "\n"
 	}
 	return ""
 }
