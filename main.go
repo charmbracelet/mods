@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/glow/editor"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
 )
@@ -65,13 +64,24 @@ func init() {
 	glamour.LightStyleConfig.CodeBlock.Chroma.Error.BackgroundColor = new(string)
 }
 
-func main() {
-	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
-	opts := []tea.ProgramOption{tea.WithOutput(renderer.Output())}
+func getRenderer() *lipgloss.Renderer {
+	out := os.Stderr
+	if !isOutputTerminal() {
+		out = os.Stdout
+	}
+	return lipgloss.NewRenderer(out, termenv.WithColorCache(true))
+}
 
-	if !isatty.IsTerminal(os.Stdin.Fd()) {
+func main() {
+	renderer := getRenderer()
+	opts := []tea.ProgramOption{
+		tea.WithOutput(renderer.Output()),
+	}
+
+	if !isInputTTY() {
 		opts = append(opts, tea.WithInput(nil))
 	}
+
 	mods := newMods(renderer)
 	p := tea.NewProgram(mods, opts...)
 	m, err := p.Run()
@@ -122,24 +132,11 @@ func main() {
 		deleteConversation(mods)
 	}
 
-	if !isOutputToTerminal() {
-		fmt.Println(mods.FormattedOutput())
-	}
-
 	if mods.Config.cacheWriteToID != "" {
 		writeConversation(mods)
 	}
 
 	exit(mods, 0)
-}
-
-func isOutputToTerminal() bool {
-	stat, err := os.Stdout.Stat()
-	if err != nil {
-		return false
-	}
-
-	return (stat.Mode() & os.ModeCharDevice) == os.ModeCharDevice
 }
 
 func resetSettings(mods *Mods) {

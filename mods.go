@@ -20,7 +20,6 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/exp/ordered"
-	"github.com/mattn/go-isatty"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -233,45 +232,6 @@ func (m Mods) ErrorView() string {
 		s.Render(m.Styles.ErrorHeader.String(), m.Error.reason),
 		s.Render(m.Styles.ErrorDetails.Render(m.Error.Error())),
 	)
-}
-
-// FormattedOutput returns the response from OpenAI with the user configured
-// prefix and standard in settings.
-func (m *Mods) FormattedOutput() string {
-	if m.Config.Glamour {
-		return m.glamOutput
-	}
-	prefixFormat := "> %s\n\n---\n\n%s"
-	stdinFormat := "```\n%s```\n\n---\n\n%s"
-	out := m.Output
-
-	if m.Config.IncludePrompt != 0 && m.Input != "" {
-		if m.Config.IncludePrompt < 0 {
-			out = fmt.Sprintf(stdinFormat, m.Input, out)
-		} else {
-			scanner := bufio.NewScanner(strings.NewReader(m.Input))
-			i := 0
-			in := ""
-			for scanner.Scan() {
-				if i == m.Config.IncludePrompt {
-					break
-				}
-				in += (scanner.Text() + "\n")
-				i++
-			}
-			out = fmt.Sprintf(stdinFormat, in, out)
-		}
-	}
-
-	if m.Config.IncludePromptArgs || m.Config.IncludePrompt != 0 {
-		prefix := m.Config.Prefix
-		if m.Config.Format {
-			prefix = fmt.Sprintf("%s %s", prefix, m.Config.FormatText)
-		}
-		out = fmt.Sprintf(prefixFormat, prefix, out)
-	}
-
-	return out
 }
 
 func (m *Mods) quit() tea.Msg {
@@ -598,7 +558,7 @@ func (m *Mods) findReadID(in string) (string, error) {
 }
 
 func readStdinCmd() tea.Msg {
-	if !isatty.IsTerminal(os.Stdin.Fd()) {
+	if !isInputTTY() {
 		reader := bufio.NewReader(os.Stdin)
 		stdinBytes, err := io.ReadAll(reader)
 		if err != nil {
