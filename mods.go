@@ -227,6 +227,10 @@ func (m *Mods) View() string {
 			return m.glamOutput
 		}
 
+		if isOutputTerminal() {
+			return m.Output
+		}
+
 		m.clearOnce.Do(func() {
 			m.renderer.Output().ClearLine()
 		})
@@ -237,9 +241,18 @@ func (m *Mods) View() string {
 		m.content = []string{}
 		m.contentMutex.Unlock()
 	case doneState:
+		if m.Config.Glamour {
+			if m.viewportNeeded() {
+				return m.glamViewport.View()
+			}
+			// We don't need the viewport yet.
+			return m.glamOutput + "\n"
+		}
+
 		if isOutputTerminal() {
 			return m.Output + "\n"
 		}
+
 		fmt.Print("\n")
 	}
 	return ""
