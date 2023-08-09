@@ -1,11 +1,11 @@
 package main
 
 import (
-	"io"
 	"os"
 	"sync/atomic"
 
 	"github.com/mattn/go-isatty"
+	"github.com/muesli/termenv"
 )
 
 var isInputTTY = OnceValue(func() bool {
@@ -20,7 +20,7 @@ var isOutputTerminal = OnceValue(func() bool {
 	return (stat.Mode() & os.ModeCharDevice) == os.ModeCharDevice
 })
 
-var _ io.ReadWriter = &modsOutput{}
+var _ termenv.File = &modsOutput{}
 
 type modsOutput struct {
 	loadingDone *atomic.Bool
@@ -28,26 +28,26 @@ type modsOutput struct {
 
 // Read implements io.Reader.
 func (o *modsOutput) Read(p []byte) (n int, err error) {
-	if o.loadingDone.Load() && !isOutputTerminal() {
-		return os.Stdout.Read(p)
-	}
+	// if o.loadingDone.Load() && !isOutputTerminal() {
+	// 	return os.Stdout.Read(p)
+	// }
 
 	return os.Stderr.Read(p)
 }
 
 // Write implements io.Writer.
 func (o *modsOutput) Write(p []byte) (n int, err error) {
-	if o.loadingDone.Load() && !isOutputTerminal() {
-		return os.Stdout.Write(p)
-	}
+	// if o.loadingDone.Load() && !isOutputTerminal() {
+	// 	return os.Stdout.Write(p)
+	// }
 
 	return os.Stderr.Write(p)
 }
 
 func (o *modsOutput) Fd() uintptr {
-	if o.loadingDone.Load() && !isOutputTerminal() {
-		return os.Stdout.Fd()
-	}
+	// if o.loadingDone.Load() && !isOutputTerminal() {
+	// 	return os.Stdout.Fd()
+	// }
 
 	return os.Stderr.Fd()
 }
