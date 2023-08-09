@@ -84,7 +84,7 @@ type Config struct {
 	Model             string  `yaml:"default-model" env:"MODEL"`
 	Format            bool    `yaml:"format" env:"FORMAT"`
 	Glamour           bool    `yaml:"glamour" env:"GLAMOUR,expand" envDefault:"${__MODS_GLAMOUR}"`
-	Quiet             bool    `yaml:"quiet" env:"QUIET,expand" envDefault:"${__MODS_QUIET}"`
+	Quiet             bool    `yaml:"quiet" env:"QUIET"`
 	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
 	MaxInputChars     int     `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
 	Temperature       float32 `yaml:"temp" env:"TEMP"`
@@ -176,7 +176,6 @@ func newConfig() (Config, error) {
 	c.Models = ms
 
 	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isOutputTerminal()))
-	// _ = os.Setenv("__MODS_QUIET", fmt.Sprintf("%v", !isOutputTerminal()))
 	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
 		return c, fmt.Errorf("could not parse environment into config: %s", err)
 	}
