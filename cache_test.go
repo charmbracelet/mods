@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -106,11 +106,7 @@ func TestCachedCompletionStream(t *testing.T) {
 	}
 
 	golden := filepath.Join("testdata", t.Name()+".md.golden")
-	linebreak := "\n"
-	if runtime.GOOS == "windows" {
-		linebreak = "\r\n"
-	}
-	content := strings.Join(output, linebreak)
+	content := strings.Join(output, "\n")
 	if *update {
 		require.NoError(t, os.WriteFile(golden, []byte(content), 0o644))
 	}
@@ -118,5 +114,5 @@ func TestCachedCompletionStream(t *testing.T) {
 	bts, err := os.ReadFile(golden)
 	require.NoError(t, err)
 
-	require.Equal(t, string(bts), content)
+	require.Equal(t, string(bytes.ReplaceAll(bts, []byte("\r\n"), []byte("\n"))), content)
 }
