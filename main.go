@@ -64,16 +64,8 @@ func init() {
 	glamour.LightStyleConfig.CodeBlock.Chroma.Error.BackgroundColor = new(string)
 }
 
-func getRenderer() *lipgloss.Renderer {
-	out := os.Stderr
-	if !isOutputTerminal() {
-		out = os.Stdout
-	}
-	return lipgloss.NewRenderer(out, termenv.WithColorCache(true))
-}
-
 func main() {
-	renderer := getRenderer()
+	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
 	opts := []tea.ProgramOption{
 		tea.WithOutput(renderer.Output()),
 	}

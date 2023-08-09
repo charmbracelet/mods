@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -55,6 +56,9 @@ type Mods struct {
 	height        int
 	db            *convoDB
 	cache         *convoCache
+
+	content      []string
+	contentMutex *sync.Mutex
 }
 
 func newMods(r *lipgloss.Renderer) *Mods {
@@ -67,6 +71,7 @@ func newMods(r *lipgloss.Renderer) *Mods {
 		state:        startState,
 		renderer:     r,
 		glamViewport: vp,
+		contentMutex: &sync.Mutex{},
 	}
 }
 
@@ -142,6 +147,11 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.content != "" {
 			m.Output += msg.content
+			if !isOutputTerminal() {
+				m.contentMutex.Lock()
+				m.content = append(m.content, msg.content)
+				m.contentMutex.Unlock()
+			}
 			if m.Config.Glamour {
 				const tabWidth = 4
 				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
@@ -214,7 +224,16 @@ func (m *Mods) View() string {
 			// We don't need the viewport yet.
 			return m.glamOutput
 		}
-		return m.Output + "\n"
+		if isOutputTerminal() {
+			return m.Output + "\n"
+		}
+
+		m.contentMutex.Lock()
+		for _, c := range m.content {
+			fmt.Print(c)
+		}
+		m.content = []string{}
+		m.contentMutex.Unlock()
 	}
 	return ""
 }
