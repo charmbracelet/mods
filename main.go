@@ -43,7 +43,7 @@ func buildVersion() string {
 
 func exitError(mods *Mods, err error, reason string) {
 	mods.Error = &modsError{reason: reason, err: err}
-	fmt.Fprintln(os.Stderr, "  "+mods.ErrorView())
+	fmt.Fprintln(os.Stderr, mods.ErrorView())
 	exit(mods, 1)
 }
 
@@ -106,7 +106,7 @@ func main() {
 		if err := c.Run(); err != nil {
 			exitError(mods, err, "Missing $EDITOR")
 		}
-		fmt.Fprintln(os.Stderr, "  Wrote config file to:", mods.Config.SettingsPath)
+		fmt.Fprintln(os.Stderr, "Wrote config file to:", mods.Config.SettingsPath)
 		exit(mods, 0)
 	}
 
@@ -161,7 +161,7 @@ func resetSettings(mods *Mods) {
 	if err != nil {
 		exitError(mods, err, "Couldn't write new config file.")
 	}
-	fmt.Fprintln(os.Stderr, "\n  Settings restored to defaults!")
+	fmt.Fprintln(os.Stderr, "\nSettings restored to defaults!")
 	fmt.Fprintf(os.Stderr,
 		"\n  %s %s\n\n",
 		mods.Styles.Comment.Render("Your old settings are have been saved to:"),
@@ -184,7 +184,7 @@ func deleteConversation(mods *Mods) {
 		exitError(mods, err, "Couldn't delete conversation.")
 	}
 
-	fmt.Fprintln(os.Stderr, "  Conversation deleted:", mods.Config.Delete)
+	fmt.Fprintln(os.Stderr, "Conversation deleted:", convo.ID[:sha1minLen])
 	exit(mods, 0)
 }
 
@@ -195,19 +195,19 @@ func listConversations(mods *Mods) {
 	}
 
 	if len(conversations) == 0 {
-		fmt.Fprintln(os.Stderr, "  No conversations found.")
+		fmt.Fprintln(os.Stderr, "No conversations found.")
 		exit(mods, 0)
 	}
 
 	fmt.Fprintf(
 		os.Stderr,
-		"  Saved conversations %s:\n",
+		"Saved conversations %s:\n",
 		mods.Styles.Comment.Render(
 			"("+fmt.Sprint(len(conversations))+")",
 		),
 	)
 	for _, conversation := range conversations {
-		fmt.Fprintf(os.Stderr, "  %s %s %s\n",
+		fmt.Fprintf(os.Stderr, "%s %s %s\n",
 			mods.Styles.Comment.Render("•"),
 			conversation.ID[:sha1short],
 			mods.Styles.Comment.Render(conversation.Title),
@@ -231,5 +231,5 @@ func writeConversation(mods *Mods) {
 		exitError(mods, err, "Couldn't save conversation.")
 	}
 
-	fmt.Fprintln(os.Stderr, "\n  Conversation saved:", mods.Config.cacheWriteToID[:sha1short])
+	fmt.Fprintln(os.Stderr, "\nConversation saved:", mods.Config.cacheWriteToID[:sha1short])
 }
