@@ -33,6 +33,14 @@ func TestConvoDB(t *testing.T) {
 		require.Len(t, list, 1)
 	})
 
+	t.Run("save no id", func(t *testing.T) {
+		require.Error(t, db.Save("", "message 1"))
+	})
+
+	t.Run("save no message", func(t *testing.T) {
+		require.Error(t, db.Save(newConversationID(), ""))
+	})
+
 	t.Run("update", func(t *testing.T) {
 		require.NoError(t, db.Save(testid, "message 2"))
 

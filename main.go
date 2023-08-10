@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"runtime/debug"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -217,13 +218,16 @@ func listConversations(mods *Mods) {
 
 func writeConversation(mods *Mods) {
 	// if message is a sha1, use the last prompt instead.
-	if sha1reg.MatchString(mods.Config.cacheWriteToTitle) {
-		mods.Config.cacheWriteToTitle = firstLine(lastPrompt(mods.messages))
+	id := mods.Config.cacheWriteToID
+	title := strings.TrimSpace(mods.Config.cacheWriteToTitle)
+
+	if sha1reg.MatchString(title) || title == "" {
+		title = firstLine(lastPrompt(mods.messages))
 	}
 
 	// conversation would already have been written to the file storage, just
 	// need to write to db too.
-	if err := mods.db.Save(mods.Config.cacheWriteToID, mods.Config.cacheWriteToTitle); err != nil {
+	if err := mods.db.Save(id, title); err != nil {
 		exitError(mods, err, "Couldn't save conversation.")
 	}
 

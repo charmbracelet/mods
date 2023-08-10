@@ -30,12 +30,14 @@ func openDB(path string) (*convoDB, error) {
 		create table if not exists conversations(
 			id string not null primary key,
 			title string not null,
-			updated_at datetime not null default(strftime('%Y-%m-%d %H:%M:%f', 'now'))
+			updated_at datetime not null default(strftime('%Y-%m-%d %H:%M:%f', 'now')),
+			check(id <> ''),
+			check(title <> '')
 		);
 	`); err != nil {
 		return nil, fmt.Errorf("could not migrate db: %w", err)
 	}
-	return &convoDB{db}, nil
+	return &convoDB{db: db}, nil
 }
 
 type convoDB struct {
@@ -54,15 +56,26 @@ func (c *convoDB) Close() error {
 }
 
 func (c *convoDB) Save(id, title string) error {
-	if _, err := c.db.Exec(`
+	res, err := c.db.Exec(`
 		update conversations
 		set title = $2, updated_at = current_timestamp
 		where id = $1
-	`, id, title); err != nil {
+	`, id, title)
+	if err != nil {
 		return fmt.Errorf("Save: %w", err)
 	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("Save: %w", err)
+	}
+
+	if rows > 0 {
+		return nil
+	}
+
 	if _, err := c.db.Exec(`
-		insert or ignore into conversations (id, title)
+		insert into conversations (id, title)
 		values ($1, $2)
 	`, id, title); err != nil {
 		return fmt.Errorf("Save: %w", err)
