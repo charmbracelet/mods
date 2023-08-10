@@ -10,6 +10,6 @@ var isInputTTY = OnceValue(func() bool {
 	return isatty.IsTerminal(os.Stdin.Fd())
 })
 
-var isOutputTerminal = OnceValue(func() bool {
+var isOutputTTY = OnceValue(func() bool {
 	return isatty.IsTerminal(os.Stdout.Fd())
 })

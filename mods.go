@@ -149,7 +149,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.content != "" {
 			m.Output += msg.content
-			if !isOutputTerminal() {
+			if !isOutputTTY() {
 				m.contentMutex.Lock()
 				m.content = append(m.content, msg.content)
 				m.contentMutex.Unlock()
@@ -227,7 +227,7 @@ func (m *Mods) View() string {
 			return m.glamOutput
 		}
 
-		if isOutputTerminal() {
+		if isOutputTTY() {
 			return m.Output
 		}
 
@@ -249,7 +249,7 @@ func (m *Mods) View() string {
 			return m.glamOutput + "\n"
 		}
 
-		if isOutputTerminal() {
+		if isOutputTTY() {
 			return m.Output + "\n"
 		}
 

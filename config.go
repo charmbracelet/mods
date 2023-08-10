@@ -175,7 +175,7 @@ func newConfig() (Config, error) {
 	}
 	c.Models = ms
 
-	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isOutputTerminal()))
+	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isOutputTTY()))
 	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
 		return c, fmt.Errorf("could not parse environment into config: %s", err)
 	}
