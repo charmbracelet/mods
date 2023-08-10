@@ -46,14 +46,68 @@ You can set a custom save message:
 mods --save='title' 'first 2 primes'
 ```
 
-### Continue
+### Continue latest
 
-You can
+You can continue the latest conversation and save it with a new title using
+`--continue=title`:
 
-### Conversation branchinb
+```bash
+mods 'first 2 primes'
+mods --continue='primes as json' 'format as json'
+```
+
+### Continue from specific conversation, save with a new title
+
+```bash
+mods --save='naturals' 'first 5 natural numbers'
+mods --continue='naturals' --save='naturals.json' 'format as json'
+```
+
+### Conversation branching
+
+You can use the `--continue` and `--save` to branch out conversations, for
+instance:
+
+```bash
+mods --save='naturals' 'first 5 natural numbers'
+mods --continue='naturals' --save='naturals.json' 'format as json'
+mods --continue='naturals' --save='naturals.yaml' 'format as yaml'
+```
+
+With this you'll end up with 3 conversations: `naturals`, `naturals.json`, and
+`naturals.yaml`.
 
 ## List conversations
 
+You can list your previous conversations with:
+
+```bash
+mods --list
+# or
+mods -l
+```
+
 ## Show a previous conversation
 
+You can also show a previous conversation by ID or title, e.g.:
+
+```bash
+mods --show='naturals'
+mods --show='a2e2'
+```
+
+For titles, the match should be exact.
+For IDs, only the first 4 chars are needed. If it matches multiple
+conversations, you can add more chars until it matches a single one again.
+
 ## Delete a conversation
+
+You can also delete conversations by title or ID, same as `--show`, different
+flag:
+
+```bash
+mods --delete='naturals'
+mods --delete='a2e2'
+```
+
+Keep in mind that these operations are not reversible.
