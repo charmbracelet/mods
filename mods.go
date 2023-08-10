@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 	"unicode"
@@ -331,6 +332,17 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		switch mod.API {
 		case "openai":
 			if key == "" {
+				prg := os.Getenv("OPENAI_API_KEY_PRG")
+
+				if prg != "" {
+					out, err := exec.Command(prg).Output()
+
+					if err == nil {
+						key = string(out[:])
+					}
+				}
+			}
+			if key == "" {
 				key = os.Getenv("OPENAI_API_KEY")
 			}
 			if key == "" {
@@ -344,6 +356,17 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				ccfg.BaseURL = api.BaseURL
 			}
 		case "azure", "azure-ad":
+			if key == "" {
+				prg := os.Getenv("AZURE_OPENAI_KEY_PRG")
+
+				if prg != "" {
+					out, err := exec.Command(prg).Output()
+
+					if err == nil {
+						key = string(out[:])
+					}
+				}
+			}
 			if key == "" {
 				key = os.Getenv("AZURE_OPENAI_KEY")
 			}
