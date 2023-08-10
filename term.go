@@ -11,9 +11,5 @@ var isInputTTY = OnceValue(func() bool {
 })
 
 var isOutputTerminal = OnceValue(func() bool {
-	stat, err := os.Stdout.Stat()
-	if err != nil {
-		return false
-	}
-	return (stat.Mode() & os.ModeCharDevice) == os.ModeCharDevice
+	return isatty.IsTerminal(os.Stdout.Fd())
 })
