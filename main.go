@@ -164,7 +164,7 @@ func resetSettings(mods *Mods) {
 	fmt.Fprintln(os.Stderr, "\nSettings restored to defaults!")
 	fmt.Fprintf(os.Stderr,
 		"\n  %s %s\n\n",
-		mods.Styles.Comment.Render("Your old settings are have been saved to:"),
+		mods.Styles.Comment.Render("Your old settings have been saved to:"),
 		mods.Styles.Link.Render(mods.Config.SettingsPath+".bak"),
 	)
 	exit(mods, 0)
