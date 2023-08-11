@@ -1,16 +1,12 @@
 package main
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestFindCacheOpsDetails(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("sqlite tests failing on windows for some reason")
-	}
 	newMods := func(t *testing.T) *Mods {
 		db := testDB(t)
 		return &Mods{

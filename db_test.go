@@ -1,7 +1,6 @@
 package main
 
 import (
-	"runtime"
 	"testing"
 	"time"
 
@@ -18,10 +17,6 @@ func testDB(tb testing.TB) *convoDB {
 }
 
 func TestConvoDB(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("sqlite tests failing on windows for some reason")
-	}
-
 	const testid = "df31ae23ab8b75b5643c2f846c570997edc71333"
 
 	t.Run("list-empty", func(t *testing.T) {
