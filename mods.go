@@ -544,25 +544,12 @@ type cacheDetailsMsg struct {
 
 func (m *Mods) findCacheOpsDetails() tea.Cmd {
 	return func() tea.Msg {
+		continueLast := m.Config.ContinueLast || (m.Config.Continue != "" && m.Config.Save == "")
 		readID := firstNonEmpty(m.Config.Continue, m.Config.Show)
 		writeID := firstNonEmpty(m.Config.Save, m.Config.Continue)
 		title := writeID
 
-		if writeID == "" {
-			writeID = newConversationID()
-		}
-
-		if !sha1reg.Match([]byte(writeID)) {
-			convo, err := m.db.Find(writeID)
-			if err != nil {
-				// its a new conversation with a title
-				writeID = newConversationID()
-			} else {
-				writeID = convo.ID
-			}
-		}
-
-		if readID != "" {
+		if readID != "" || continueLast {
 			found, err := m.findReadID(readID)
 			if err != nil {
 				return modsError{
@@ -571,6 +558,25 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 				}
 			}
 			readID = found
+		}
+
+		// if we are continuing last, update the existing conversation
+		if continueLast {
+			writeID = readID
+		}
+
+		if writeID == "" {
+			writeID = newConversationID()
+		}
+
+		if !sha1reg.MatchString(writeID) {
+			convo, err := m.db.Find(writeID)
+			if err != nil {
+				// its a new conversation with a title
+				writeID = newConversationID()
+			} else {
+				writeID = convo.ID
+			}
 		}
 
 		return cacheDetailsMsg{

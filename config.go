@@ -39,6 +39,7 @@ var help = map[string]string{
 	"settings":        "Open settings in your $EDITOR.",
 	"reset-settings":  "Reset settings to the defaults, your old settings file will be backed up.",
 	"continue":        "Continue from the last response or a given save name.",
+	"continue-last":   "Continue from the last response.",
 	"no-cache":        "Disables caching of the prompt/response.",
 	"save":            "Saves the current conversation with the given name.",
 	"list":            "Lists saved conversations.",
@@ -108,6 +109,7 @@ type Config struct {
 	Version           bool
 	Settings          bool
 	SettingsPath      string
+	ContinueLast      bool
 	Continue          string
 	Save              string
 	Show              string
@@ -192,6 +194,7 @@ func newConfig() (Config, error) {
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
 	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
 	flag.StringVarP(&c.Continue, "continue", "c", "", help["continue"])
+	flag.BoolVarP(&c.ContinueLast, "continue-last", "C", false, help["continue-last"])
 	flag.BoolVarP(&c.List, "list", "l", c.List, help["list"])
 	flag.IntVar(&c.MaxRetries, "max-retries", c.MaxRetries, help["max-retries"])
 	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, help["no-limit"])

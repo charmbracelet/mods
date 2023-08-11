@@ -50,6 +50,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
 		require.Equal(t, id, dets.ReadID)
+		require.Equal(t, id, dets.WriteID)
 	})
 
 	t.Run("continue title", func(t *testing.T) {
@@ -60,9 +61,22 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
 		require.Equal(t, id, dets.ReadID)
+		require.Equal(t, id, dets.WriteID)
 	})
 
-	t.Run("continue latest", func(t *testing.T) {
+	t.Run("continue last", func(t *testing.T) {
+		mods := newMods(t)
+		id := newConversationID()
+		require.NoError(t, mods.db.Save(id, "message 1"))
+		mods.Config.ContinueLast = true
+		msg := mods.findCacheOpsDetails()()
+		dets := msg.(cacheDetailsMsg)
+		require.Equal(t, id, dets.ReadID)
+		require.Equal(t, id, dets.WriteID)
+		require.Empty(t, dets.Title)
+	})
+
+	t.Run("continue last with name", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
 		require.NoError(t, mods.db.Save(id, "message 1"))
@@ -72,6 +86,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		require.Equal(t, id, dets.ReadID)
 		require.Equal(t, "message 2", dets.Title)
 		require.NotEmpty(t, dets.WriteID)
+		require.Equal(t, id, dets.WriteID)
 	})
 
 	t.Run("write", func(t *testing.T) {
