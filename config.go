@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,7 +11,6 @@ import (
 	"github.com/adrg/xdg"
 	"github.com/caarlos0/env/v9"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mattn/go-isatty"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
@@ -43,6 +43,7 @@ var help = map[string]string{
 	"save":            "Saves the current conversation with the given name.",
 	"list":            "Lists saved conversations.",
 	"delete":          "Deletes a saved conversation with the given name.",
+	"show":            "Show a saved conversation with the given name",
 }
 
 // Model represents the LLM model used in the API call.
@@ -109,8 +110,11 @@ type Config struct {
 	SettingsPath      string
 	Continue          string
 	Save              string
+	Show              string
 	List              bool
 	Delete            string
+
+	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
 }
 
 type flagParseError struct {
@@ -171,7 +175,7 @@ func newConfig() (Config, error) {
 	}
 	c.Models = ms
 
-	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isatty.IsTerminal(os.Stdin.Fd())))
+	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isOutputTTY()))
 	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
 		return c, fmt.Errorf("could not parse environment into config: %s", err)
 	}
@@ -199,15 +203,16 @@ func newConfig() (Config, error) {
 	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
 	flag.StringVar(&c.Save, "save", c.Save, help["save"])
 	flag.StringVar(&c.Delete, "delete", c.Delete, help["delete"])
+	flag.StringVar(&c.Show, "show", c.Show, help["show"])
 	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
-	flag.Lookup("continue").NoOptDefVal = defaultCacheName
 	flag.Usage = usage
 	flag.CommandLine.SortFlags = false
 	flag.CommandLine.Init("", flag.ContinueOnError)
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return c, flagParseError{err}
 	}
+
 	if c.Format && c.FormatText == "" {
 		c.FormatText = "Format the response as markdown without enclosing backticks."
 	}
@@ -219,36 +224,50 @@ func newConfig() (Config, error) {
 	return c, nil
 }
 
+func firstNonEmpty(ss ...string) string {
+	for _, s := range ss {
+		if strings.TrimSpace(s) != "" {
+			return s
+		}
+	}
+	return ""
+}
+
 func writeConfigFile(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		var c Config
-		tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
-		if err != nil {
-			return fmt.Errorf("could not parse config template: %w", err)
-		}
-		dir := filepath.Dir(path)
-		if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gomnd
-			return fmt.Errorf("could not create directory '%s': %w", dir, err)
-		}
-
-		f, err := os.Create(path)
-		if err != nil {
-			return fmt.Errorf("could not create file '%s': %w", path, err)
-		}
-		defer func() { _ = f.Close() }()
-
-		m := struct {
-			Config Config
-			Help   map[string]string
-		}{
-			Config: c,
-			Help:   help,
-		}
-		if err := tmpl.Execute(f, m); err != nil {
-			return fmt.Errorf("could not render template: %w", err)
-		}
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return createConfigFile(path)
 	} else if err != nil {
 		return fmt.Errorf("could not stat path '%s': %w", path, err)
+	}
+	return nil
+}
+
+func createConfigFile(path string) error {
+	var c Config
+	tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
+	if err != nil {
+		return fmt.Errorf("could not parse config template: %w", err)
+	}
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gomnd
+		return fmt.Errorf("could not create directory '%s': %w", dir, err)
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("could not create file '%s': %w", path, err)
+	}
+	defer func() { _ = f.Close() }()
+
+	m := struct {
+		Config Config
+		Help   map[string]string
+	}{
+		Config: c,
+		Help:   help,
+	}
+	if err := tmpl.Execute(f, m); err != nil {
+		return fmt.Errorf("could not render template: %w", err)
 	}
 	return nil
 }

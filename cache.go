@@ -1,101 +1,120 @@
 package main
 
 import (
-	"encoding/gob"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
+	"sync"
 
 	openai "github.com/sashabaranov/go-openai"
 )
 
-var cacheExt = ".gob"
-var defaultCacheName = "_current" + cacheExt
+const cacheExt = ".gob"
 
-func readCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
-	if !strings.HasSuffix(name, cacheExt) {
-		name += cacheExt
+var errInvalidID = errors.New("invalid id")
+
+type convoCache struct {
+	dir string
+}
+
+func newCache(dir string) (*convoCache, error) {
+	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint: gomnd
+		return nil, fmt.Errorf("newCache: %w", err)
 	}
+	return &convoCache{
+		dir: dir,
+	}, nil
+}
 
-	file, err := os.Open(filepath.Join(cfg.CachePath, name))
+func (c *convoCache) read(id string, messages *[]openai.ChatCompletionMessage) error {
+	if id == "" {
+		return fmt.Errorf("read: %w", errInvalidID)
+	}
+	file, err := os.Open(filepath.Join(c.dir, id+cacheExt))
 	if err != nil {
-		return err
+		return fmt.Errorf("read: %w", err)
 	}
 	defer file.Close() //nolint:errcheck
 
-	decoder := gob.NewDecoder(file)
-	err = decoder.Decode(messages)
-	if err != nil {
-		return err
+	if err := decode(file, messages); err != nil {
+		return fmt.Errorf("read: %w", err)
 	}
-
 	return nil
 }
 
-func writeCache(name string, messages *[]openai.ChatCompletionMessage, cfg Config) error {
-	if !strings.HasSuffix(name, cacheExt) {
-		name += cacheExt
+func (c *convoCache) write(id string, messages *[]openai.ChatCompletionMessage) error {
+	if id == "" {
+		return fmt.Errorf("write: %w", errInvalidID)
 	}
 
-	err := os.MkdirAll(cfg.CachePath, 0o700)
+	file, err := os.Create(filepath.Join(c.dir, id+cacheExt))
 	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(filepath.Join(cfg.CachePath, name))
-	if err != nil {
-		return err
+		return fmt.Errorf("write: %w", err)
 	}
 	defer file.Close() //nolint:errcheck
 
-	encoder := gob.NewEncoder(file)
-	err = encoder.Encode(messages)
-	if err != nil {
-		return err
+	if err := encode(file, messages); err != nil {
+		return fmt.Errorf("write: %w", err)
 	}
 
 	return nil
 }
 
-func saveCache(cfg Config) error {
-	inputFile, err := os.Open(filepath.Join(cfg.CachePath, defaultCacheName))
-	if err != nil {
-		return err
+func (c *convoCache) delete(id string) error {
+	if id == "" {
+		return fmt.Errorf("delete: %w", errInvalidID)
 	}
-	defer inputFile.Close() //nolint:errcheck
-	outputFile, err := os.Create(filepath.Join(cfg.CachePath, cfg.Save+cacheExt))
-	if err != nil {
-		return err
+	if err := os.Remove(filepath.Join(c.dir, id+cacheExt)); err != nil {
+		return fmt.Errorf("delete: %w", err)
 	}
-	defer outputFile.Close() //nolint:errcheck
-	_, err = io.Copy(outputFile, inputFile)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func listCache(cfg Config) ([]string, error) {
-	entries, err := os.ReadDir(cfg.CachePath)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, err
+var _ chatCompletionReceiver = &cachedCompletionStream{}
+
+type cachedCompletionStream struct {
+	messages []openai.ChatCompletionMessage
+	read     int
+	m        sync.Mutex
+}
+
+func (c *cachedCompletionStream) Close() { /* noop */ }
+func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, error) {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	if c.read == len(c.messages) {
+		return openai.ChatCompletionStreamResponse{}, io.EOF
 	}
 
-	files := []string{}
-	for _, entry := range entries {
-		if entry.IsDir() || entry.Name() == defaultCacheName {
-			continue
+	msg := c.messages[c.read]
+	prefix := ""
+
+	switch msg.Role {
+	case openai.ChatMessageRoleSystem:
+		prefix += "\n**Response**: "
+	case openai.ChatMessageRoleUser:
+		if c.read > 0 {
+			prefix = "\n---\n"
 		}
-
-		files = append(files, strings.TrimSuffix(entry.Name(), cacheExt))
+		prefix += "\n**Prompt**: "
+	case openai.ChatMessageRoleAssistant:
+		prefix += "\n**Assistant**: "
+	case openai.ChatMessageRoleFunction:
+		prefix += "\n**Function**: "
 	}
 
-	return files, nil
-}
-
-func deleteCache(cfg Config) error {
-	return os.Remove(filepath.Join(cfg.CachePath, cfg.Delete+cacheExt))
+	c.read++
+	return openai.ChatCompletionStreamResponse{
+		Choices: []openai.ChatCompletionStreamChoice{
+			{
+				Delta: openai.ChatCompletionStreamChoiceDelta{
+					Content: prefix + msg.Content + "\n",
+					Role:    msg.Role,
+				},
+			},
+		},
+	}, nil
 }
