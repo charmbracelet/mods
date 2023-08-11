@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -310,7 +311,7 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 			err:    err,
 		}
 	}
-	db, err := openDB(cfg.CachePath)
+	db, err := openDB("file://" + filepath.Join(cfg.CachePath, "mods.db"))
 	if err != nil {
 		return modsError{
 			reason: "Could not open db",

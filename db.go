@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -15,11 +14,8 @@ var (
 	errManyMatches = errors.New("multiple conversations matched the input")
 )
 
-func openDB(path string) (*convoDB, error) {
-	db, err := sqlx.Open(
-		"sqlite",
-		"file://"+filepath.Join(path, "mods.db"),
-	)
+func openDB(ds string) (*convoDB, error) {
+	db, err := sqlx.Open("sqlite", ds)
 	if err != nil {
 		return nil, fmt.Errorf("could not create db: %w", err)
 	}
@@ -56,11 +52,11 @@ func (c *convoDB) Close() error {
 }
 
 func (c *convoDB) Save(id, title string) error {
-	res, err := c.db.Exec(`
+	res, err := c.db.Exec(c.db.Rebind(`
 		update conversations
-		set title = $2, updated_at = current_timestamp
-		where id = $1
-	`, id, title)
+		set title = ?, updated_at = current_timestamp
+		where id = ?
+	`), title, id)
 	if err != nil {
 		return fmt.Errorf("Save: %w", err)
 	}
@@ -74,10 +70,10 @@ func (c *convoDB) Save(id, title string) error {
 		return nil
 	}
 
-	if _, err := c.db.Exec(`
+	if _, err := c.db.Exec(c.db.Rebind(`
 		insert into conversations (id, title)
-		values ($1, $2)
-	`, id, title); err != nil {
+		values (?, ?)
+	`), id, title); err != nil {
 		return fmt.Errorf("Save: %w", err)
 	}
 
@@ -85,10 +81,10 @@ func (c *convoDB) Save(id, title string) error {
 }
 
 func (c *convoDB) Delete(id string) error {
-	if _, err := c.db.Exec(`
+	if _, err := c.db.Exec(c.db.Rebind(`
 		delete from conversations
-		where id = $1
-	`, id); err != nil {
+		where id = ?
+	`), id); err != nil {
 		return fmt.Errorf("Delete: %w", err)
 	}
 	return nil
@@ -102,15 +98,42 @@ func (c *convoDB) FindHEAD() (*Conversation, error) {
 	return &convo, nil
 }
 
+func (c *convoDB) findByExactTitle(result *[]Conversation, in string) error {
+	if err := c.db.Select(result, c.db.Rebind(`
+		select *
+		from conversations
+		where title = ?
+	`), in); err != nil {
+		return fmt.Errorf("findByExactTitle: %w", err)
+	}
+	return nil
+}
+
+func (c *convoDB) findByIDOrTitle(result *[]Conversation, in string) error {
+	if err := c.db.Select(result, c.db.Rebind(`
+		select *
+		from conversations
+		where id like ?
+		or title = ?
+	`), in+"%", in); err != nil {
+		return fmt.Errorf("findByIDOrTitle: %w", err)
+	}
+	return nil
+}
+
 func (c *convoDB) Find(in string) (*Conversation, error) {
 	var conversations []Conversation
-	q := fmt.Sprintf(`select * from conversations where id like %q or title = %q`, in+"%", in)
+	var err error
+
 	if len(in) < sha1minLen {
-		q = fmt.Sprintf(`select * from conversations where title = %q`, in)
+		err = c.findByExactTitle(&conversations, in)
+	} else {
+		err = c.findByIDOrTitle(&conversations, in)
 	}
-	if err := c.db.Select(&conversations, q); err != nil {
+	if err != nil {
 		return nil, fmt.Errorf("Find: %w", err)
 	}
+
 	if len(conversations) > 1 {
 		return nil, errManyMatches
 	}
@@ -122,7 +145,10 @@ func (c *convoDB) Find(in string) (*Conversation, error) {
 
 func (c *convoDB) List() ([]Conversation, error) {
 	var convos []Conversation
-	if err := c.db.Select(&convos, "select * from conversations order by updated_at desc"); err != nil {
+	if err := c.db.Select(
+		&convos,
+		"select * from conversations order by updated_at desc",
+	); err != nil {
 		return convos, fmt.Errorf("List: %w", err)
 	}
 	return convos, nil

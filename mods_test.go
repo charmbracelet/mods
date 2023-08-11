@@ -12,9 +12,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		t.Skip("sqlite tests failing on windows for some reason")
 	}
 	newMods := func(t *testing.T) *Mods {
-		db, err := openDB(t.TempDir())
-		require.NoError(t, err)
-		t.Cleanup(func() { require.NoError(t, db.Close()) })
+		db := testDB(t)
 		return &Mods{
 			db: db,
 		}
