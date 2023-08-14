@@ -38,13 +38,13 @@ var help = map[string]string{
 	"status-text":     "Text to show while generating.",
 	"settings":        "Open settings in your $EDITOR.",
 	"reset-settings":  "Reset settings to the defaults, your old settings file will be backed up.",
-	"continue":        "Continue from the last response or a given save name.",
+	"continue":        "Continue from the last response or a given save title.",
 	"continue-last":   "Continue from the last response.",
 	"no-cache":        "Disables caching of the prompt/response.",
-	"save":            "Saves the current conversation with the given name.",
+	"title":           "Saves the current conversation with the given title.",
 	"list":            "Lists saved conversations.",
-	"delete":          "Deletes a saved conversation with the given name.",
-	"show":            "Show a saved conversation with the given name",
+	"delete":          "Deletes a saved conversation with the given title or ID.",
+	"show":            "Show a saved conversation with the given title or ID",
 }
 
 // Model represents the LLM model used in the API call.
@@ -111,7 +111,7 @@ type Config struct {
 	SettingsPath      string
 	ContinueLast      bool
 	Continue          string
-	Save              string
+	Title             string
 	Show              string
 	List              bool
 	Delete            string
@@ -204,7 +204,7 @@ func newConfig() (Config, error) {
 	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, help["fanciness"])
 	flag.StringVar(&c.StatusText, "status-text", c.StatusText, help["status-text"])
 	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
-	flag.StringVar(&c.Save, "save", c.Save, help["save"])
+	flag.StringVarP(&c.Title, "title", "t", c.Title, help["title"])
 	flag.StringVar(&c.Delete, "delete", c.Delete, help["delete"])
 	flag.StringVar(&c.Show, "show", c.Show, help["show"])
 	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])

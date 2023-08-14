@@ -91,7 +91,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 
 	t.Run("write", func(t *testing.T) {
 		mods := newMods(t)
-		mods.Config.Save = "some title"
+		mods.Config.Title = "some title"
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
 		require.Empty(t, dets.ReadID)
@@ -104,7 +104,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
 		require.NoError(t, mods.db.Save(id, "message 1"))
-		mods.Config.Save = "some title"
+		mods.Config.Title = "some title"
 		mods.Config.Continue = id[:10]
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
@@ -119,7 +119,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
 		require.NoError(t, mods.db.Save(id, "message 1"))
-		mods.Config.Save = "some title"
+		mods.Config.Title = "some title"
 		mods.Config.Continue = "message 1"
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)

@@ -231,5 +231,10 @@ func writeConversation(mods *Mods) {
 		exitError(mods, err, "Couldn't save conversation.")
 	}
 
-	fmt.Fprintln(os.Stderr, "\nConversation saved:", mods.Config.cacheWriteToID[:sha1short])
+	fmt.Fprintln(
+		os.Stderr,
+		"\nConversation saved:",
+		mods.Config.cacheWriteToID[:sha1short],
+		mods.Styles.Comment.Render(mods.Config.cacheWriteToTitle),
+	)
 }
