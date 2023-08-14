@@ -56,6 +56,13 @@ mods 'first 2 primes'
 mods --continue='primes as json' 'format as json'
 ```
 
+### Untitled continue latest
+
+```bash
+mods 'first 2 primes'
+mods --continue-last 'format as json'
+```
+
 ### Continue from specific conversation, save with a new title
 
 ```bash
