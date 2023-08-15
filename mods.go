@@ -304,6 +304,13 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 			return modsError{err, "There was an error loading your config file."}
 		}
 	}
+
+	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil { //nolint: gomnd
+		return modsError{
+			reason: "Could not create cache directory",
+			err:    err,
+		}
+	}
 	cache, err := newCache(cfg.CachePath)
 	if err != nil {
 		return modsError{
@@ -311,7 +318,7 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 			err:    err,
 		}
 	}
-	db, err := openDB("file://" + filepath.Join(cfg.CachePath, "mods.db"))
+	db, err := openDB(filepath.Join(cfg.CachePath, "mods.db"))
 	if err != nil {
 		return modsError{
 			reason: "Could not open db",

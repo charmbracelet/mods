@@ -20,9 +20,6 @@ type convoCache struct {
 }
 
 func newCache(dir string) (*convoCache, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint: gomnd
-		return nil, fmt.Errorf("newCache: %w", err)
-	}
 	return &convoCache{
 		dir: dir,
 	}, nil

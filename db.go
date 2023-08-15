@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"modernc.org/sqlite"
 	_ "modernc.org/sqlite"
 )
 
@@ -14,13 +15,31 @@ var (
 	errManyMatches = errors.New("multiple conversations matched the input")
 )
 
+func handleSqliteErr(err error) error {
+	sqerr := &sqlite.Error{}
+	if errors.As(err, &sqerr) {
+		return fmt.Errorf(
+			"%w: %s",
+			sqerr,
+			sqlite.ErrorCodeString[sqerr.Code()],
+		)
+	}
+	return err
+}
+
 func openDB(ds string) (*convoDB, error) {
 	db, err := sqlx.Open("sqlite", ds)
 	if err != nil {
-		return nil, fmt.Errorf("could not create db: %w", err)
+		return nil, fmt.Errorf(
+			"could not create db: %w",
+			handleSqliteErr(err),
+		)
 	}
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("could not ping db: %w", err)
+		return nil, fmt.Errorf(
+			"could not ping db: %w",
+			handleSqliteErr(err),
+		)
 	}
 	if _, err := db.Exec(`
 		create table if not exists conversations(
