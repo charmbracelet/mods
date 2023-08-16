@@ -311,13 +311,7 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 			err:    err,
 		}
 	}
-	cache, err := newCache(cfg.CachePath)
-	if err != nil {
-		return modsError{
-			reason: "Could not init cache",
-			err:    err,
-		}
-	}
+	cache := newCache(cfg.CachePath)
 	db, err := openDB(filepath.Join(cfg.CachePath, "mods.db"))
 	if err != nil {
 		return modsError{
