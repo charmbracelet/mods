@@ -17,7 +17,7 @@ import (
 var update = flag.Bool("update", false, "update .golden files")
 
 func TestCache(t *testing.T) {
-	cache, err := newCache(filepath.Join(t.TempDir(), "foo", "bar", "cache"))
+	cache, err := newCache(filepath.Join(t.TempDir()))
 	require.NoError(t, err)
 
 	t.Run("read non-existent", func(t *testing.T) {
