@@ -19,10 +19,8 @@ type convoCache struct {
 	dir string
 }
 
-func newCache(dir string) (*convoCache, error) {
-	return &convoCache{
-		dir: dir,
-	}, nil
+func newCache(dir string) *convoCache {
+	return &convoCache{dir}
 }
 
 func (c *convoCache) read(id string, messages *[]openai.ChatCompletionMessage) error {
