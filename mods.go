@@ -551,9 +551,9 @@ type cacheDetailsMsg struct {
 
 func (m *Mods) findCacheOpsDetails() tea.Cmd {
 	return func() tea.Msg {
-		continueLast := m.Config.ContinueLast || (m.Config.Continue != "" && m.Config.Save == "")
+		continueLast := m.Config.ContinueLast || (m.Config.Continue != "" && m.Config.Title == "")
 		readID := firstNonEmpty(m.Config.Continue, m.Config.Show)
-		writeID := firstNonEmpty(m.Config.Save, m.Config.Continue)
+		writeID := firstNonEmpty(m.Config.Title, m.Config.Continue)
 		title := writeID
 
 		if readID != "" || continueLast {
