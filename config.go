@@ -190,7 +190,7 @@ func newConfig() (Config, error) {
 	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, help["prompt"])
 	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, help["prompt-args"])
 	flag.BoolVarP(&c.Quiet, "quiet", "q", c.Quiet, help["quiet"])
-	flag.BoolVarP(&c.Settings, "settings", "s", false, help["settings"])
+	flag.BoolVar(&c.Settings, "settings", false, help["settings"])
 	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
 	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
 	flag.StringVarP(&c.Continue, "continue", "c", "", help["continue"])
@@ -206,7 +206,7 @@ func newConfig() (Config, error) {
 	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
 	flag.StringVarP(&c.Title, "title", "t", c.Title, help["title"])
 	flag.StringVar(&c.Delete, "delete", c.Delete, help["delete"])
-	flag.StringVar(&c.Show, "show", c.Show, help["show"])
+	flag.StringVarP(&c.Show, "show", "s", c.Show, help["show"])
 	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
 	flag.Lookup("prompt").NoOptDefVal = "-1"
 	flag.Usage = usage
