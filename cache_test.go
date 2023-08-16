@@ -17,15 +17,14 @@ import (
 var update = flag.Bool("update", false, "update .golden files")
 
 func TestCache(t *testing.T) {
-	cache, err := newCache(filepath.Join(t.TempDir()))
-	require.NoError(t, err)
-
 	t.Run("read non-existent", func(t *testing.T) {
+		cache := newCache(t.TempDir())
 		err := cache.read("super-fake", &[]openai.ChatCompletionMessage{})
 		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("write", func(t *testing.T) {
+		cache := newCache(t.TempDir())
 		messages := []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,
@@ -45,18 +44,23 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
+		cache := newCache(t.TempDir())
+		cache.write("fake", &[]openai.ChatCompletionMessage{})
 		require.NoError(t, cache.delete("fake"))
 		require.ErrorIs(t, cache.read("fake", nil), os.ErrNotExist)
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
 		t.Run("write", func(t *testing.T) {
+			cache := newCache(t.TempDir())
 			require.ErrorIs(t, cache.write("", nil), errInvalidID)
 		})
 		t.Run("delete", func(t *testing.T) {
+			cache := newCache(t.TempDir())
 			require.ErrorIs(t, cache.delete(""), errInvalidID)
 		})
 		t.Run("read", func(t *testing.T) {
+			cache := newCache(t.TempDir())
 			require.ErrorIs(t, cache.read("", nil), errInvalidID)
 		})
 	})
