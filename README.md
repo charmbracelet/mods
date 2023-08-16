@@ -81,8 +81,8 @@ sudo yum install mods
 
 Or, download it:
 
-* [Packages][releases] are available in Debian and RPM formats
-* [Binaries][releases] are available for Linux, macOS, and Windows
+- [Packages][releases] are available in Debian and RPM formats
+- [Binaries][releases] are available for Linux, macOS, and Windows
 
 [releases]: https://github.com/charmbracelet/mods/releases
 
@@ -91,6 +91,19 @@ Or, just install it with `go`:
 ```sh
 go install github.com/charmbracelet/mods@latest
 ```
+
+## Saving conversations
+
+All conversations are automatically saved, and can be identified by their latest
+prompt.
+
+A saved conversation has a SHA1 identifier and a title, similar to how Git
+works.
+
+Not so similar to Git, conversations can be updated, keeping their id but having
+a different title.
+
+Check the [examples document](./Examples.md) for usage examples.
 
 ## Settings
 
@@ -108,25 +121,23 @@ You can add new models to the settings with `mods -s`. You can also specify a
 model and an API endpoint with `-m` and `-a` to use models not in the settings
 file.
 
-#### Save
+#### Title
 
-`--save`
+`-t`, --title`
 
-Saves the conversation with the given name. Continue the conversation back with
-`-c` and pass the name.
+Set a custom save title for the conversation.
 
+#### Continue last
+
+`-C`, --continue-last`
+
+Continues the previous conversation.
 
 #### Continue
 
 `-c`, `--continue`
 
-Continue from the last response or a given name.
-
-Additional instances of `-c` will continue the conversation. Once a prompt is
-sent without `-c`.
-
-Providing a name will automatically save the conversation with that name if it
-doesn't already exist.
+Continue from the last response or a given title or SHA1.
 
 #### List
 
@@ -134,11 +145,17 @@ doesn't already exist.
 
 Lists all saved conversations.
 
+#### Show
+
+`-s`, `--show`
+
+Show the saved conversation the given title or SHA1.
+
 #### Delete
 
 `--delete`
 
-Deletes the saved conversation with the given name.
+Deletes the saved conversation with the given title or SHA1.
 
 #### Format As Markdown
 
@@ -222,10 +239,10 @@ Backup your old settings file and reset everything to the defaults.
 
 `--no-cache`, `MODS_NO_CACHE`
 
-Disable saving and reading the most recent prompt/response.
-
+Disables conversation saving.
 
 #### HTTP Proxy
+
 `-x`, `--http-proxy`, `MODS_HTTP_PROXY`
 
 Use the HTTP proxy to the connect the API endpoints.
@@ -234,18 +251,19 @@ Use the HTTP proxy to the connect the API endpoints.
 
 We’d love to hear your thoughts on this project. Feel free to drop us a note.
 
-* [Twitter](https://twitter.com/charmcli)
-* [The Fediverse](https://mastodon.social/@charmcli)
-* [Discord](https://charm.sh/chat)
+- [Twitter](https://twitter.com/charmcli)
+- [The Fediverse](https://mastodon.social/@charmcli)
+- [Discord](https://charm.sh/chat)
 
 ## License
 
 [MIT](https://github.com/charmbracelet/mods/raw/main/LICENSE)
 
-***
+---
 
 Part of [Charm](https://charm.sh).
 
 <a href="https://charm.sh/"><img alt="The Charm logo" width="400" src="https://stuff.charm.sh/charm-badge.jpg" /></a>
 
+<!--prettier-ignore-->
 Charm热爱开源 • Charm loves open source
