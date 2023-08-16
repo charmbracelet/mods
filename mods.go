@@ -413,8 +413,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
 
-		// TODO: fake openai thingy for testing?
-
 		default:
 			ccfg = openai.DefaultConfig(key)
 			if api.BaseURL != "" {
