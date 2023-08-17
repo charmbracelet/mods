@@ -1,4 +1,4 @@
-# Mods spec
+# Mods Examples
 
 ## Regular usage
 
@@ -6,7 +6,7 @@ By default:
 
 - all messages go to `STDERR`
 - all prompts are saved with the first line of the prompt as the title
-- glamour is used by default
+- glamour is used by default if `STDOUT` is a TTY
 
 ### Basic
 
@@ -38,12 +38,12 @@ echo 'as json' | mods 'first 2 primes' | jq .
 In this case, the "Generating" animation will go to `STDERR`, but the response
 will be streamed to `STDOUT`.
 
-### Custom save title
+### Custom title
 
-You can set a custom save message:
+You can set a custom title:
 
 ```bash
-mods --save='title' 'first 2 primes'
+mods --title='title' 'first 2 primes'
 ```
 
 ### Continue latest
@@ -66,19 +66,19 @@ mods --continue-last 'format as json'
 ### Continue from specific conversation, save with a new title
 
 ```bash
-mods --save='naturals' 'first 5 natural numbers'
-mods --continue='naturals' --save='naturals.json' 'format as json'
+mods --title='naturals' 'first 5 natural numbers'
+mods --continue='naturals' --title='naturals.json' 'format as json'
 ```
 
 ### Conversation branching
 
-You can use the `--continue` and `--save` to branch out conversations, for
+You can use the `--continue` and `--title` to branch out conversations, for
 instance:
 
 ```bash
-mods --save='naturals' 'first 5 natural numbers'
-mods --continue='naturals' --save='naturals.json' 'format as json'
-mods --continue='naturals' --save='naturals.yaml' 'format as yaml'
+mods --title='naturals' 'first 5 natural numbers'
+mods --continue='naturals' --title='naturals.json' 'format as json'
+mods --continue='naturals' --title='naturals.yaml' 'format as yaml'
 ```
 
 With this you'll end up with 3 conversations: `naturals`, `naturals.json`, and
@@ -100,7 +100,7 @@ You can also show a previous conversation by ID or title, e.g.:
 
 ```bash
 mods --show='naturals'
-mods --show='a2e2'
+mods -s='a2e2'
 ```
 
 For titles, the match should be exact.
