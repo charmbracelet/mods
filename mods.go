@@ -468,37 +468,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		)
 		ae := &openai.APIError{}
 		if errors.As(err, &ae) {
-			switch ae.HTTPStatusCode {
-			case http.StatusNotFound:
-				if mod.Fallback != "" {
-					m.Config.Model = mod.Fallback
-					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
-				}
-				return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", cfg.Model, cfg.API)}
-			case http.StatusBadRequest:
-				if ae.Code == "context_length_exceeded" {
-					pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
-					if cfg.NoLimit {
-						return pe
-					}
-					return m.retry(content[:len(content)-10], pe)
-				}
-				// bad request (do not retry)
-				return modsError{err: err, reason: "OpenAI API request error."}
-			case http.StatusUnauthorized:
-				// invalid auth or key (do not retry)
-				return modsError{err: err, reason: "Invalid OpenAI API key."}
-			case http.StatusTooManyRequests:
-				// rate limiting or engine overload (wait and retry)
-				return m.retry(content, modsError{err: err, reason: "You’ve hit your OpenAI API rate limit."})
-			case http.StatusInternalServerError:
-				if mod.API == "openai" {
-					return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
-				}
-				return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", mod.Name, mod.API)}
-			default:
-				return m.retry(content, modsError{err: err, reason: "Unknown API error."})
-			}
+			return m.handleAPIError(ae, cfg, mod, content)
 		}
 
 		if err != nil {
@@ -506,6 +476,40 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
+	}
+}
+
+func (m *Mods) handleAPIError(err *openai.APIError, cfg Config, mod Model, content string) tea.Msg {
+	switch err.HTTPStatusCode {
+	case http.StatusNotFound:
+		if mod.Fallback != "" {
+			m.Config.Model = mod.Fallback
+			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
+		}
+		return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", cfg.Model, cfg.API)}
+	case http.StatusBadRequest:
+		if err.Code == "context_length_exceeded" {
+			pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
+			if cfg.NoLimit {
+				return pe
+			}
+			return m.retry(content[:len(content)-10], pe)
+		}
+		// bad request (do not retry)
+		return modsError{err: err, reason: "OpenAI API request error."}
+	case http.StatusUnauthorized:
+		// invalid auth or key (do not retry)
+		return modsError{err: err, reason: "Invalid OpenAI API key."}
+	case http.StatusTooManyRequests:
+		// rate limiting or engine overload (wait and retry)
+		return m.retry(content, modsError{err: err, reason: "You’ve hit your OpenAI API rate limit."})
+	case http.StatusInternalServerError:
+		if mod.API == "openai" {
+			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
+		}
+		return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", mod.Name, mod.API)}
+	default:
+		return m.retry(content, modsError{err: err, reason: "Unknown API error."})
 	}
 }
 
