@@ -100,7 +100,7 @@ prompt.
 A saved conversation has a SHA1 identifier and a title, similar to how Git
 works.
 
-Not so similar to Git, conversations can be updated, keeping their id but having
+Unlike Git, conversations can be updated, keeping their id but having
 a different title.
 
 Check the [examples document](./Examples.md) for usage examples.
