@@ -122,9 +122,9 @@ and flags.
 Mods uses `gpt-4` with OpenAI by default but you can specify any model as long
 as your account has access to it or you have installed locally with LocalAI.
 
-You can add new models to the settings with `mods -s`. You can also specify a
-model and an API endpoint with `-m` and `-a` to use models not in the settings
-file.
+You can add new models to the settings with `mods --settings`.
+You can also specify a model and an API endpoint with `-m` and `-a`
+to use models not in the settings file.
 
 #### Title
 
@@ -167,7 +167,7 @@ Deletes the saved conversation with the given title or SHA1.
 `-f`, `--format`, `MODS_FORMAT`
 
 Ask the LLM to format the response as markdown. You can edit the text passed to
-the LLM with `mods -s` then changing the `format-text` value.
+the LLM with `mods --settings` then changing the `format-text` value.
 
 #### Max Tokens
 
