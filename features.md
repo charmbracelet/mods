@@ -1,4 +1,4 @@
-# Mods Examples
+# Mods Features
 
 ## Regular usage
 

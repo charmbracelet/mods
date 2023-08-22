@@ -30,13 +30,15 @@ result, optionally asking the LLM to format the response as Markdown. This
 gives you a way to "question" the output of a command. Mods will also work on
 standard in or an argument supplied prompt individually.
 
-Be sure to check out the [examples](examples.md).
+Be sure to check out the [examples](examples.md) and a list of all the
+[features](features.md).
 
 ## Installation
 
 Mods works with OpenAI compatible endpoints. By default, Mods is configured to
 support OpenAI's official API and a LocalAI installation running on port 8080.
-You can configure additional endpoints in your settings file by running `mods -s`.
+You can configure additional endpoints in your settings file by running
+`mods --settings`.
 
 ### OpenAI
 
@@ -46,13 +48,13 @@ which you can get [from here](https://platform.openai.com/account/api-keys).
 
 Mods can also use the [Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service)
 service. Set the `AZURE_OPENAI_KEY` environment variable and configure your
-Azure endpoint with `mods -s`.
+Azure endpoint with `mods --settings`.
 
 ### LocalAI
 
 LocalAI allows you to run a multitude of models locally. Mods works with the
 GPT4ALL-J model as setup in [this tutorial](https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model).
-You can define more LocalAI models and endpoints with `mods -s`.
+You can define more LocalAI models and endpoints with `mods --settings`.
 
 ### Install Mods
 
@@ -94,21 +96,24 @@ go install github.com/charmbracelet/mods@latest
 
 ## Saving conversations
 
-All conversations are automatically saved, and can be identified by their latest
-prompt.
+All conversations are automatically saved, and can be identified by their
+latest prompt.
 
 A saved conversation has a SHA1 identifier and a title, similar to how Git
 works.
 
-Unlike Git, conversations can be updated, keeping their id but having
-a different title.
+Unlike Git, conversations can be updated, keeping their SHA1, but changing their
+title.
 
-Check the [examples document](./Examples.md) for usage examples.
+Check the [features document](./features.md) for more details.
 
 ## Settings
 
+`--settings`
+
 Mods lets you tune your query with a variety of settings. You can configure
-Mods with `mods -s` or pass the settings as environment variables and flags.
+Mods with `mods --settings` or pass the settings as environment variables
+and flags.
 
 #### Model
 
@@ -123,13 +128,13 @@ file.
 
 #### Title
 
-`-t`, --title`
+`-t`, `--title`
 
 Set a custom save title for the conversation.
 
 #### Continue last
 
-`-C`, --continue-last`
+`-C`, `--continue-last`
 
 Continues the previous conversation.
 
