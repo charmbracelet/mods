@@ -123,13 +123,13 @@ file.
 
 #### Title
 
-`-t`, --title`
+`-t`, `--title`
 
 Set a custom save title for the conversation.
 
 #### Continue last
 
-`-C`, --continue-last`
+`-C`, `--continue-last`
 
 Continues the previous conversation.
 
