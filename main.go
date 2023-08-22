@@ -92,12 +92,6 @@ func main() {
 		exit(mods, 0)
 	}
 
-	if mods.Config.ShowHelp || (mods.Input == "" && mods.Config.Prefix == "" &&
-		mods.Config.Show == "" && mods.Config.Delete == "" && !mods.Config.List) {
-		flag.Usage()
-		exit(mods, 0)
-	}
-
 	if mods.Config.Settings {
 		c := editor.Cmd(mods.Config.SettingsPath)
 		c.Stdin = os.Stdin
@@ -112,6 +106,15 @@ func main() {
 
 	if mods.Config.ResetSettings {
 		resetSettings(mods)
+	}
+
+	if mods.Config.ShowHelp || (mods.Input == "" &&
+		mods.Config.Prefix == "" &&
+		mods.Config.Show == "" &&
+		mods.Config.Delete == "" &&
+		!mods.Config.List) {
+		flag.Usage()
+		exit(mods, 0)
 	}
 
 	if mods.Config.Show != "" {
