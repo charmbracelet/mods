@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.24.3-0.20230809191442-6a459f3bfe5e
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/charmbracelet/glow v1.5.1
-	github.com/charmbracelet/lipgloss v0.7.1
+	github.com/charmbracelet/lipgloss v0.8.0
 	github.com/charmbracelet/x/exp/ordered v0.0.0-20230707174939-50fb4f48b5b3
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lucasb-eyer/go-colorful v1.2.0
