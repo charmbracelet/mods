@@ -7,7 +7,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"modernc.org/sqlite"
-	_ "modernc.org/sqlite"
 )
 
 var (
