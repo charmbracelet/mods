@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 
+	"github.com/adrg/xdg"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/glow/editor"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
-	flag "github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 )
 
 // Build vars.
@@ -25,7 +27,7 @@ var (
 )
 
 func buildVersion() string {
-	result := "mods version " + version
+	result := version
 	if commit != "" {
 		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
 	}
@@ -48,10 +50,9 @@ func exitError(mods *Mods, err error, reason string) {
 }
 
 func exit(mods *Mods, status int) {
-	if mods.db == nil {
-		os.Exit(status)
+	if mods != nil && db != nil {
+		_ = db.Close()
 	}
-	_ = mods.db.Close()
 	os.Exit(status)
 }
 
@@ -63,90 +64,219 @@ func init() {
 	// copying).
 	glamour.DarkStyleConfig.CodeBlock.Chroma.Error.BackgroundColor = new(string)
 	glamour.LightStyleConfig.CodeBlock.Chroma.Error.BackgroundColor = new(string)
+
+	rootCmd.Version = buildVersion()
+	rootCmd.SetUsageFunc(usageFunc)
+	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		return flagParseError{err: err}
+	})
+
+}
+
+var (
+	config Config
+	db     *convoDB
+	cache  *convoCache
+
+	stdoutRenderer = lipgloss.DefaultRenderer()
+	stdoutStyles   = makeStyles(stdoutRenderer)
+	stderrRenderer = lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
+	stderrStyles   = makeStyles(stderrRenderer)
+
+	rootCmd = &cobra.Command{
+		Use:           "mods",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Example: func() string {
+			desc, example := randomExample()
+			return fmt.Sprintf(
+				"  %s\n  %s\n",
+				stdoutStyles.Comment.Render("# "+desc),
+				cheapHighlighting(stdoutStyles, example),
+			)
+		}(),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			config.Prefix = strings.Join(args, " ")
+
+			stdin := cmd.InOrStdin()
+			stdout := cmd.OutOrStdout()
+			stderr := cmd.ErrOrStderr()
+			opts := []tea.ProgramOption{
+				tea.WithOutput(stderrRenderer.Output()),
+				tea.WithoutEmptyRenders(),
+			}
+
+			if !isInputTTY() {
+				opts = append(opts, tea.WithInput(nil))
+			}
+
+			mods := newMods(stderrRenderer)
+			p := tea.NewProgram(mods, opts...)
+			m, err := p.Run()
+			if err != nil {
+				exitError(mods, err, "Couldn't start Bubble Tea program.")
+				return modsError{reason: "Couldn't start Bubble Tea program.", err: err}
+			}
+
+			mods = m.(*Mods)
+			if mods.Error != nil {
+				return mods.Error
+			}
+
+			if config.Settings {
+				c := editor.Cmd(config.SettingsPath)
+				c.Stdin = stdin
+				c.Stdout = stdout
+				c.Stderr = stderr
+				if err := c.Run(); err != nil {
+					return modsError{reason: "Missing $EDITOR", err: err}
+				}
+
+				fmt.Fprintln(stderr, "Wrote config file to:", config.SettingsPath)
+				return nil
+			}
+
+			if config.ResetSettings {
+				resetSettings(mods)
+			}
+
+			if config.ShowHelp || (mods.Input == "" &&
+				config.Prefix == "" &&
+				config.Show == "" &&
+				config.Delete == "" &&
+				!config.List) {
+				return cmd.Usage()
+			}
+
+			if config.Show != "" {
+				return nil
+			}
+
+			if config.List {
+				listConversations(mods)
+			}
+
+			if config.Delete != "" {
+				deleteConversation(mods)
+			}
+
+			if config.cacheWriteToID != "" {
+				writeConversation(mods)
+			}
+
+			return nil
+		},
+	}
+)
+
+func initFlags() {
+	flags := rootCmd.Flags()
+	flags.StringVarP(&config.Model, "model", "m", config.Model, stdoutStyles.FlagDesc.Render(help["model"]))
+	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles.FlagDesc.Render(help["api"]))
+	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles.FlagDesc.Render(help["http-proxy"]))
+	flags.BoolVarP(&config.Format, "format", "f", config.Format, stdoutStyles.FlagDesc.Render(help["format"]))
+	flags.BoolVarP(&config.Glamour, "glamour", "g", config.Glamour, stdoutStyles.FlagDesc.Render(help["glamour"]))
+	flags.IntVarP(&config.IncludePrompt, "prompt", "P", config.IncludePrompt, stdoutStyles.FlagDesc.Render(help["prompt"]))
+	flags.BoolVarP(&config.IncludePromptArgs, "prompt-args", "p", config.IncludePromptArgs, stdoutStyles.FlagDesc.Render(help["prompt-args"]))
+	flags.BoolVarP(&config.Quiet, "quiet", "q", config.Quiet, stdoutStyles.FlagDesc.Render(help["quiet"]))
+	flags.BoolVar(&config.Settings, "settings", false, stdoutStyles.FlagDesc.Render(help["settings"]))
+	flags.BoolVarP(&config.ShowHelp, "help", "h", false, stdoutStyles.FlagDesc.Render(help["help"]))
+	flags.BoolVarP(&config.Version, "version", "v", false, stdoutStyles.FlagDesc.Render(help["version"]))
+	flags.StringVarP(&config.Continue, "continue", "c", "", stdoutStyles.FlagDesc.Render(help["continue"]))
+	flags.BoolVarP(&config.ContinueLast, "continue-last", "C", false, stdoutStyles.FlagDesc.Render(help["continue-last"]))
+	flags.BoolVarP(&config.List, "list", "l", config.List, stdoutStyles.FlagDesc.Render(help["list"]))
+	flags.IntVar(&config.MaxRetries, "max-retries", config.MaxRetries, stdoutStyles.FlagDesc.Render(help["max-retries"]))
+	flags.BoolVar(&config.NoLimit, "no-limit", config.NoLimit, stdoutStyles.FlagDesc.Render(help["no-limit"]))
+	flags.IntVar(&config.MaxTokens, "max-tokens", config.MaxTokens, stdoutStyles.FlagDesc.Render(help["max-tokens"]))
+	flags.Float32Var(&config.Temperature, "temp", config.Temperature, stdoutStyles.FlagDesc.Render(help["temp"]))
+	flags.Float32Var(&config.TopP, "topp", config.TopP, stdoutStyles.FlagDesc.Render(help["topp"]))
+	flags.UintVar(&config.Fanciness, "fanciness", config.Fanciness, stdoutStyles.FlagDesc.Render(help["fanciness"]))
+	flags.StringVar(&config.StatusText, "status-text", config.StatusText, stdoutStyles.FlagDesc.Render(help["status-text"]))
+	flags.BoolVar(&config.ResetSettings, "reset-settings", config.ResetSettings, stdoutStyles.FlagDesc.Render(help["reset-settings"]))
+	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles.FlagDesc.Render(help["title"]))
+	flags.StringVar(&config.Delete, "delete", config.Delete, stdoutStyles.FlagDesc.Render(help["delete"]))
+	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles.FlagDesc.Render(help["show"]))
+	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles.FlagDesc.Render(help["no-cache"]))
+	flags.Lookup("prompt").NoOptDefVal = "-1"
+	flags.SortFlags = false
+	// flags.Init("", flag.ContinueOnError)
+
+	if config.Format && config.FormatText == "" {
+		config.FormatText = "Format the response as markdown without enclosing backticks."
+	}
+	if config.CachePath == "" {
+		config.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
+	}
 }
 
 func main() {
-	renderer := lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
-	opts := []tea.ProgramOption{
-		tea.WithOutput(renderer.Output()),
-		tea.WithoutEmptyRenders(),
-	}
-
-	if !isInputTTY() {
-		opts = append(opts, tea.WithInput(nil))
-	}
-
-	mods := newMods(renderer)
-	p := tea.NewProgram(mods, opts...)
-	m, err := p.Run()
+	var err error
+	config, err = newConfig()
 	if err != nil {
-		exitError(mods, err, "Couldn't start Bubble Tea program.")
-	}
-	mods = m.(*Mods)
-	if mods.Error != nil {
-		exit(mods, 1)
+		fmt.Fprintf(os.Stderr, "There was an error loading your config file.\n")
+		os.Exit(1)
 	}
 
-	if mods.Config.Version {
-		fmt.Fprintln(os.Stderr, buildVersion())
-		exit(mods, 0)
+	// XXX: this must come after creating the config.
+	initFlags()
+
+	cache = newCache(config.CachePath)
+	db, err = openDB(filepath.Join(config.CachePath, "db"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not open db: %s\n", err)
+		os.Exit(1)
 	}
 
-	if mods.Config.Settings {
-		c := editor.Cmd(mods.Config.SettingsPath)
-		c.Stdin = os.Stdin
-		c.Stdout = os.Stdout
-		c.Stderr = os.Stderr
-		if err := c.Run(); err != nil {
-			exitError(mods, err, "Missing $EDITOR")
+	defer db.Close() //nolint:errcheck
+
+	// XXX: since mods doesn't have any subcommands, Cobra won't create the
+	// default `completion` command. Explicitly create it here.
+	rootCmd.InitDefaultCompletionCmd()
+
+	if err := rootCmd.Execute(); err != nil {
+		const horizontalEdgePadding = 2
+		s := stderrRenderer.NewStyle().Padding(0, horizontalEdgePadding)
+		format := "%s\n\n"
+
+		var args []interface{}
+		if ferr, ok := err.(flagParseError); ok {
+			format += "%s\n\n"
+			args = []interface{}{
+				fmt.Errorf("Check out %s %s", stderrStyles.InlineCode.Render("mods -h"), stderrStyles.Comment.Render("for help.")),
+				fmt.Sprintf("Missing flag: %s", stderrStyles.InlineCode.Render(ferr.Flag())),
+			}
+		} else if merr, ok := err.(modsError); ok {
+			format += "%s\n\n"
+			args = []interface{}{
+				s.Render(stderrStyles.ErrorHeader.String(), merr.reason),
+				s.Render(stderrStyles.ErrorDetails.Render(err.Error())),
+			}
+		} else {
+			args = []interface{}{
+				s.Render(stderrStyles.ErrorDetails.Render(err.Error())),
+			}
 		}
-		fmt.Fprintln(os.Stderr, "Wrote config file to:", mods.Config.SettingsPath)
-		exit(mods, 0)
-	}
 
-	if mods.Config.ResetSettings {
-		resetSettings(mods)
-	}
+		fmt.Fprintf(os.Stderr,
+			format,
+			args...,
+		)
 
-	if mods.Config.ShowHelp || (mods.Input == "" &&
-		mods.Config.Prefix == "" &&
-		mods.Config.Show == "" &&
-		mods.Config.Delete == "" &&
-		!mods.Config.List) {
-		flag.Usage()
-		exit(mods, 0)
+		os.Exit(1)
 	}
-
-	if mods.Config.Show != "" {
-		exit(mods, 0)
-	}
-
-	if mods.Config.List {
-		listConversations(mods)
-	}
-
-	if mods.Config.Delete != "" {
-		deleteConversation(mods)
-	}
-
-	if mods.Config.cacheWriteToID != "" {
-		writeConversation(mods)
-	}
-
-	exit(mods, 0)
 }
 
 func resetSettings(mods *Mods) {
-	_, err := os.Stat(mods.Config.SettingsPath)
+	_, err := os.Stat(config.SettingsPath)
 	if err != nil {
 		exitError(mods, err, "Couldn't read config file.")
 	}
-	inputFile, err := os.Open(mods.Config.SettingsPath)
+	inputFile, err := os.Open(config.SettingsPath)
 	if err != nil {
 		exitError(mods, err, "Couldn't open config file.")
 	}
 	defer inputFile.Close() //nolint:errcheck
-	outputFile, err := os.Create(mods.Config.SettingsPath + ".bak")
+	outputFile, err := os.Create(config.SettingsPath + ".bak")
 	if err != nil {
 		exitError(mods, err, "Couldn't backup config file.")
 	}
@@ -156,11 +286,11 @@ func resetSettings(mods *Mods) {
 		exitError(mods, err, "Couldn't write config file.")
 	}
 	// The copy was successful, so now delete the original file
-	err = os.Remove(mods.Config.SettingsPath)
+	err = os.Remove(config.SettingsPath)
 	if err != nil {
 		exitError(mods, err, "Couldn't remove config file.")
 	}
-	err = writeConfigFile(mods.Config.SettingsPath)
+	err = writeConfigFile(config.SettingsPath)
 	if err != nil {
 		exitError(mods, err, "Couldn't write new config file.")
 	}
@@ -168,22 +298,22 @@ func resetSettings(mods *Mods) {
 	fmt.Fprintf(os.Stderr,
 		"\n  %s %s\n\n",
 		mods.Styles.Comment.Render("Your old settings have been saved to:"),
-		mods.Styles.Link.Render(mods.Config.SettingsPath+".bak"),
+		mods.Styles.Link.Render(config.SettingsPath+".bak"),
 	)
 	exit(mods, 0)
 }
 
 func deleteConversation(mods *Mods) {
-	convo, err := mods.db.Find(mods.Config.Delete)
+	convo, err := db.Find(config.Delete)
 	if err != nil {
 		exitError(mods, err, "Couldn't delete conversation.")
 	}
 
-	if err := mods.db.Delete(convo.ID); err != nil {
+	if err := db.Delete(convo.ID); err != nil {
 		exitError(mods, err, "Couldn't delete conversation.")
 	}
 
-	if err := mods.cache.delete(convo.ID); err != nil {
+	if err := cache.delete(convo.ID); err != nil {
 		exitError(mods, err, "Couldn't delete conversation.")
 	}
 
@@ -192,7 +322,7 @@ func deleteConversation(mods *Mods) {
 }
 
 func listConversations(mods *Mods) {
-	conversations, err := mods.db.List()
+	conversations, err := db.List()
 	if err != nil {
 		exitError(mods, err, "Couldn't list saves.")
 	}
@@ -221,8 +351,8 @@ func listConversations(mods *Mods) {
 
 func writeConversation(mods *Mods) {
 	// if message is a sha1, use the last prompt instead.
-	id := mods.Config.cacheWriteToID
-	title := strings.TrimSpace(mods.Config.cacheWriteToTitle)
+	id := config.cacheWriteToID
+	title := strings.TrimSpace(config.cacheWriteToTitle)
 
 	if sha1reg.MatchString(title) || title == "" {
 		title = firstLine(lastPrompt(mods.messages))
@@ -230,14 +360,14 @@ func writeConversation(mods *Mods) {
 
 	// conversation would already have been written to the file storage, just
 	// need to write to db too.
-	if err := mods.db.Save(id, title); err != nil {
+	if err := db.Save(id, title); err != nil {
 		exitError(mods, err, "Couldn't save conversation.")
 	}
 
 	fmt.Fprintln(
 		os.Stderr,
 		"\nConversation saved:",
-		mods.Config.cacheWriteToID[:sha1short],
-		mods.Styles.Comment.Render(mods.Config.cacheWriteToTitle),
+		config.cacheWriteToID[:sha1short],
+		stderrStyles.Comment.Render(config.cacheWriteToTitle),
 	)
 }

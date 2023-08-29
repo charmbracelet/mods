@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -38,7 +37,6 @@ const (
 // Mods is the Bubble Tea model that manages reading stdin and querying the
 // OpenAI API.
 type Mods struct {
-	Config        Config
 	Output        string
 	Input         string
 	Styles        styles
@@ -55,8 +53,6 @@ type Mods struct {
 	anim          tea.Model
 	width         int
 	height        int
-	db            *convoDB
-	cache         *convoCache
 
 	content      []string
 	contentMutex *sync.Mutex
@@ -106,7 +102,7 @@ func (m modsError) Error() string {
 
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
-	return m.loadConfigCmd
+	return m.findCacheOpsDetails()
 }
 
 // Update implements tea.Model.
@@ -115,30 +111,19 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case cacheDetailsMsg:
-		m.Config.cacheWriteToID = msg.WriteID
-		m.Config.cacheWriteToTitle = msg.Title
-		m.Config.cacheReadFromID = msg.ReadID
+		config.cacheWriteToID = msg.WriteID
+		config.cacheWriteToTitle = msg.Title
+		config.cacheReadFromID = msg.ReadID
 
-		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
+		m.anim = newAnim(config.Fanciness, config.StatusText, m.renderer, m.Styles)
 		m.state = configLoadedState
 		cmds = append(cmds, readStdinCmd, m.anim.Init())
-
-	case initMsg:
-		m.Config = msg.config
-		m.db = msg.db
-		m.cache = msg.cache
-
-		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
-			return m, m.quit
-		}
-
-		cmds = append(cmds, m.findCacheOpsDetails())
 
 	case completionInput:
 		if msg.content != "" {
 			m.Input = msg.content
 		}
-		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" {
+		if msg.content == "" && config.Prefix == "" && config.Show == "" {
 			return m, m.quit
 		}
 		m.state = requestState
@@ -155,7 +140,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.content = append(m.content, msg.content)
 				m.contentMutex.Unlock()
 			}
-			if m.Config.Glamour {
+			if config.Glamour {
 				const tabWidth = 4
 				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
 				oldHeight := m.glamHeight
@@ -216,11 +201,11 @@ func (m *Mods) View() string {
 	case errorState:
 		return m.ErrorView()
 	case requestState:
-		if !m.Config.Quiet {
+		if !config.Quiet {
 			return m.anim.View()
 		}
 	case responseState:
-		if m.Config.Glamour {
+		if config.Glamour {
 			if m.viewportNeeded() {
 				return m.glamViewport.View()
 			}
@@ -242,7 +227,7 @@ func (m *Mods) View() string {
 		m.content = []string{}
 		m.contentMutex.Unlock()
 	case doneState:
-		if m.Config.Glamour {
+		if config.Glamour {
 			if m.viewportNeeded() {
 				return m.glamViewport.View()
 			}
@@ -282,7 +267,7 @@ func (m *Mods) quit() tea.Msg {
 
 func (m *Mods) retry(content string, err modsError) tea.Msg {
 	m.retries++
-	if m.retries >= m.Config.MaxRetries {
+	if m.retries >= config.MaxRetries {
 		return err
 	}
 	wait := time.Millisecond * 100 * time.Duration(math.Pow(2, float64(m.retries))) //nolint:gomnd
@@ -290,50 +275,8 @@ func (m *Mods) retry(content string, err modsError) tea.Msg {
 	return completionInput{content}
 }
 
-func (m *Mods) loadConfigCmd() tea.Msg {
-	cfg, err := newConfig()
-	if err != nil {
-		var fpe flagParseError
-		switch {
-		case errors.As(err, &fpe):
-			me := modsError{}
-			me.reason = fmt.Sprintf("Missing flag: %s", m.Styles.InlineCode.Render(fpe.Flag()))
-			me.err = fmt.Errorf("Check out %s %s", m.Styles.InlineCode.Render("mods -h"), m.Styles.Comment.Render("for help."))
-			return me
-		default:
-			return modsError{err, "There was an error loading your config file."}
-		}
-	}
-
-	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil { //nolint: gomnd
-		return modsError{
-			reason: "Could not create cache directory",
-			err:    err,
-		}
-	}
-	cache := newCache(cfg.CachePath)
-	db, err := openDB(filepath.Join(cfg.CachePath, "mods.db"))
-	if err != nil {
-		return modsError{
-			reason: "Could not open db",
-			err:    err,
-		}
-	}
-	return initMsg{
-		config: cfg,
-		db:     db,
-		cache:  cache,
-	}
-}
-
-type initMsg struct {
-	config Config
-	db     *convoDB
-	cache  *convoCache
-}
-
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
-	if m.Config.Show != "" {
+	if config.Show != "" {
 		return m.readFromCache()
 	}
 
@@ -344,7 +287,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var key string
 		var ccfg openai.ClientConfig
 
-		cfg := m.Config
+		cfg := config
 		mod, ok = cfg.Models[cfg.Model]
 		if !ok {
 			if cfg.API == "" {
@@ -442,7 +385,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		m.messages = []openai.ChatCompletionMessage{}
 		if !cfg.NoCache && cfg.cacheReadFromID != "" {
-			if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
+			if err := cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
 				return modsError{
 					err:    err,
 					reason: fmt.Sprintf("There was a problem reading the cache. Use %s / %s to disable it.", m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
@@ -483,7 +426,7 @@ func (m *Mods) handleAPIError(err *openai.APIError, cfg Config, mod Model, conte
 	switch err.HTTPStatusCode {
 	case http.StatusNotFound:
 		if mod.Fallback != "" {
-			m.Config.Model = mod.Fallback
+			config.Model = mod.Fallback
 			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 		}
 		return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", cfg.Model, cfg.API)}
@@ -518,15 +461,15 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, io.EOF) {
 			msg.stream.Close()
-			if !m.Config.NoCache && m.Config.cacheWriteToID != "" {
+			if !config.NoCache && config.cacheWriteToID != "" {
 				messages := append(m.messages, openai.ChatCompletionMessage{
 					Role:    openai.ChatMessageRoleSystem,
 					Content: m.Output,
 				})
-				if err := m.cache.write(m.Config.cacheWriteToID, &messages); err != nil {
+				if err := cache.write(config.cacheWriteToID, &messages); err != nil {
 					return modsError{
 						err:    err,
-						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.cacheWriteToID, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", config.cacheWriteToID, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
 					}
 				}
 			}
@@ -547,9 +490,9 @@ type cacheDetailsMsg struct {
 
 func (m *Mods) findCacheOpsDetails() tea.Cmd {
 	return func() tea.Msg {
-		continueLast := m.Config.ContinueLast || (m.Config.Continue != "" && m.Config.Title == "")
-		readID := firstNonEmpty(m.Config.Continue, m.Config.Show)
-		writeID := firstNonEmpty(m.Config.Title, m.Config.Continue)
+		continueLast := config.ContinueLast || (config.Continue != "" && config.Title == "")
+		readID := firstNonEmpty(config.Continue, config.Show)
+		writeID := firstNonEmpty(config.Title, config.Continue)
 		title := writeID
 
 		if readID != "" || continueLast {
@@ -573,7 +516,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		}
 
 		if !sha1reg.MatchString(writeID) {
-			convo, err := m.db.Find(writeID)
+			convo, err := db.Find(writeID)
 			if err != nil {
 				// its a new conversation with a title
 				writeID = newConversationID()
@@ -591,12 +534,12 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 }
 
 func (m *Mods) findReadID(in string) (string, error) {
-	convo, err := m.db.Find(in)
+	convo, err := db.Find(in)
 	if err == nil {
 		return convo.ID, nil
 	}
-	if errors.Is(err, errNoMatches) && m.Config.Show == "" {
-		convo, err := m.db.FindHEAD()
+	if errors.Is(err, errNoMatches) && config.Show == "" {
+		convo, err := db.FindHEAD()
 		if err != nil {
 			return "", err
 		}
@@ -633,7 +576,7 @@ func noOmitFloat(f float32) float32 {
 func (m *Mods) readFromCache() tea.Cmd {
 	return func() tea.Msg {
 		var messages []openai.ChatCompletionMessage
-		if err := m.cache.read(m.Config.cacheReadFromID, &messages); err != nil {
+		if err := cache.read(config.cacheReadFromID, &messages); err != nil {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 

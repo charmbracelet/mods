@@ -10,8 +10,8 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/caarlos0/env/v9"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
+	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
@@ -182,48 +182,6 @@ func newConfig() (Config, error) {
 		return c, fmt.Errorf("could not parse environment into config: %s", err)
 	}
 
-	flag.StringVarP(&c.Model, "model", "m", c.Model, help["model"])
-	flag.StringVarP(&c.API, "api", "a", c.API, help["api"])
-	flag.StringVarP(&c.HTTPProxy, "http-proxy", "x", c.HTTPProxy, help["http-proxy"])
-	flag.BoolVarP(&c.Format, "format", "f", c.Format, help["format"])
-	flag.BoolVarP(&c.Glamour, "glamour", "g", c.Glamour, help["glamour"])
-	flag.IntVarP(&c.IncludePrompt, "prompt", "P", c.IncludePrompt, help["prompt"])
-	flag.BoolVarP(&c.IncludePromptArgs, "prompt-args", "p", c.IncludePromptArgs, help["prompt-args"])
-	flag.BoolVarP(&c.Quiet, "quiet", "q", c.Quiet, help["quiet"])
-	flag.BoolVar(&c.Settings, "settings", false, help["settings"])
-	flag.BoolVarP(&c.ShowHelp, "help", "h", false, help["help"])
-	flag.BoolVarP(&c.Version, "version", "v", false, help["version"])
-	flag.StringVarP(&c.Continue, "continue", "c", "", help["continue"])
-	flag.BoolVarP(&c.ContinueLast, "continue-last", "C", false, help["continue-last"])
-	flag.BoolVarP(&c.List, "list", "l", c.List, help["list"])
-	flag.IntVar(&c.MaxRetries, "max-retries", c.MaxRetries, help["max-retries"])
-	flag.BoolVar(&c.NoLimit, "no-limit", c.NoLimit, help["no-limit"])
-	flag.IntVar(&c.MaxTokens, "max-tokens", c.MaxTokens, help["max-tokens"])
-	flag.Float32Var(&c.Temperature, "temp", c.Temperature, help["temp"])
-	flag.Float32Var(&c.TopP, "topp", c.TopP, help["topp"])
-	flag.UintVar(&c.Fanciness, "fanciness", c.Fanciness, help["fanciness"])
-	flag.StringVar(&c.StatusText, "status-text", c.StatusText, help["status-text"])
-	flag.BoolVar(&c.ResetSettings, "reset-settings", c.ResetSettings, help["reset-settings"])
-	flag.StringVarP(&c.Title, "title", "t", c.Title, help["title"])
-	flag.StringVar(&c.Delete, "delete", c.Delete, help["delete"])
-	flag.StringVarP(&c.Show, "show", "s", c.Show, help["show"])
-	flag.BoolVar(&c.NoCache, "no-cache", c.NoCache, help["no-cache"])
-	flag.Lookup("prompt").NoOptDefVal = "-1"
-	flag.Usage = usage
-	flag.CommandLine.SortFlags = false
-	flag.CommandLine.Init("", flag.ContinueOnError)
-	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
-		return c, flagParseError{err}
-	}
-
-	if c.Format && c.FormatText == "" {
-		c.FormatText = "Format the response as markdown without enclosing backticks."
-	}
-	if c.CachePath == "" {
-		c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
-	}
-	c.Prefix = strings.Join(flag.Args(), " ")
-
 	return c, nil
 }
 
@@ -275,43 +233,50 @@ func createConfigFile(path string) error {
 	return nil
 }
 
-func usage() {
-	r := lipgloss.DefaultRenderer()
-	s := makeStyles(r)
+func useLine() string {
 	appName := filepath.Base(os.Args[0])
 
-	if r.ColorProfile() == termenv.TrueColor {
-		appName = makeGradientText(s.AppName, appName)
+	if stdoutRenderer.ColorProfile() == termenv.TrueColor {
+		appName = makeGradientText(stdoutStyles.AppName, appName)
 	}
 
+	return fmt.Sprintf(
+		"%s %s",
+		appName,
+		stdoutStyles.CliArgs.Render("[OPTIONS] [PREFIX TERM]"),
+	)
+}
+
+func usageFunc(cmd *cobra.Command) error {
 	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
 	fmt.Printf(
-		"Usage:\n  %s %s\n\n",
-		appName,
-		s.CliArgs.Render("[OPTIONS] [PREFIX TERM]"),
+		"Usage:\n  %s\n\n",
+		useLine(),
 	)
 	fmt.Println("Options:")
-	flag.VisitAll(func(f *flag.Flag) {
+	cmd.Flags().VisitAll(func(f *flag.Flag) {
 		if f.Shorthand == "" {
 			fmt.Printf(
-				"  %-42s %s\n",
-				s.Flag.Render("--"+f.Name),
-				s.FlagDesc.Render(f.Usage),
+				"  %-44s %s\n",
+				stdoutStyles.Flag.Render("--"+f.Name),
+				stdoutStyles.FlagDesc.Render(f.Usage),
 			)
 		} else {
 			fmt.Printf(
-				"  %s%s %-38s %s\n",
-				s.Flag.Render("-"+f.Shorthand),
-				s.FlagComma,
-				s.Flag.Render("--"+f.Name),
-				s.FlagDesc.Render(f.Usage),
+				"  %s%s %-40s %s\n",
+				stdoutStyles.Flag.Render("-"+f.Shorthand),
+				stdoutStyles.FlagComma,
+				stdoutStyles.Flag.Render("--"+f.Name),
+				stdoutStyles.FlagDesc.Render(f.Usage),
 			)
 		}
 	})
 	desc, example := randomExample()
 	fmt.Printf(
 		"\nExample:\n  %s\n  %s\n",
-		s.Comment.Render("# "+desc),
-		cheapHighlighting(s, example),
+		stdoutStyles.Comment.Render("# "+desc),
+		cheapHighlighting(stdoutStyles, example),
 	)
+
+	return nil
 }
