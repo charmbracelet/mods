@@ -2,7 +2,8 @@
 **Prompt**: first 4 natural numbers
 
 
-**Response**: 1, 2, 3, 4
+**Response**:
+1, 2, 3, 4
 
 
 ---
@@ -10,7 +11,8 @@
 **Prompt**: as a json array
 
 
-**Response**: [ 1, 2, 3, 4 ]
+**Response**:
+[ 1, 2, 3, 4 ]
 
 
 **Assistant**: something from an assistant
