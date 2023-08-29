@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	flag "github.com/spf13/pflag"
+	"golang.org/x/term"
 )
 
 // Build vars.
@@ -42,9 +44,33 @@ func buildVersion() string {
 }
 
 func exitError(mods *Mods, err error, reason string) {
-	mods.Error = &modsError{reason: reason, err: err}
-	fmt.Fprintln(os.Stderr, mods.ErrorView())
-	exit(mods, 1)
+	me := &modsError{reason: reason, err: err}
+	exitErrorFn(
+		mods,
+		func(_ styles) *modsError { return me },
+	)
+}
+
+func exitErrorFn(mods *Mods, fn func(styles styles) *modsError) {
+	if mods != nil && mods.db != nil {
+		_ = mods.db.Close()
+	}
+
+	if !isErrTTY() {
+		me := fn(styles{})
+		fmt.Fprintf(os.Stderr, "%s\n%s\n", me.reason, me.err.Error())
+		os.Exit(1)
+	}
+
+	renderer := lipgloss.NewRenderer(os.Stderr)
+	width, _, _ := term.GetSize(int(os.Stderr.Fd()))
+	styles := makeStyles(renderer)
+	me := fn(styles)
+	fmt.Fprintln(
+		os.Stderr,
+		errorView(me, renderer, styles, width),
+	)
+	os.Exit(1)
 }
 
 func exit(mods *Mods, status int) {
@@ -76,7 +102,27 @@ func main() {
 		opts = append(opts, tea.WithInput(nil))
 	}
 
-	mods := newMods(renderer)
+	cfg, err := newConfig()
+	if err != nil {
+		exitErrorFn(nil, func(styles styles) *modsError {
+			me := &modsError{}
+			var fpe flagParseError
+			switch {
+			case errors.As(err, &fpe):
+				me.reason = fmt.Sprintf("Missing flag: %s", styles.InlineCode.Render(fpe.Flag()))
+				me.err = fmt.Errorf(
+					"check out %s %s",
+					styles.InlineCode.Render("mods -h"),
+					styles.Comment.Render("for help."),
+				)
+			default:
+				me.err = err
+				me.reason = "There was an error loading your config file."
+			}
+			return me
+		})
+	}
+	mods := newMods(renderer, cfg)
 	p := tea.NewProgram(mods, opts...)
 	m, err := p.Run()
 	if err != nil {

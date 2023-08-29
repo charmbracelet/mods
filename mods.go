@@ -63,7 +63,7 @@ type Mods struct {
 	clearOnce    *sync.Once
 }
 
-func newMods(r *lipgloss.Renderer) *Mods {
+func newMods(r *lipgloss.Renderer, cfg Config) *Mods {
 	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
 	vp := viewport.New(0, 0)
 	vp.GotoBottom()
@@ -75,6 +75,7 @@ func newMods(r *lipgloss.Renderer) *Mods {
 		glamViewport: vp,
 		contentMutex: &sync.Mutex{},
 		clearOnce:    &sync.Once{},
+		Config:       cfg,
 	}
 }
 
@@ -106,7 +107,7 @@ func (m modsError) Error() string {
 
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
-	return m.loadConfigCmd
+	return m.initCmd
 }
 
 // Update implements tea.Model.
@@ -124,7 +125,6 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, readStdinCmd, m.anim.Init())
 
 	case initMsg:
-		m.Config = msg.config
 		m.db = msg.db
 		m.cache = msg.cache
 
@@ -261,15 +261,19 @@ func (m *Mods) View() string {
 
 // ErrorView renders the currently set modsError.
 func (m Mods) ErrorView() string {
+	return errorView(m.Error, m.renderer, m.Styles, m.width)
+}
+
+func errorView(err *modsError, renderer *lipgloss.Renderer, styles styles, width int) string {
 	const maxWidth = 120
 	const horizontalEdgePadding = 2
 	const totalHorizontalPadding = horizontalEdgePadding * 2
-	w := ordered.Max(maxWidth, m.width-totalHorizontalPadding)
-	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalEdgePadding)
+	w := ordered.Max(maxWidth, width-totalHorizontalPadding)
+	s := renderer.NewStyle().Width(w).Padding(0, horizontalEdgePadding)
 	return fmt.Sprintf(
 		"\n%s\n\n%s\n\n",
-		s.Render(m.Styles.ErrorHeader.String(), m.Error.reason),
-		s.Render(m.Styles.ErrorDetails.Render(m.Error.Error())),
+		s.Render(styles.ErrorHeader.String(), err.reason),
+		s.Render(styles.ErrorDetails.Render(err.Error())),
 	)
 }
 
@@ -290,21 +294,8 @@ func (m *Mods) retry(content string, err modsError) tea.Msg {
 	return completionInput{content}
 }
 
-func (m *Mods) loadConfigCmd() tea.Msg {
-	cfg, err := newConfig()
-	if err != nil {
-		var fpe flagParseError
-		switch {
-		case errors.As(err, &fpe):
-			me := modsError{}
-			me.reason = fmt.Sprintf("Missing flag: %s", m.Styles.InlineCode.Render(fpe.Flag()))
-			me.err = fmt.Errorf("Check out %s %s", m.Styles.InlineCode.Render("mods -h"), m.Styles.Comment.Render("for help."))
-			return me
-		default:
-			return modsError{err, "There was an error loading your config file."}
-		}
-	}
-
+func (m *Mods) initCmd() tea.Msg {
+	cfg := m.Config
 	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil { //nolint: gomnd
 		return modsError{
 			reason: "Could not create cache directory",
@@ -320,16 +311,14 @@ func (m *Mods) loadConfigCmd() tea.Msg {
 		}
 	}
 	return initMsg{
-		config: cfg,
-		db:     db,
-		cache:  cache,
+		db:    db,
+		cache: cache,
 	}
 }
 
 type initMsg struct {
-	config Config
-	db     *convoDB
-	cache  *convoCache
+	db    *convoDB
+	cache *convoCache
 }
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {

@@ -13,3 +13,7 @@ var isInputTTY = OnceValue(func() bool {
 var isOutputTTY = OnceValue(func() bool {
 	return isatty.IsTerminal(os.Stdout.Fd())
 })
+
+var isErrTTY = OnceValue(func() bool {
+	return isatty.IsTerminal(os.Stderr.Fd())
+})
