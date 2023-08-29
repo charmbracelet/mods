@@ -9,7 +9,7 @@
 
 AI for the command line, built for pipelines.
 
-<p><img src="https://github.com/charmbracelet/mods/assets/25087/347300c6-b382-462d-9f80-8520a27e14bb" width="900" alt="a GIF of mods running"></p>
+<p><img src="https://vhs.charm.sh/vhs-5Uyj0U6Hlqi1LVIIRyYKM5.gif" width="900" alt="a GIF of mods running"></p>
 
 LLM based AI is really good at interpreting the output of commands and
 returning the results in CLI friendly text formats like Markdown. Mods is a
@@ -96,16 +96,13 @@ go install github.com/charmbracelet/mods@latest
 
 ## Saving conversations
 
-All conversations are automatically saved, and can be identified by their
-latest prompt.
-
-A saved conversation has a SHA1 identifier and a title, similar to how Git
-works.
-
-Unlike Git, conversations can be updated, keeping their SHA1, but changing their
-title.
+Conversations save automatically. They are identified by their latest prompt.
+Similar to Git, conversations have a SHA-1 identifier and a title. Conversations
+can be updated, maintaining their SHA-1 identifier but changing their title.
 
 Check the [features document](./features.md) for more details.
+
+<p><img src="https://vhs.charm.sh/vhs-6MMscpZwgzohYYMfTrHErF.gif" width="900" alt="a GIF listing and showing saved conversations."></p>
 
 ## Settings
 
