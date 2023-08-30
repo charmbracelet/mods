@@ -122,7 +122,7 @@ var (
 			}
 
 			if config.ResetSettings {
-				return resetSettings(mods)
+				return resetSettings()
 			}
 
 			if config.ShowHelp || (mods.Input == "" &&
@@ -130,6 +130,7 @@ var (
 				config.Show == "" &&
 				config.Delete == "" &&
 				!config.List) {
+				//nolint: wrapcheck
 				return cmd.Usage()
 			}
 
@@ -138,11 +139,11 @@ var (
 			}
 
 			if config.List {
-				return listConversations(mods)
+				return listConversations()
 			}
 
 			if config.Delete != "" {
-				return deleteConversation(mods)
+				return deleteConversation()
 			}
 
 			if config.cacheWriteToID != "" {
@@ -245,8 +246,15 @@ func handleError(err error) {
 	if errors.As(err, &ferr) {
 		format += "%s\n\n"
 		args = []interface{}{
-			fmt.Sprintf("Check out %s %s", stderrStyles.InlineCode.Render("mods -h"), stderrStyles.Comment.Render("for help.")),
-			fmt.Sprintf("Missing flag: %s", stderrStyles.InlineCode.Render(ferr.Flag())),
+			fmt.Sprintf(
+				"Check out %s %s",
+				stderrStyles.InlineCode.Render("mods -h"),
+				stderrStyles.Comment.Render("for help."),
+			),
+			fmt.Sprintf(
+				"Missing flag: %s",
+				stderrStyles.InlineCode.Render(ferr.Flag()),
+			),
 		}
 	} else if errors.As(err, &merr) {
 		format += "%s\n\n"
@@ -266,7 +274,7 @@ func handleError(err error) {
 	)
 }
 
-func resetSettings(mods *Mods) error {
+func resetSettings() error {
 	_, err := os.Stat(config.SettingsPath)
 	if err != nil {
 		return modsError{err, "Couldn't read config file."}
@@ -297,13 +305,13 @@ func resetSettings(mods *Mods) error {
 	fmt.Fprintln(os.Stderr, "\nSettings restored to defaults!")
 	fmt.Fprintf(os.Stderr,
 		"\n  %s %s\n\n",
-		mods.Styles.Comment.Render("Your old settings have been saved to:"),
-		mods.Styles.Link.Render(config.SettingsPath+".bak"),
+		stderrStyles.Comment.Render("Your old settings have been saved to:"),
+		stderrStyles.Link.Render(config.SettingsPath+".bak"),
 	)
 	return nil
 }
 
-func deleteConversation(mods *Mods) error {
+func deleteConversation() error {
 	convo, err := db.Find(config.Delete)
 	if err != nil {
 		return modsError{err, "Couldn't delete conversation."}
@@ -321,8 +329,7 @@ func deleteConversation(mods *Mods) error {
 	return nil
 }
 
-func listConversations(mods *Mods) error {
-	styles := makeStyles(stdoutRenderer)
+func listConversations() error {
 	conversations, err := db.List()
 	if err != nil {
 		return modsError{err, "Couldn't list saves."}
@@ -336,18 +343,18 @@ func listConversations(mods *Mods) error {
 	fmt.Fprintf(
 		os.Stderr,
 		"Saved conversations %s:\n",
-		mods.Styles.Comment.Render(
+		stderrStyles.Comment.Render(
 			"("+fmt.Sprint(len(conversations))+")",
 		),
 	)
 	format := "%s %s\n"
 	if isOutputTTY() {
-		format = styles.Comment.Render("•") + " %s %s\n"
+		format = stdoutStyles.Comment.Render("•") + " %s %s\n"
 	}
 	for _, conversation := range conversations {
 		fmt.Fprintf(os.Stdout, format,
 			conversation.ID[:sha1short],
-			styles.Comment.Render(conversation.Title),
+			stdoutStyles.Comment.Render(conversation.Title),
 		)
 	}
 	return nil
