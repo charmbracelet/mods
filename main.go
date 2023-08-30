@@ -53,6 +53,9 @@ func init() {
 	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return flagParseError{err: err}
 	})
+
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 }
 
 var (
@@ -181,7 +184,6 @@ func initFlags() {
 	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles.FlagDesc.Render(help["no-cache"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
-	// flags.Init("", flag.ContinueOnError)
 
 	if config.Format && config.FormatText == "" {
 		config.FormatText = "Format the response as markdown without enclosing backticks."
