@@ -69,14 +69,6 @@ var (
 		Use:           "mods",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Example: func() string {
-			desc, example := randomExample()
-			return fmt.Sprintf(
-				"  %s\n  %s\n",
-				stdoutStyles.Comment.Render("# "+desc),
-				cheapHighlighting(stdoutStyles, example),
-			)
-		}(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.Prefix = strings.Join(args, " ")
 
