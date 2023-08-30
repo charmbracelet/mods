@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -40,19 +41,6 @@ func buildVersion() string {
 		result = fmt.Sprintf("%s\nmodule version: %s, checksum: %s", result, info.Main.Version, info.Main.Sum)
 	}
 	return result
-}
-
-func exitError(mods *Mods, err error, reason string) {
-	mods.Error = &modsError{reason: reason, err: err}
-	fmt.Fprintln(os.Stderr, mods.ErrorView())
-	exit(mods, 1)
-}
-
-func exit(mods *Mods, status int) {
-	if mods != nil && db != nil {
-		_ = db.Close()
-	}
-	os.Exit(status)
 }
 
 func init() {
@@ -112,8 +100,7 @@ var (
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
 			if err != nil {
-				exitError(mods, err, "Couldn't start Bubble Tea program.")
-				return modsError{reason: "Couldn't start Bubble Tea program.", err: err}
+				return modsError{err, "Couldn't start Bubble Tea program."}
 			}
 
 			mods = m.(*Mods)
@@ -135,7 +122,7 @@ var (
 			}
 
 			if config.ResetSettings {
-				resetSettings(mods)
+				return resetSettings(mods)
 			}
 
 			if config.ShowHelp || (mods.Input == "" &&
@@ -151,15 +138,15 @@ var (
 			}
 
 			if config.List {
-				listConversations(mods)
+				return listConversations(mods)
 			}
 
 			if config.Delete != "" {
-				deleteConversation(mods)
+				return deleteConversation(mods)
 			}
 
 			if config.cacheWriteToID != "" {
-				writeConversation(mods)
+				return writeConversation(mods)
 			}
 
 			return nil
@@ -216,89 +203,96 @@ func main() {
 	var err error
 	config, err = newConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "There was an error loading your config file.\n")
+		handleError(modsError{err, "Could not load your configuration file."})
 		os.Exit(1)
 	}
 
 	cache = newCache(config.CachePath)
 	db, err = openDB(filepath.Join(config.CachePath, "mods.db"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not open db: %s\n", err)
+		handleError(modsError{err, "Could not open database."})
 		os.Exit(1)
 	}
-
 	defer db.Close() //nolint:errcheck
 
 	// XXX: this must come after creating the config.
 	initFlags()
 
 	// XXX: since mods doesn't have any subcommands, Cobra won't create the
-	// default `completion` command. Explicitly create it here.
+	// default `completion` command.
+	// Forcefully create the completion related subcommands by adding a fake
+	// command when completions are being used.
 	if os.Getenv("__MODS_CMP_ENABLED") == "1" || os.Args[1] == "__complete" {
 		rootCmd.AddCommand(&cobra.Command{Use: "____fake_command_to_enable_completions"})
 		rootCmd.InitDefaultCompletionCmd()
 	}
 
 	if err := rootCmd.Execute(); err != nil {
-		const horizontalEdgePadding = 2
-		s := stderrRenderer.NewStyle().Padding(0, horizontalEdgePadding)
-		format := "%s\n\n"
-
-		var args []interface{}
-		if ferr, ok := err.(flagParseError); ok {
-			format += "%s\n\n"
-			args = []interface{}{
-				fmt.Sprintf("Check out %s %s", stderrStyles.InlineCode.Render("mods -h"), stderrStyles.Comment.Render("for help.")),
-				fmt.Sprintf("Missing flag: %s", stderrStyles.InlineCode.Render(ferr.Flag())),
-			}
-		} else if merr, ok := err.(modsError); ok {
-			format += "%s\n\n"
-			args = []interface{}{
-				s.Render(stderrStyles.ErrorHeader.String(), merr.reason),
-				s.Render(stderrStyles.ErrorDetails.Render(err.Error())),
-			}
-		} else {
-			args = []interface{}{
-				s.Render(stderrStyles.ErrorDetails.Render(err.Error())),
-			}
-		}
-
-		fmt.Fprintf(os.Stderr,
-			format,
-			args...,
-		)
-
+		handleError(err)
+		_ = db.Close()
 		os.Exit(1)
 	}
 }
 
-func resetSettings(mods *Mods) {
+func handleError(err error) {
+	const horizontalEdgePadding = 2
+	s := stderrRenderer.NewStyle().Padding(0, horizontalEdgePadding)
+	format := "\n%s\n\n"
+
+	var merr modsError
+	var ferr flagParseError
+	var args []interface{}
+	if errors.As(err, &ferr) {
+		format += "%s\n\n"
+		args = []interface{}{
+			fmt.Sprintf("Check out %s %s", stderrStyles.InlineCode.Render("mods -h"), stderrStyles.Comment.Render("for help.")),
+			fmt.Sprintf("Missing flag: %s", stderrStyles.InlineCode.Render(ferr.Flag())),
+		}
+	} else if errors.As(err, &merr) {
+		format += "%s\n\n"
+		args = []interface{}{
+			s.Render(stderrStyles.ErrorHeader.String(), merr.reason),
+			s.Render(stderrStyles.ErrorDetails.Render(err.Error())),
+		}
+	} else {
+		args = []interface{}{
+			s.Render(stderrStyles.ErrorDetails.Render(err.Error())),
+		}
+	}
+
+	fmt.Fprintf(os.Stderr,
+		format,
+		args...,
+	)
+}
+
+func resetSettings(mods *Mods) error {
 	_, err := os.Stat(config.SettingsPath)
 	if err != nil {
-		exitError(mods, err, "Couldn't read config file.")
+		return modsError{err, "Couldn't read config file."}
 	}
 	inputFile, err := os.Open(config.SettingsPath)
 	if err != nil {
-		exitError(mods, err, "Couldn't open config file.")
+		return modsError{err, "Couldn't open config file."}
 	}
 	defer inputFile.Close() //nolint:errcheck
 	outputFile, err := os.Create(config.SettingsPath + ".bak")
 	if err != nil {
-		exitError(mods, err, "Couldn't backup config file.")
+		return modsError{err, "Couldn't backup config file."}
 	}
 	defer outputFile.Close() //nolint:errcheck
 	_, err = io.Copy(outputFile, inputFile)
 	if err != nil {
-		exitError(mods, err, "Couldn't write config file.")
+		return modsError{err, "Couldn't write config file."}
 	}
 	// The copy was successful, so now delete the original file
 	err = os.Remove(config.SettingsPath)
 	if err != nil {
-		exitError(mods, err, "Couldn't remove config file.")
+		return modsError{err, "Couldn't remove config file."}
 	}
 	err = writeConfigFile(config.SettingsPath)
 	if err != nil {
-		exitError(mods, err, "Couldn't write new config file.")
+		return modsError{err, "Couldn't write new config file."}
 	}
 	fmt.Fprintln(os.Stderr, "\nSettings restored to defaults!")
 	fmt.Fprintf(os.Stderr,
@@ -306,36 +300,36 @@ func resetSettings(mods *Mods) {
 		mods.Styles.Comment.Render("Your old settings have been saved to:"),
 		mods.Styles.Link.Render(config.SettingsPath+".bak"),
 	)
-	exit(mods, 0)
+	return nil
 }
 
-func deleteConversation(mods *Mods) {
+func deleteConversation(mods *Mods) error {
 	convo, err := db.Find(config.Delete)
 	if err != nil {
-		exitError(mods, err, "Couldn't delete conversation.")
+		return modsError{err, "Couldn't delete conversation."}
 	}
 
 	if err := db.Delete(convo.ID); err != nil {
-		exitError(mods, err, "Couldn't delete conversation.")
+		return modsError{err, "Couldn't delete conversation."}
 	}
 
 	if err := cache.delete(convo.ID); err != nil {
-		exitError(mods, err, "Couldn't delete conversation.")
+		return modsError{err, "Couldn't delete conversation."}
 	}
 
 	fmt.Fprintln(os.Stderr, "Conversation deleted:", convo.ID[:sha1minLen])
-	exit(mods, 0)
+	return nil
 }
 
-func listConversations(mods *Mods) {
+func listConversations(mods *Mods) error {
 	conversations, err := db.List()
 	if err != nil {
-		exitError(mods, err, "Couldn't list saves.")
+		return modsError{err, "Couldn't list saves."}
 	}
 
 	if len(conversations) == 0 {
 		fmt.Fprintln(os.Stderr, "No conversations found.")
-		exit(mods, 0)
+		return nil
 	}
 
 	fmt.Fprintf(
@@ -352,10 +346,10 @@ func listConversations(mods *Mods) {
 			mods.Styles.Comment.Render(conversation.Title),
 		)
 	}
-	exit(mods, 0)
+	return nil
 }
 
-func writeConversation(mods *Mods) {
+func writeConversation(mods *Mods) error {
 	// if message is a sha1, use the last prompt instead.
 	id := config.cacheWriteToID
 	title := strings.TrimSpace(config.cacheWriteToTitle)
@@ -367,7 +361,7 @@ func writeConversation(mods *Mods) {
 	// conversation would already have been written to the file storage, just
 	// need to write to db too.
 	if err := db.Save(id, title); err != nil {
-		exitError(mods, err, "Couldn't save conversation.")
+		return modsError{err, "Couldn't save conversation."}
 	}
 
 	fmt.Fprintln(
@@ -376,4 +370,5 @@ func writeConversation(mods *Mods) {
 		config.cacheWriteToID[:sha1short],
 		stderrStyles.Comment.Render(config.cacheWriteToTitle),
 	)
+	return nil
 }
