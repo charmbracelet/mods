@@ -222,7 +222,7 @@ func main() {
 	// default `completion` command.
 	// Forcefully create the completion related subcommands by adding a fake
 	// command when completions are being used.
-	if os.Getenv("__MODS_CMP_ENABLED") == "1" || os.Args[1] == "__complete" {
+	if os.Getenv("__MODS_CMP_ENABLED") == "1" || (len(os.Args) > 1 && os.Args[1] == "__complete") {
 		rootCmd.AddCommand(&cobra.Command{Use: "____fake_command_to_enable_completions"})
 		rootCmd.InitDefaultCompletionCmd()
 	}
@@ -322,6 +322,7 @@ func deleteConversation(mods *Mods) error {
 }
 
 func listConversations(mods *Mods) error {
+	styles := makeStyles(stdoutRenderer)
 	conversations, err := db.List()
 	if err != nil {
 		return modsError{err, "Couldn't list saves."}
@@ -339,11 +340,14 @@ func listConversations(mods *Mods) error {
 			"("+fmt.Sprint(len(conversations))+")",
 		),
 	)
+	format := "%s %s\n"
+	if isOutputTTY() {
+		format = styles.Comment.Render("•") + " %s %s\n"
+	}
 	for _, conversation := range conversations {
-		fmt.Fprintf(os.Stderr, "%s %s %s\n",
-			mods.Styles.Comment.Render("•"),
+		fmt.Fprintf(os.Stdout, format,
 			conversation.ID[:sha1short],
-			mods.Styles.Comment.Render(conversation.Title),
+			styles.Comment.Render(conversation.Title),
 		)
 	}
 	return nil
