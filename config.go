@@ -182,6 +182,10 @@ func newConfig() (Config, error) {
 		return c, fmt.Errorf("could not parse environment into config: %s", err)
 	}
 
+	if c.CachePath == "" {
+		c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
+	}
+
 	return c, nil
 }
 

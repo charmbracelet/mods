@@ -8,7 +8,6 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/adrg/xdg"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/glow/editor"
@@ -204,9 +203,6 @@ func initFlags() {
 	if config.Format && config.FormatText == "" {
 		config.FormatText = "Format the response as markdown without enclosing backticks."
 	}
-	if config.CachePath == "" {
-		config.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
-	}
 }
 
 func main() {
@@ -217,17 +213,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// XXX: this must come after creating the config.
-	initFlags()
-
 	cache = newCache(config.CachePath)
-	db, err = openDB(filepath.Join(config.CachePath, "db"))
+	db, err = openDB(filepath.Join(config.CachePath, "mods.db"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not open db: %s\n", err)
 		os.Exit(1)
 	}
 
 	defer db.Close() //nolint:errcheck
+
+	// XXX: this must come after creating the config.
+	initFlags()
 
 	// XXX: since mods doesn't have any subcommands, Cobra won't create the
 	// default `completion` command. Explicitly create it here.
