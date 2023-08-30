@@ -19,7 +19,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/x/exp/ordered"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -206,7 +205,7 @@ func (m *Mods) View() string {
 	//nolint:exhaustive
 	switch m.state {
 	case errorState:
-		return m.ErrorView()
+		return ""
 	case requestState:
 		if !m.Config.Quiet {
 			return m.anim.View()
@@ -249,20 +248,6 @@ func (m *Mods) View() string {
 		fmt.Print("\n")
 	}
 	return ""
-}
-
-// ErrorView renders the currently set modsError.
-func (m Mods) ErrorView() string {
-	const maxWidth = 120
-	const horizontalEdgePadding = 2
-	const totalHorizontalPadding = horizontalEdgePadding * 2
-	w := ordered.Max(maxWidth, m.width-totalHorizontalPadding)
-	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalEdgePadding)
-	return fmt.Sprintf(
-		"\n%s\n\n%s\n\n",
-		s.Render(m.Styles.ErrorHeader.String(), m.Error.reason),
-		s.Render(m.Styles.ErrorDetails.Render(m.Error.Error())),
-	)
 }
 
 func (m *Mods) quit() tea.Msg {
@@ -501,6 +486,13 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		readID := firstNonEmpty(m.Config.Continue, m.Config.Show)
 		writeID := firstNonEmpty(m.Config.Title, m.Config.Continue)
 		title := writeID
+
+		if continueLast && m.Config.Prefix == "" {
+			return modsError{
+				err:    fmt.Errorf("Missing prompt"),
+				reason: "You must specify a prompt",
+			}
+		}
 
 		if readID != "" || continueLast {
 			found, err := m.findReadID(readID)

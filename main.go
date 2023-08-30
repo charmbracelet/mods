@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -96,7 +95,7 @@ var (
 
 			mods = m.(*Mods)
 			if mods.Error != nil {
-				return mods.Error
+				return *mods.Error
 			}
 
 			if config.Settings {
@@ -230,10 +229,8 @@ func handleError(err error) {
 	s := stderrRenderer.NewStyle().Padding(0, horizontalEdgePadding)
 	format := "\n%s\n\n"
 
-	var merr modsError
-	var ferr flagParseError
 	var args []interface{}
-	if errors.As(err, &ferr) {
+	if ferr, ok := err.(flagParseError); ok {
 		format += "%s\n\n"
 		args = []interface{}{
 			fmt.Sprintf(
@@ -246,7 +243,7 @@ func handleError(err error) {
 				stderrStyles.InlineCode.Render(ferr.Flag()),
 			),
 		}
-	} else if errors.As(err, &merr) {
+	} else if merr, ok := err.(modsError); ok {
 		format += "%s\n\n"
 		args = []interface{}{
 			s.Render(stderrStyles.ErrorHeader.String(), merr.reason),
