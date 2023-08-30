@@ -233,8 +233,10 @@ func main() {
 	initFlags()
 
 	// XXX: since mods doesn't have any subcommands, Cobra won't create the
-	// default `completion` command. Explicitly create it here.
-	if os.Getenv("__MODS_CMP_ENABLED") == "1" || os.Args[1] == "__complete" {
+	// default `completion` command.
+	// Forcefully create the completion related subcommands by adding a fake
+	// command when completions are being used.
+	if os.Getenv("__MODS_CMP_ENABLED") == "1" || (len(os.Args) > 1 && os.Args[1] == "__complete") {
 		rootCmd.AddCommand(&cobra.Command{Use: "____fake_command_to_enable_completions"})
 		rootCmd.InitDefaultCompletionCmd()
 	}
