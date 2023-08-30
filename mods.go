@@ -56,14 +56,14 @@ type Mods struct {
 
 	db     *convoDB
 	cache  *convoCache
-	Config Config
+	Config *Config
 
 	content      []string
 	contentMutex *sync.Mutex
 	clearOnce    *sync.Once
 }
 
-func newMods(r *lipgloss.Renderer, cfg Config, db *convoDB, cache *convoCache) *Mods {
+func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) *Mods {
 	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
 	vp := viewport.New(0, 0)
 	vp.GotoBottom()
@@ -429,7 +429,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	}
 }
 
-func (m *Mods) handleAPIError(err *openai.APIError, cfg Config, mod Model, content string) tea.Msg {
+func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, content string) tea.Msg {
 	switch err.HTTPStatusCode {
 	case http.StatusNotFound:
 		if mod.Fallback != "" {
