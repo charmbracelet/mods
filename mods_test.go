@@ -10,7 +10,8 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	newMods := func(t *testing.T) *Mods {
 		db := testDB(t)
 		return &Mods{
-			db: db,
+			db:     db,
+			Config: &Config{},
 		}
 	}
 
