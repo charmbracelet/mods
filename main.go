@@ -169,11 +169,6 @@ var (
 
 func initFlags() {
 	flags := rootCmd.Flags()
-	flags.StringVar(&config.complete, "complete", "", "Print completion scripts")
-	_ = flags.MarkHidden("complete")
-	_ = rootCmd.RegisterFlagCompletionFunc("complete", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"fish", "bash", "zsh"}, cobra.ShellCompDirectiveDefault
-	})
 	flags.StringVarP(&config.Model, "model", "m", config.Model, stdoutStyles.FlagDesc.Render(help["model"]))
 	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles.FlagDesc.Render(help["api"]))
 	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles.FlagDesc.Render(help["http-proxy"]))
