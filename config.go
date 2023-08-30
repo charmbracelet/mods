@@ -116,7 +116,6 @@ type Config struct {
 	List              bool
 	Delete            string
 
-	complete                                           string
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
 }
 
