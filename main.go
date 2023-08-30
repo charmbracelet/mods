@@ -187,6 +187,16 @@ func initFlags() {
 	if config.Format && config.FormatText == "" {
 		config.FormatText = "Format the response as markdown without enclosing backticks."
 	}
+
+	rootCmd.MarkFlagsMutuallyExclusive(
+		"settings",
+		"show",
+		"delete",
+		"list",
+		"continue",
+		"continue-last",
+		"reset-settings",
+	)
 }
 
 func main() {
