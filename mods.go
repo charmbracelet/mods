@@ -294,7 +294,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var key string
 		var ccfg openai.ClientConfig
 
-		cfg := config
+		cfg := m.Config
 		mod, ok = cfg.Models[cfg.Model]
 		if !ok {
 			if cfg.API == "" {
@@ -392,7 +392,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		m.messages = []openai.ChatCompletionMessage{}
 		if !cfg.NoCache && cfg.cacheReadFromID != "" {
-			if err := cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
+			if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
 				return modsError{
 					err:    err,
 					reason: fmt.Sprintf("There was a problem reading the cache. Use %s / %s to disable it.", m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
@@ -473,7 +473,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 					Role:    openai.ChatMessageRoleSystem,
 					Content: m.Output,
 				})
-				if err := cache.write(m.Config.cacheWriteToID, &messages); err != nil {
+				if err := m.cache.write(m.Config.cacheWriteToID, &messages); err != nil {
 					return modsError{
 						err:    err,
 						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.cacheWriteToID, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
@@ -583,7 +583,7 @@ func noOmitFloat(f float32) float32 {
 func (m *Mods) readFromCache() tea.Cmd {
 	return func() tea.Msg {
 		var messages []openai.ChatCompletionMessage
-		if err := cache.read(m.Config.cacheReadFromID, &messages); err != nil {
+		if err := m.cache.read(m.Config.cacheReadFromID, &messages); err != nil {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 
