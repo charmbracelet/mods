@@ -143,4 +143,17 @@ func TestConvoDB(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, list)
 	})
+
+	t.Run("completions", func(t *testing.T) {
+		db := testDB(t)
+
+		const testid = "fc5012d8c67073ea0a46a3c05488a0e1d87df74b"
+		const testid2 = "6c33f71694bf41a18c844a96d1f62f153e5f6f44"
+		require.NoError(t, db.Save(testid, "some title"))
+		require.NoError(t, db.Save(testid2, "football teams"))
+
+		results, err := db.Completions("f")
+		require.NoError(t, err)
+		require.Equal(t, []string{testid, "football teams"}, results)
+	})
 }
