@@ -248,7 +248,7 @@ func main() {
 		if ferr, ok := err.(flagParseError); ok {
 			format += "%s\n\n"
 			args = []interface{}{
-				fmt.Errorf("Check out %s %s", stderrStyles.InlineCode.Render("mods -h"), stderrStyles.Comment.Render("for help.")),
+				fmt.Sprintf("Check out %s %s", stderrStyles.InlineCode.Render("mods -h"), stderrStyles.Comment.Render("for help.")),
 				fmt.Sprintf("Missing flag: %s", stderrStyles.InlineCode.Render(ferr.Flag())),
 			}
 		} else if merr, ok := err.(modsError); ok {
