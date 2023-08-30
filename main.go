@@ -69,7 +69,6 @@ func init() {
 	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return flagParseError{err: err}
 	})
-
 }
 
 var (
@@ -170,6 +169,11 @@ var (
 
 func initFlags() {
 	flags := rootCmd.Flags()
+	flags.StringVar(&config.complete, "complete", "", "Print completion scripts")
+	_ = flags.MarkHidden("complete")
+	_ = rootCmd.RegisterFlagCompletionFunc("complete", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"fish", "bash", "zsh"}, cobra.ShellCompDirectiveDefault
+	})
 	flags.StringVarP(&config.Model, "model", "m", config.Model, stdoutStyles.FlagDesc.Render(help["model"]))
 	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles.FlagDesc.Render(help["api"]))
 	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles.FlagDesc.Render(help["http-proxy"]))
@@ -195,6 +199,14 @@ func initFlags() {
 	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles.FlagDesc.Render(help["title"]))
 	flags.StringVar(&config.Delete, "delete", config.Delete, stdoutStyles.FlagDesc.Render(help["delete"]))
 	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles.FlagDesc.Render(help["show"]))
+
+	for _, name := range []string{"show", "delete", "continue"} {
+		_ = rootCmd.RegisterFlagCompletionFunc(name, func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			results, _ := db.Completions(toComplete)
+			return results, cobra.ShellCompDirectiveDefault
+		})
+	}
+
 	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles.FlagDesc.Render(help["no-cache"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
@@ -227,7 +239,10 @@ func main() {
 
 	// XXX: since mods doesn't have any subcommands, Cobra won't create the
 	// default `completion` command. Explicitly create it here.
-	rootCmd.InitDefaultCompletionCmd()
+	if os.Getenv("__MODS_CMP_ENABLE") == "1" || os.Args[1] == "__complete" {
+		rootCmd.AddCommand(&cobra.Command{Use: "____fake_command_to_enable_completions"})
+		rootCmd.InitDefaultCompletionCmd()
+	}
 
 	if err := rootCmd.Execute(); err != nil {
 		const horizontalEdgePadding = 2
