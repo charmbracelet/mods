@@ -20,27 +20,23 @@ import (
 // Build vars.
 var (
 	//nolint: gochecknoglobals
-	version = "dev"
-	commit  = ""
-	date    = ""
-	builtBy = ""
+	Version   = ""
+	CommitSHA = ""
 )
 
-func buildVersion() string {
-	result := version
-	if commit != "" {
-		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
+func buildVersion() {
+	if len(CommitSHA) >= 7 {
+		vt := rootCmd.VersionTemplate()
+		rootCmd.SetVersionTemplate(vt[:len(vt)-1] + " (" + CommitSHA[0:7] + ")\n")
 	}
-	if date != "" {
-		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
+	if Version == "" {
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Sum != "" {
+			Version = info.Main.Version
+		} else {
+			Version = "unknown (built from source)"
+		}
 	}
-	if builtBy != "" {
-		result = fmt.Sprintf("%s\nbuilt by: %s", result, builtBy)
-	}
-	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Sum != "" {
-		result = fmt.Sprintf("%s\nmodule version: %s, checksum: %s", result, info.Main.Version, info.Main.Sum)
-	}
-	return result
+	rootCmd.Version = Version
 }
 
 func init() {
@@ -52,7 +48,7 @@ func init() {
 	glamour.DarkStyleConfig.CodeBlock.Chroma.Error.BackgroundColor = new(string)
 	glamour.LightStyleConfig.CodeBlock.Chroma.Error.BackgroundColor = new(string)
 
-	rootCmd.Version = buildVersion()
+	buildVersion()
 	rootCmd.SetUsageFunc(usageFunc)
 	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
 		return flagParseError{err: err}
