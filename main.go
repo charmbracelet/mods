@@ -108,7 +108,7 @@ var (
 				opts = append(opts, tea.WithInput(nil))
 			}
 
-			mods := newMods(stderrRenderer)
+			mods := newMods(stderrRenderer, config, db, cache)
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
 			if err != nil {
