@@ -330,6 +330,7 @@ func deleteConversation(mods *Mods) {
 }
 
 func listConversations(mods *Mods) {
+	styles := makeStyles(stdoutRenderer)
 	conversations, err := db.List()
 	if err != nil {
 		exitError(mods, err, "Couldn't list saves.")
@@ -347,13 +348,17 @@ func listConversations(mods *Mods) {
 			"("+fmt.Sprint(len(conversations))+")",
 		),
 	)
+	format := "%s %s\n"
+	if isOutputTTY() {
+		format = styles.Comment.Render("•") + " %s %s\n"
+	}
 	for _, conversation := range conversations {
-		fmt.Fprintf(os.Stderr, "%s %s %s\n",
-			mods.Styles.Comment.Render("•"),
+		fmt.Fprintf(os.Stdout, format,
 			conversation.ID[:sha1short],
-			mods.Styles.Comment.Render(conversation.Title),
+			styles.Comment.Render(conversation.Title),
 		)
 	}
+
 	exit(mods, 0)
 }
 
