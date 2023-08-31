@@ -343,13 +343,6 @@ func listConversations() error {
 		return nil
 	}
 
-	fmt.Fprintf(
-		os.Stderr,
-		"Saved conversations %s:\n",
-		stderrStyles.Comment.Render(
-			"("+fmt.Sprint(len(conversations))+")",
-		),
-	)
 	for _, conversation := range conversations {
 		if isOutputTTY() {
 			fmt.Fprintf(

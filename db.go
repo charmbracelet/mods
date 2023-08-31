@@ -40,7 +40,8 @@ func openDB(ds string) (*convoDB, error) {
 			handleSqliteErr(err),
 		)
 	}
-	if _, err := db.Exec(`
+	for _, stm := range []string{
+		`
 		create table if not exists conversations(
 			id string not null primary key,
 			title string not null,
@@ -48,8 +49,13 @@ func openDB(ds string) (*convoDB, error) {
 			check(id <> ''),
 			check(title <> '')
 		);
-	`); err != nil {
-		return nil, fmt.Errorf("could not migrate db: %w", err)
+		`,
+		`create index if not exists idx_conv_id on conversations(id)`,
+		`create index if not exists idx_conv_title on conversations(title)`,
+	} {
+		if _, err := db.Exec(stm); err != nil {
+			return nil, fmt.Errorf("could not migrate db: %w", err)
+		}
 	}
 	return &convoDB{db: db}, nil
 }
@@ -131,9 +137,9 @@ func (c *convoDB) findByIDOrTitle(result *[]Conversation, in string) error {
 	if err := c.db.Select(result, c.db.Rebind(`
 		select *
 		from conversations
-		where id like ?
+		where id glob ?
 		or title = ?
-	`), in+"%", in); err != nil {
+	`), in+"*", in); err != nil {
 		return fmt.Errorf("findByIDOrTitle: %w", err)
 	}
 	return nil
@@ -145,18 +151,26 @@ func (c *convoDB) Completions(in string) ([]string, error) {
 		select printf(
 			'%s%c%s',
 			case
-				when length(?) < ? then
-					substr(id, 1, ?)
-				else
-					id
+			when length(?) < ? then
+				substr(id, 1, ?)
+			else
+				id
 			end,
 			char(9),
 			title
 		)
-		from conversations where id like ?
+		from conversations where id glob ?
 		union
-		select printf("%s%c%s", title, char(9), substr(id, 1, ?)) from conversations where title like ?
-	`), in, sha1short, sha1short, in+"%", sha1short, in+"%"); err != nil {
+		select
+			printf(
+				"%s%c%s",
+				title,
+				char(9),
+				substr(id, 1, ?)
+		)
+		from conversations
+		where title glob ?
+	`), in, sha1short, sha1short, in+"*", sha1short, in+"*"); err != nil {
 		return result, fmt.Errorf("Completions: %w", err)
 	}
 	return result, nil
