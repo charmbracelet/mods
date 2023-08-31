@@ -354,14 +354,22 @@ func listConversations() error {
 			"("+fmt.Sprint(len(conversations))+")",
 		),
 	)
-	format := "%s %s\n"
-	if isOutputTTY() {
-		format = stdoutStyles.Comment.Render("•") + " %s %s\n"
-	}
 	for _, conversation := range conversations {
-		fmt.Fprintf(os.Stdout, format,
+		if isOutputTTY() {
+			fmt.Fprintf(
+				os.Stdout,
+				"%s %s %s\n",
+				stdoutStyles.Comment.Render("•"),
+				stdoutStyles.SHA1.Render(conversation.ID[:sha1short]),
+				conversation.Title,
+			)
+			continue
+		}
+		fmt.Fprintf(
+			os.Stdout,
+			"%s %s\n",
 			conversation.ID[:sha1short],
-			stdoutStyles.Comment.Render(conversation.Title),
+			conversation.Title,
 		)
 	}
 	return nil
@@ -385,8 +393,8 @@ func writeConversation(mods *Mods) error {
 	fmt.Fprintln(
 		os.Stderr,
 		"\nConversation saved:",
-		config.cacheWriteToID[:sha1short],
-		stderrStyles.Comment.Render(config.cacheWriteToTitle),
+		stderrStyles.InlineCode.Render(config.cacheWriteToID[:sha1short]),
+		stderrStyles.Comment.Render(title),
 	)
 	return nil
 }
