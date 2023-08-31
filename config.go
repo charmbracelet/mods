@@ -143,7 +143,7 @@ func ensureConfig() (Config, error) {
 	var c Config
 	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
 	if err != nil {
-		return c, modsError{err, "Could not find settings path"}
+		return c, modsError{err, "Could not find settings path."}
 	}
 	c.SettingsPath = sp
 
@@ -157,10 +157,10 @@ func ensureConfig() (Config, error) {
 	}
 	content, err := os.ReadFile(sp)
 	if err != nil {
-		return c, modsError{err, "Could not read settings file"}
+		return c, modsError{err, "Could not read settings file."}
 	}
 	if err := yaml.Unmarshal(content, &c); err != nil {
-		return c, modsError{err, "Could not parse settings file"}
+		return c, modsError{err, "Could not parse settings file."}
 	}
 	ms := make(map[string]Model)
 	for _, api := range c.APIs {
@@ -184,7 +184,7 @@ func ensureConfig() (Config, error) {
 
 	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isOutputTTY()))
 	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
-		return c, modsError{err, "Could not parse environment into settings file"}
+		return c, modsError{err, "Could not parse environment into settings file."}
 	}
 
 	if c.CachePath == "" {
@@ -211,7 +211,7 @@ func writeConfigFile(path string) error {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return createConfigFile(path)
 	} else if err != nil {
-		return modsError{err, "Could not stat path"}
+		return modsError{err, "Could not stat path."}
 	}
 	return nil
 }
@@ -222,7 +222,7 @@ func createConfigFile(path string) error {
 	var c Config
 	f, err := os.Create(path)
 	if err != nil {
-		return modsError{err, "Could not create configuration file"}
+		return modsError{err, "Could not create configuration file."}
 	}
 	defer func() { _ = f.Close() }()
 
@@ -234,7 +234,7 @@ func createConfigFile(path string) error {
 		Help:   help,
 	}
 	if err := tmpl.Execute(f, m); err != nil {
-		return modsError{err, "Could not render template"}
+		return modsError{err, "Could not render template."}
 	}
 	return nil
 }

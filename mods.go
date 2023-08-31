@@ -284,8 +284,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !ok {
 			if cfg.API == "" {
 				return modsError{
-					reason: "Model " + m.Styles.InlineCode.Render(cfg.Model) + " is not in the settings file.",
-					err:    fmt.Errorf("Please specify an API endpoint with %s or configure the model in the settings: %s", m.Styles.InlineCode.Render("--api"), m.Styles.InlineCode.Render("mods -s")),
+					reason: fmt.Sprintf(
+						"Model %s is not in the settings file.",
+						m.Styles.InlineCode.Render(cfg.Model),
+					),
+					err: fmt.Errorf(
+						"Please specify an API endpoint with %s or configure the model in the settings: %s",
+						m.Styles.InlineCode.Render("--api"),
+						m.Styles.InlineCode.Render("mods -s"),
+					),
 				}
 			}
 			mod.Name = cfg.Model
@@ -304,8 +311,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				eps = append(eps, m.Styles.InlineCode.Render(a.Name))
 			}
 			return modsError{
-				reason: fmt.Sprintf("The API endpoint %s is not configured ", m.Styles.InlineCode.Render(cfg.API)),
-				err:    fmt.Errorf("Your configured API endpoints are: %s", eps),
+				err: fmt.Errorf(
+					"Your configured API endpoints are: %s",
+					eps,
+				),
+				reason: fmt.Sprintf(
+					"The API endpoint %s is not configured.",
+					m.Styles.InlineCode.Render(cfg.API),
+				),
 			}
 		}
 		if api.APIKeyEnv != "" {
@@ -319,8 +332,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			if key == "" {
 				return modsError{
-					reason: m.Styles.InlineCode.Render("OPENAI_API_KEY") + " environment variable is required.",
-					err:    fmt.Errorf("You can grab one at %s", m.Styles.Link.Render("https://platform.openai.com/account/api-keys.")),
+					reason: fmt.Sprintf(
+						"%s environment variable is required.",
+						m.Styles.InlineCode.Render("OPENAI_API_KEY"),
+					),
+					err: fmt.Errorf(
+						"You can grab one at %s",
+						m.Styles.Link.Render("https://platform.openai.com/account/api-keys."),
+					),
 				}
 			}
 			ccfg = openai.DefaultConfig(key)
@@ -333,8 +352,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			if key == "" {
 				return modsError{
-					reason: m.Styles.InlineCode.Render("AZURE_OPENAI_KEY") + " environment variable is required.",
-					err:    fmt.Errorf("You can apply for one at %s", m.Styles.Link.Render("https://aka.ms/oai/access")),
+					reason: fmt.Sprintf(
+						"%s environment variable is required.",
+						m.Styles.InlineCode.Render("AZURE_OPENAI_KEY"),
+					),
+					err: fmt.Errorf(
+						"You can apply for one at %s",
+						m.Styles.Link.Render("https://aka.ms/oai/access"),
+					),
 				}
 			}
 			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
@@ -379,8 +404,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !cfg.NoCache && cfg.cacheReadFromID != "" {
 			if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
 				return modsError{
-					err:    err,
-					reason: fmt.Sprintf("There was a problem reading the cache. Use %s / %s to disable it.", m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+					err: err,
+					reason: fmt.Sprintf(
+						"There was a problem reading the cache. Use %s / %s to disable it.",
+						m.Styles.InlineCode.Render("--no-cache"),
+						m.Styles.InlineCode.Render("NO_CACHE"),
+					),
 				}
 			}
 		}
@@ -407,7 +436,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		if err != nil {
-			return modsError{err: err, reason: fmt.Sprintf("There was a problem with the %s API request.", mod.API)}
+			return modsError{err, fmt.Sprintf(
+				"There was a problem with the %s API request.",
+				mod.API,
+			)}
 		}
 
 		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
@@ -421,7 +453,11 @@ func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, cont
 			m.Config.Model = mod.Fallback
 			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 		}
-		return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", cfg.Model, cfg.API)}
+		return modsError{err: err, reason: fmt.Sprintf(
+			"Missing model '%s' for API '%s'.",
+			cfg.Model,
+			cfg.API,
+		)}
 	case http.StatusBadRequest:
 		if err.Code == "context_length_exceeded" {
 			pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
@@ -442,7 +478,11 @@ func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, cont
 		if mod.API == "openai" {
 			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 		}
-		return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", mod.Name, mod.API)}
+		return modsError{err: err, reason: fmt.Sprintf(
+			"Error loading model '%s' for API '%s'.",
+			mod.Name,
+			mod.API,
+		)}
 	default:
 		return m.retry(content, modsError{err: err, reason: "Unknown API error."})
 	}
@@ -460,8 +500,13 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 				})
 				if err := m.cache.write(m.Config.cacheWriteToID, &messages); err != nil {
 					return modsError{
-						err:    err,
-						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.cacheWriteToID, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+						err: err,
+						reason: fmt.Sprintf(
+							"There was a problem writing %s to the cache. Use %s / %s to disable it.",
+							m.Config.cacheWriteToID,
+							m.Styles.InlineCode.Render("--no-cache"),
+							m.Styles.InlineCode.Render("NO_CACHE"),
+						),
 					}
 				}
 			}
@@ -490,7 +535,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		if continueLast && m.Config.Prefix == "" {
 			return modsError{
 				err:    fmt.Errorf("Missing prompt"),
-				reason: "You must specify a prompt",
+				reason: "You must specify a prompt.",
 			}
 		}
 
@@ -499,7 +544,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 			if err != nil {
 				return modsError{
 					err:    err,
-					reason: "Could not find the conversation",
+					reason: "Could not find the conversation.",
 				}
 			}
 			readID = found

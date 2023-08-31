@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -26,7 +25,7 @@ var (
 )
 
 func buildVersion() {
-	if len(CommitSHA) >= 7 {
+	if len(CommitSHA) >= sha1short {
 		vt := rootCmd.VersionTemplate()
 		rootCmd.SetVersionTemplate(vt[:len(vt)-1] + " (" + CommitSHA[0:7] + ")\n")
 	}
@@ -106,7 +105,10 @@ var (
 				c.Stdout = stdout
 				c.Stderr = stderr
 				if err := c.Run(); err != nil {
-					return modsError{reason: "Missing $EDITOR", err: err}
+					return modsError{err, fmt.Sprintf(
+						"Missing %s.",
+						stderrStyles.InlineCode.Render("$EDITOR"),
+					)}
 				}
 
 				fmt.Fprintln(stderr, "Wrote config file to:", config.SettingsPath)
