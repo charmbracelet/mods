@@ -40,22 +40,28 @@ func openDB(ds string) (*convoDB, error) {
 			handleSqliteErr(err),
 		)
 	}
-	for _, stm := range []string{
-		`
+	if _, err := db.Exec(`
 		create table if not exists conversations(
 			id string not null primary key,
 			title string not null,
 			updated_at datetime not null default(strftime('%Y-%m-%d %H:%M:%f', 'now')),
 			check(id <> ''),
 			check(title <> '')
-		);
-		`,
-		`create index if not exists idx_conv_id on conversations(id)`,
-		`create index if not exists idx_conv_title on conversations(title)`,
-	} {
-		if _, err := db.Exec(stm); err != nil {
-			return nil, fmt.Errorf("could not migrate db: %w", err)
-		}
+		)
+	`); err != nil {
+		return nil, fmt.Errorf("could not migrate db: %w", err)
+	}
+	if _, err := db.Exec(`
+		create index if not exists idx_conv_id
+		on conversations(id)
+	`); err != nil {
+		return nil, fmt.Errorf("could not migrate db: %w", err)
+	}
+	if _, err := db.Exec(`
+		create index if not exists idx_conv_title
+		on conversations(title)
+	`); err != nil {
+		return nil, fmt.Errorf("could not migrate db: %w", err)
 	}
 	return &convoDB{db: db}, nil
 }
@@ -116,7 +122,12 @@ func (c *convoDB) Delete(id string) error {
 
 func (c *convoDB) FindHEAD() (*Conversation, error) {
 	var convo Conversation
-	if err := c.db.Get(&convo, "select * from conversations order by updated_at desc limit 1"); err != nil {
+	if err := c.db.Get(&convo, `
+		select *
+		from conversations
+		order by updated_at desc
+		limit 1
+	`); err != nil {
 		return nil, fmt.Errorf("FindHead: %w", err)
 	}
 	return &convo, nil
@@ -200,10 +211,11 @@ func (c *convoDB) Find(in string) (*Conversation, error) {
 
 func (c *convoDB) List() ([]Conversation, error) {
 	var convos []Conversation
-	if err := c.db.Select(
-		&convos,
-		"select * from conversations order by updated_at desc",
-	); err != nil {
+	if err := c.db.Select(&convos, `
+		select *
+		from conversations
+		order by updated_at desc
+	`); err != nil {
 		return convos, fmt.Errorf("List: %w", err)
 	}
 	return convos, nil
