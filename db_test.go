@@ -154,6 +154,10 @@ func TestConvoDB(t *testing.T) {
 
 		results, err := db.Completions("f")
 		require.NoError(t, err)
-		require.Equal(t, []string{testid, "football teams"}, results)
+		require.Equal(t, []string{testid[:sha1short], "football teams"}, results)
+
+		results, err = db.Completions(testid[:8])
+		require.NoError(t, err)
+		require.Equal(t, []string{testid}, results)
 	})
 }
