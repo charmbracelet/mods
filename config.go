@@ -139,23 +139,28 @@ func (f flagParseError) Flag() string {
 	}
 }
 
-func newConfig() (Config, error) {
+func ensureConfig() (Config, error) {
 	var c Config
 	sp, err := xdg.ConfigFile(filepath.Join("mods", "mods.yml"))
 	if err != nil {
-		return c, fmt.Errorf("can't find settings path: %s", err)
+		return c, modsError{err, "Could not find settings path"}
 	}
 	c.SettingsPath = sp
-	err = writeConfigFile(sp)
-	if err != nil {
+
+	dir := filepath.Dir(sp)
+	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gomnd
+		return c, modsError{err, "Could not create cache directory."}
+	}
+
+	if err := writeConfigFile(sp); err != nil {
 		return c, err
 	}
 	content, err := os.ReadFile(sp)
 	if err != nil {
-		return c, fmt.Errorf("can't read settings file: %s", err)
+		return c, modsError{err, "Could not read settings file"}
 	}
 	if err := yaml.Unmarshal(content, &c); err != nil {
-		return c, fmt.Errorf("%s: %w", sp, err)
+		return c, modsError{err, "Could not parse settings file"}
 	}
 	ms := make(map[string]Model)
 	for _, api := range c.APIs {
@@ -179,7 +184,7 @@ func newConfig() (Config, error) {
 
 	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isOutputTTY()))
 	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
-		return c, fmt.Errorf("could not parse environment into config: %s", err)
+		return c, modsError{err, "Could not parse environment into settings file"}
 	}
 
 	if c.CachePath == "" {
@@ -202,25 +207,18 @@ func writeConfigFile(path string) error {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return createConfigFile(path)
 	} else if err != nil {
-		return fmt.Errorf("could not stat path '%s': %w", path, err)
+		return modsError{err, "Could not stat path"}
 	}
 	return nil
 }
 
 func createConfigFile(path string) error {
-	var c Config
-	tmpl, err := template.New("config").Parse(strings.TrimSpace(configTemplate))
-	if err != nil {
-		return fmt.Errorf("could not parse config template: %w", err)
-	}
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gomnd
-		return fmt.Errorf("could not create directory '%s': %w", dir, err)
-	}
+	tmpl := template.Must(template.New("config").Parse(configTemplate))
 
+	var c Config
 	f, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("could not create file '%s': %w", path, err)
+		return modsError{err, "Could not create configuration file"}
 	}
 	defer func() { _ = f.Close() }()
 
@@ -232,7 +230,7 @@ func createConfigFile(path string) error {
 		Help:   help,
 	}
 	if err := tmpl.Execute(f, m); err != nil {
-		return fmt.Errorf("could not render template: %w", err)
+		return modsError{err, "Could not render template"}
 	}
 	return nil
 }
