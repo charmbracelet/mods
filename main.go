@@ -208,6 +208,12 @@ func main() {
 	}
 
 	cache = newCache(config.CachePath)
+	if _, err := os.Stat(config.CachePath); errors.Is(err, fs.ErrNotExist) {
+		if err := os.MkdirAll(config.CachePath, 0755); err != nil {
+			handleError(modsError{err, "Could not create cache directory."})
+			os.Exit(1)
+		}
+	}
 	db, err = openDB(filepath.Join(config.CachePath, "mods.db"))
 	if err != nil {
 		handleError(modsError{err, "Could not open database."})
