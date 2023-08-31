@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -147,17 +148,24 @@ func TestConvoDB(t *testing.T) {
 	t.Run("completions", func(t *testing.T) {
 		db := testDB(t)
 
-		const testid = "fc5012d8c67073ea0a46a3c05488a0e1d87df74b"
+		const testid1 = "fc5012d8c67073ea0a46a3c05488a0e1d87df74b"
+		const title1 = "some title"
 		const testid2 = "6c33f71694bf41a18c844a96d1f62f153e5f6f44"
-		require.NoError(t, db.Save(testid, "some title"))
-		require.NoError(t, db.Save(testid2, "football teams"))
+		const title2 = "football teams"
+		require.NoError(t, db.Save(testid1, title1))
+		require.NoError(t, db.Save(testid2, title2))
 
 		results, err := db.Completions("f")
 		require.NoError(t, err)
-		require.Equal(t, []string{testid[:sha1short], "football teams"}, results)
+		require.Equal(t, []string{
+			fmt.Sprintf("%s\t%s", testid1[:sha1short], title1),
+			fmt.Sprintf("%s\t%s", title2, testid2[:sha1short]),
+		}, results)
 
-		results, err = db.Completions(testid[:8])
+		results, err = db.Completions(testid1[:8])
 		require.NoError(t, err)
-		require.Equal(t, []string{testid}, results)
+		require.Equal(t, []string{
+			fmt.Sprintf("%s\t%s", testid1, title1),
+		}, results)
 	})
 }

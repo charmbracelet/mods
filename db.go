@@ -142,16 +142,21 @@ func (c *convoDB) findByIDOrTitle(result *[]Conversation, in string) error {
 func (c *convoDB) Completions(in string) ([]string, error) {
 	var result []string
 	if err := c.db.Select(&result, c.db.Rebind(`
-		select case
-			when length(?) < ? then
-				substr(id, 1, ?)
-			else
-				id
-			end
+		select printf(
+			'%s%c%s',
+			case
+				when length(?) < ? then
+					substr(id, 1, ?)
+				else
+					id
+			end,
+			char(9),
+			title
+		)
 		from conversations where id like ?
 		union
-		select title from conversations where title like ?
-	`), in, sha1short, sha1short, in+"%", in+"%"); err != nil {
+		select printf("%s%c%s", title, char(9), substr(id, 1, ?)) from conversations where title like ?
+	`), in, sha1short, sha1short, in+"%", sha1short, in+"%"); err != nil {
 		return result, fmt.Errorf("Completions: %w", err)
 	}
 	return result, nil
