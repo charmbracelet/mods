@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -246,7 +248,9 @@ func handleError(err error) {
 	format := "\n%s\n\n"
 
 	var args []interface{}
-	if ferr, ok := err.(flagParseError); ok {
+	var ferr flagParseError
+	var merr modsError
+	if errors.As(err, &ferr) {
 		format += "%s\n\n"
 		args = []interface{}{
 			fmt.Sprintf(
@@ -259,7 +263,7 @@ func handleError(err error) {
 				stderrStyles.InlineCode.Render(ferr.Flag()),
 			),
 		}
-	} else if merr, ok := err.(modsError); ok {
+	} else if errors.As(err, &merr) {
 		format += "%s\n\n"
 		args = []interface{}{
 			s.Render(stderrStyles.ErrorHeader.String(), merr.reason),
