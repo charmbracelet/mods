@@ -365,6 +365,16 @@ func listConversations() error {
 }
 
 func saveConversation(mods *Mods) error {
+	if config.NoCache {
+		fmt.Fprintf(
+			os.Stderr,
+			"\nConversation was not saved because %s or %s is set.\n",
+			stderrStyles.InlineCode.Render("--no-cache"),
+			stderrStyles.InlineCode.Render("NO_CACHE"),
+		)
+		return nil
+	}
+
 	// if message is a sha1, use the last prompt instead.
 	id := config.cacheWriteToID
 	title := strings.TrimSpace(config.cacheWriteToTitle)
