@@ -16,6 +16,7 @@ type styles struct {
 	Link         lipgloss.Style
 	Pipe         lipgloss.Style
 	Quote        lipgloss.Style
+	SHA1         lipgloss.Style
 }
 
 func makeStyles(r *lipgloss.Renderer) (s styles) {
@@ -32,5 +33,6 @@ func makeStyles(r *lipgloss.Renderer) (s styles) {
 	s.Link = r.NewStyle().Foreground(lipgloss.Color("#00AF87")).Underline(true)
 	s.Quote = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"})
 	s.Pipe = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
+	s.SHA1 = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#5DD6C0", Dark: "#427C72"})
 	return s
 }

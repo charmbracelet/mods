@@ -10,7 +10,8 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	newMods := func(t *testing.T) *Mods {
 		db := testDB(t)
 		return &Mods{
-			db: db,
+			db:     db,
+			Config: &Config{},
 		}
 	}
 
@@ -47,10 +48,22 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		id := newConversationID()
 		require.NoError(t, mods.db.Save(id, "message"))
 		mods.Config.Continue = id[:5]
+		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
 		require.Equal(t, id, dets.ReadID)
 		require.Equal(t, id, dets.WriteID)
+	})
+
+	t.Run("continue with no prompt", func(t *testing.T) {
+		mods := newMods(t)
+		id := newConversationID()
+		require.NoError(t, mods.db.Save(id, "message 1"))
+		mods.Config.ContinueLast = true
+		msg := mods.findCacheOpsDetails()()
+		err := msg.(modsError)
+		require.Error(t, err.err)
+		require.Equal(t, "You must specify a prompt.", err.reason)
 	})
 
 	t.Run("continue title", func(t *testing.T) {
@@ -58,6 +71,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		id := newConversationID()
 		require.NoError(t, mods.db.Save(id, "message 1"))
 		mods.Config.Continue = "message 1"
+		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
 		require.Equal(t, id, dets.ReadID)
@@ -69,6 +83,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		id := newConversationID()
 		require.NoError(t, mods.db.Save(id, "message 1"))
 		mods.Config.ContinueLast = true
+		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
 		require.Equal(t, id, dets.ReadID)
@@ -81,6 +96,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		id := newConversationID()
 		require.NoError(t, mods.db.Save(id, "message 1"))
 		mods.Config.Continue = "message 2"
+		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
 		require.Equal(t, id, dets.ReadID)
@@ -135,7 +151,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		mods.Config.Show = "aaa"
 		msg := mods.findCacheOpsDetails()()
 		err := msg.(modsError)
-		require.Equal(t, "Could not find the conversation", err.reason)
+		require.Equal(t, "Could not find the conversation.", err.reason)
 		require.EqualError(t, err, errNoMatches.Error())
 	})
 }

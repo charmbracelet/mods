@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -20,7 +19,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/x/exp/ordered"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -38,7 +36,6 @@ const (
 // Mods is the Bubble Tea model that manages reading stdin and querying the
 // OpenAI API.
 type Mods struct {
-	Config        Config
 	Output        string
 	Input         string
 	Styles        styles
@@ -55,15 +52,17 @@ type Mods struct {
 	anim          tea.Model
 	width         int
 	height        int
-	db            *convoDB
-	cache         *convoCache
+
+	db     *convoDB
+	cache  *convoCache
+	Config *Config
 
 	content      []string
 	contentMutex *sync.Mutex
 	clearOnce    *sync.Once
 }
 
-func newMods(r *lipgloss.Renderer) *Mods {
+func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) *Mods {
 	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
 	vp := viewport.New(0, 0)
 	vp.GotoBottom()
@@ -75,6 +74,9 @@ func newMods(r *lipgloss.Renderer) *Mods {
 		glamViewport: vp,
 		contentMutex: &sync.Mutex{},
 		clearOnce:    &sync.Once{},
+		db:           db,
+		cache:        cache,
+		Config:       cfg,
 	}
 }
 
@@ -106,7 +108,7 @@ func (m modsError) Error() string {
 
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
-	return m.loadConfigCmd
+	return m.findCacheOpsDetails()
 }
 
 // Update implements tea.Model.
@@ -122,17 +124,6 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
 		m.state = configLoadedState
 		cmds = append(cmds, readStdinCmd, m.anim.Init())
-
-	case initMsg:
-		m.Config = msg.config
-		m.db = msg.db
-		m.cache = msg.cache
-
-		if m.Config.ShowHelp || m.Config.Version || m.Config.Settings {
-			return m, m.quit
-		}
-
-		cmds = append(cmds, m.findCacheOpsDetails())
 
 	case completionInput:
 		if msg.content != "" {
@@ -214,7 +205,7 @@ func (m *Mods) View() string {
 	//nolint:exhaustive
 	switch m.state {
 	case errorState:
-		return m.ErrorView()
+		return ""
 	case requestState:
 		if !m.Config.Quiet {
 			return m.anim.View()
@@ -259,20 +250,6 @@ func (m *Mods) View() string {
 	return ""
 }
 
-// ErrorView renders the currently set modsError.
-func (m Mods) ErrorView() string {
-	const maxWidth = 120
-	const horizontalEdgePadding = 2
-	const totalHorizontalPadding = horizontalEdgePadding * 2
-	w := ordered.Max(maxWidth, m.width-totalHorizontalPadding)
-	s := m.renderer.NewStyle().Width(w).Padding(0, horizontalEdgePadding)
-	return fmt.Sprintf(
-		"\n%s\n\n%s\n\n",
-		s.Render(m.Styles.ErrorHeader.String(), m.Error.reason),
-		s.Render(m.Styles.ErrorDetails.Render(m.Error.Error())),
-	)
-}
-
 func (m *Mods) quit() tea.Msg {
 	if m.cancelRequest != nil {
 		m.cancelRequest()
@@ -288,48 +265,6 @@ func (m *Mods) retry(content string, err modsError) tea.Msg {
 	wait := time.Millisecond * 100 * time.Duration(math.Pow(2, float64(m.retries))) //nolint:gomnd
 	time.Sleep(wait)
 	return completionInput{content}
-}
-
-func (m *Mods) loadConfigCmd() tea.Msg {
-	cfg, err := newConfig()
-	if err != nil {
-		var fpe flagParseError
-		switch {
-		case errors.As(err, &fpe):
-			me := modsError{}
-			me.reason = fmt.Sprintf("Missing flag: %s", m.Styles.InlineCode.Render(fpe.Flag()))
-			me.err = fmt.Errorf("Check out %s %s", m.Styles.InlineCode.Render("mods -h"), m.Styles.Comment.Render("for help."))
-			return me
-		default:
-			return modsError{err, "There was an error loading your config file."}
-		}
-	}
-
-	if err := os.MkdirAll(cfg.CachePath, 0o700); err != nil { //nolint: gomnd
-		return modsError{
-			reason: "Could not create cache directory",
-			err:    err,
-		}
-	}
-	cache := newCache(cfg.CachePath)
-	db, err := openDB(filepath.Join(cfg.CachePath, "mods.db"))
-	if err != nil {
-		return modsError{
-			reason: "Could not open db",
-			err:    err,
-		}
-	}
-	return initMsg{
-		config: cfg,
-		db:     db,
-		cache:  cache,
-	}
-}
-
-type initMsg struct {
-	config Config
-	db     *convoDB
-	cache  *convoCache
 }
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
@@ -349,8 +284,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !ok {
 			if cfg.API == "" {
 				return modsError{
-					reason: "Model " + m.Styles.InlineCode.Render(cfg.Model) + " is not in the settings file.",
-					err:    fmt.Errorf("Please specify an API endpoint with %s or configure the model in the settings: %s", m.Styles.InlineCode.Render("--api"), m.Styles.InlineCode.Render("mods -s")),
+					reason: fmt.Sprintf(
+						"Model %s is not in the settings file.",
+						m.Styles.InlineCode.Render(cfg.Model),
+					),
+					err: fmt.Errorf(
+						"Please specify an API endpoint with %s or configure the model in the settings: %s",
+						m.Styles.InlineCode.Render("--api"),
+						m.Styles.InlineCode.Render("mods -s"),
+					),
 				}
 			}
 			mod.Name = cfg.Model
@@ -369,8 +311,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				eps = append(eps, m.Styles.InlineCode.Render(a.Name))
 			}
 			return modsError{
-				reason: fmt.Sprintf("The API endpoint %s is not configured ", m.Styles.InlineCode.Render(cfg.API)),
-				err:    fmt.Errorf("Your configured API endpoints are: %s", eps),
+				err: fmt.Errorf(
+					"Your configured API endpoints are: %s",
+					eps,
+				),
+				reason: fmt.Sprintf(
+					"The API endpoint %s is not configured.",
+					m.Styles.InlineCode.Render(cfg.API),
+				),
 			}
 		}
 		if api.APIKeyEnv != "" {
@@ -384,8 +332,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			if key == "" {
 				return modsError{
-					reason: m.Styles.InlineCode.Render("OPENAI_API_KEY") + " environment variable is required.",
-					err:    fmt.Errorf("You can grab one at %s", m.Styles.Link.Render("https://platform.openai.com/account/api-keys.")),
+					reason: fmt.Sprintf(
+						"%s environment variable is required.",
+						m.Styles.InlineCode.Render("OPENAI_API_KEY"),
+					),
+					err: fmt.Errorf(
+						"You can grab one at %s",
+						m.Styles.Link.Render("https://platform.openai.com/account/api-keys."),
+					),
 				}
 			}
 			ccfg = openai.DefaultConfig(key)
@@ -398,8 +352,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			if key == "" {
 				return modsError{
-					reason: m.Styles.InlineCode.Render("AZURE_OPENAI_KEY") + " environment variable is required.",
-					err:    fmt.Errorf("You can apply for one at %s", m.Styles.Link.Render("https://aka.ms/oai/access")),
+					reason: fmt.Sprintf(
+						"%s environment variable is required.",
+						m.Styles.InlineCode.Render("AZURE_OPENAI_KEY"),
+					),
+					err: fmt.Errorf(
+						"You can apply for one at %s",
+						m.Styles.Link.Render("https://aka.ms/oai/access"),
+					),
 				}
 			}
 			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
@@ -444,8 +404,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !cfg.NoCache && cfg.cacheReadFromID != "" {
 			if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
 				return modsError{
-					err:    err,
-					reason: fmt.Sprintf("There was a problem reading the cache. Use %s / %s to disable it.", m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+					err: err,
+					reason: fmt.Sprintf(
+						"There was a problem reading the cache. Use %s / %s to disable it.",
+						m.Styles.InlineCode.Render("--no-cache"),
+						m.Styles.InlineCode.Render("NO_CACHE"),
+					),
 				}
 			}
 		}
@@ -472,21 +436,28 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		if err != nil {
-			return modsError{err: err, reason: fmt.Sprintf("There was a problem with the %s API request.", mod.API)}
+			return modsError{err, fmt.Sprintf(
+				"There was a problem with the %s API request.",
+				mod.API,
+			)}
 		}
 
 		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 	}
 }
 
-func (m *Mods) handleAPIError(err *openai.APIError, cfg Config, mod Model, content string) tea.Msg {
+func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, content string) tea.Msg {
 	switch err.HTTPStatusCode {
 	case http.StatusNotFound:
 		if mod.Fallback != "" {
 			m.Config.Model = mod.Fallback
 			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 		}
-		return modsError{err: err, reason: fmt.Sprintf("Missing model '%s' for API '%s'", cfg.Model, cfg.API)}
+		return modsError{err: err, reason: fmt.Sprintf(
+			"Missing model '%s' for API '%s'.",
+			cfg.Model,
+			cfg.API,
+		)}
 	case http.StatusBadRequest:
 		if err.Code == "context_length_exceeded" {
 			pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
@@ -507,7 +478,11 @@ func (m *Mods) handleAPIError(err *openai.APIError, cfg Config, mod Model, conte
 		if mod.API == "openai" {
 			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
 		}
-		return modsError{err: err, reason: fmt.Sprintf("Error loading model '%s' for API '%s'", mod.Name, mod.API)}
+		return modsError{err: err, reason: fmt.Sprintf(
+			"Error loading model '%s' for API '%s'.",
+			mod.Name,
+			mod.API,
+		)}
 	default:
 		return m.retry(content, modsError{err: err, reason: "Unknown API error."})
 	}
@@ -525,8 +500,13 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 				})
 				if err := m.cache.write(m.Config.cacheWriteToID, &messages); err != nil {
 					return modsError{
-						err:    err,
-						reason: fmt.Sprintf("There was a problem writing %s to the cache. Use %s / %s to disable it.", m.Config.cacheWriteToID, m.Styles.InlineCode.Render("--no-cache"), m.Styles.InlineCode.Render("NO_CACHE")),
+						err: err,
+						reason: fmt.Sprintf(
+							"There was a problem writing %s to the cache. Use %s / %s to disable it.",
+							m.Config.cacheWriteToID,
+							m.Styles.InlineCode.Render("--no-cache"),
+							m.Styles.InlineCode.Render("NO_CACHE"),
+						),
 					}
 				}
 			}
@@ -552,12 +532,19 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		writeID := firstNonEmpty(m.Config.Title, m.Config.Continue)
 		title := writeID
 
+		if continueLast && m.Config.Prefix == "" {
+			return modsError{
+				err:    fmt.Errorf("Missing prompt"),
+				reason: "You must specify a prompt.",
+			}
+		}
+
 		if readID != "" || continueLast {
 			found, err := m.findReadID(readID)
 			if err != nil {
 				return modsError{
 					err:    err,
-					reason: "Could not find the conversation",
+					reason: "Could not find the conversation.",
 				}
 			}
 			readID = found
