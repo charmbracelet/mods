@@ -493,23 +493,10 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, io.EOF) {
 			msg.stream.Close()
-			if !m.Config.NoCache && m.Config.cacheWriteToID != "" {
-				messages := append(m.messages, openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: m.Output,
-				})
-				if err := m.cache.write(m.Config.cacheWriteToID, &messages); err != nil {
-					return modsError{
-						err: err,
-						reason: fmt.Sprintf(
-							"There was a problem writing %s to the cache. Use %s / %s to disable it.",
-							m.Config.cacheWriteToID,
-							m.Styles.InlineCode.Render("--no-cache"),
-							m.Styles.InlineCode.Render("NO_CACHE"),
-						),
-					}
-				}
-			}
+			m.messages = append(m.messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: m.Output,
+			})
 			return completionOutput{}
 		}
 		if err != nil {

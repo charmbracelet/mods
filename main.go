@@ -141,7 +141,7 @@ var (
 			}
 
 			if config.cacheWriteToID != "" {
-				return writeConversation(mods)
+				return saveConversation(mods)
 			}
 
 			return nil
@@ -317,7 +317,7 @@ func resetSettings() error {
 func deleteConversation() error {
 	convo, err := db.Find(config.Delete)
 	if err != nil {
-		return modsError{err, "Couldn't delete conversation."}
+		return modsError{err, "Couldn't find conversation to delete."}
 	}
 
 	if err := db.Delete(convo.ID); err != nil {
@@ -364,7 +364,7 @@ func listConversations() error {
 	return nil
 }
 
-func writeConversation(mods *Mods) error {
+func saveConversation(mods *Mods) error {
 	// if message is a sha1, use the last prompt instead.
 	id := config.cacheWriteToID
 	title := strings.TrimSpace(config.cacheWriteToTitle)
@@ -373,10 +373,22 @@ func writeConversation(mods *Mods) error {
 		title = firstLine(lastPrompt(mods.messages))
 	}
 
-	// conversation would already have been written to the file storage, just
-	// need to write to db too.
+	if err := cache.write(id, &mods.messages); err != nil {
+		return modsError{err, fmt.Sprintf(
+			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
+			config.cacheWriteToID,
+			stderrStyles.InlineCode.Render("--no-cache"),
+			stderrStyles.InlineCode.Render("NO_CACHE"),
+		)}
+	}
 	if err := db.Save(id, title); err != nil {
-		return modsError{err, "Couldn't save conversation."}
+		_ = cache.delete(id) // remove leftovers
+		return modsError{err, fmt.Sprintf(
+			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
+			config.cacheWriteToID,
+			stderrStyles.InlineCode.Render("--no-cache"),
+			stderrStyles.InlineCode.Render("NO_CACHE"),
+		)}
 	}
 
 	fmt.Fprintln(
