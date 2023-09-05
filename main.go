@@ -236,7 +236,6 @@ func handleError(err error) {
 	_, _ = io.ReadAll(os.Stdin)
 
 	format := "\n%s\n\n"
-	style := stderrStyles().ErrPadding
 
 	var args []interface{}
 	var ferr flagParseError
@@ -257,19 +256,16 @@ func handleError(err error) {
 	} else if errors.As(err, &merr) {
 		format += "%s\n\n"
 		args = []interface{}{
-			style.Render(stderrStyles().ErrorHeader.String(), merr.reason),
-			style.Render(stderrStyles().ErrorDetails.Render(err.Error())),
+			stderrStyles().ErrPadding.Render(stderrStyles().ErrorHeader.String(), merr.reason),
+			stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())),
 		}
 	} else {
 		args = []interface{}{
-			style.Render(stderrStyles().ErrorDetails.Render(err.Error())),
+			stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())),
 		}
 	}
 
-	fmt.Fprintf(os.Stderr,
-		format,
-		args...,
-	)
+	fmt.Fprintf(os.Stderr, format, args...)
 }
 
 func resetSettings() error {
