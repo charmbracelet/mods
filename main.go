@@ -176,6 +176,9 @@ func initFlags() {
 	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles.FlagDesc.Render(help["title"]))
 	flags.StringVar(&config.Delete, "delete", config.Delete, stdoutStyles.FlagDesc.Render(help["delete"]))
 	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles.FlagDesc.Render(help["show"]))
+	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles.FlagDesc.Render(help["no-cache"]))
+	flags.Lookup("prompt").NoOptDefVal = "-1"
+	flags.SortFlags = false
 
 	for _, name := range []string{"show", "delete", "continue"} {
 		_ = rootCmd.RegisterFlagCompletionFunc(name, func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -183,10 +186,6 @@ func initFlags() {
 			return results, cobra.ShellCompDirectiveDefault
 		})
 	}
-
-	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles.FlagDesc.Render(help["no-cache"]))
-	flags.Lookup("prompt").NoOptDefVal = "-1"
-	flags.SortFlags = false
 
 	if config.Format && config.FormatText == "" {
 		config.FormatText = "Format the response as markdown without enclosing backticks."
@@ -255,7 +254,7 @@ func handleError(err error) {
 				stderrStyles.Comment.Render("for help."),
 			),
 			fmt.Sprintf(
-				"Missing flag: %s",
+				ferr.ReasonFormat(),
 				stderrStyles.InlineCode.Render(ferr.Flag()),
 			),
 		}
