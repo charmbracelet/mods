@@ -242,14 +242,14 @@ func createConfigFile(path string) error {
 func useLine() string {
 	appName := filepath.Base(os.Args[0])
 
-	if stdoutRenderer.ColorProfile() == termenv.TrueColor {
-		appName = makeGradientText(stdoutStyles.AppName, appName)
+	if stdoutRenderer().ColorProfile() == termenv.TrueColor {
+		appName = makeGradientText(stdoutStyles().AppName, appName)
 	}
 
 	return fmt.Sprintf(
 		"%s %s",
 		appName,
-		stdoutStyles.CliArgs.Render("[OPTIONS] [PREFIX TERM]"),
+		stdoutStyles().CliArgs.Render("[OPTIONS] [PREFIX TERM]"),
 	)
 }
 
@@ -264,24 +264,24 @@ func usageFunc(cmd *cobra.Command) error {
 		if f.Shorthand == "" {
 			fmt.Printf(
 				"  %-44s %s\n",
-				stdoutStyles.Flag.Render("--"+f.Name),
-				stdoutStyles.FlagDesc.Render(f.Usage),
+				stdoutStyles().Flag.Render("--"+f.Name),
+				stdoutStyles().FlagDesc.Render(f.Usage),
 			)
 		} else {
 			fmt.Printf(
 				"  %s%s %-40s %s\n",
-				stdoutStyles.Flag.Render("-"+f.Shorthand),
-				stdoutStyles.FlagComma,
-				stdoutStyles.Flag.Render("--"+f.Name),
-				stdoutStyles.FlagDesc.Render(f.Usage),
+				stdoutStyles().Flag.Render("-"+f.Shorthand),
+				stdoutStyles().FlagComma,
+				stdoutStyles().Flag.Render("--"+f.Name),
+				stdoutStyles().FlagDesc.Render(f.Usage),
 			)
 		}
 	})
 	desc, example := randomExample()
 	fmt.Printf(
 		"\nExample:\n  %s\n  %s\n",
-		stdoutStyles.Comment.Render("# "+desc),
-		cheapHighlighting(stdoutStyles, example),
+		stdoutStyles().Comment.Render("# "+desc),
+		cheapHighlighting(stdoutStyles(), example),
 	)
 
 	return nil
