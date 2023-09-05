@@ -12,8 +12,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/glow/editor"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 )
 
@@ -63,11 +61,6 @@ var (
 	db     *convoDB
 	cache  *convoCache
 
-	stdoutRenderer = lipgloss.DefaultRenderer()
-	stdoutStyles   = makeStyles(stdoutRenderer)
-	stderrRenderer = lipgloss.NewRenderer(os.Stderr, termenv.WithColorCache(true))
-	stderrStyles   = makeStyles(stderrRenderer)
-
 	rootCmd = &cobra.Command{
 		Use:           "mods",
 		SilenceUsage:  true,
@@ -79,7 +72,7 @@ var (
 			stdout := cmd.OutOrStdout()
 			stderr := cmd.ErrOrStderr()
 			opts := []tea.ProgramOption{
-				tea.WithOutput(stderrRenderer.Output()),
+				tea.WithOutput(stderrRenderer().Output()),
 				tea.WithoutEmptyRenders(),
 			}
 
@@ -87,7 +80,7 @@ var (
 				opts = append(opts, tea.WithInput(nil))
 			}
 
-			mods := newMods(stderrRenderer, &config, db, cache)
+			mods := newMods(stderrRenderer(), &config, db, cache)
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
 			if err != nil {
@@ -107,7 +100,7 @@ var (
 				if err := c.Run(); err != nil {
 					return modsError{err, fmt.Sprintf(
 						"Missing %s.",
-						stderrStyles.InlineCode.Render("$EDITOR"),
+						stderrStyles().InlineCode.Render("$EDITOR"),
 					)}
 				}
 
@@ -151,31 +144,31 @@ var (
 
 func initFlags() {
 	flags := rootCmd.Flags()
-	flags.StringVarP(&config.Model, "model", "m", config.Model, stdoutStyles.FlagDesc.Render(help["model"]))
-	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles.FlagDesc.Render(help["api"]))
-	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles.FlagDesc.Render(help["http-proxy"]))
-	flags.BoolVarP(&config.Format, "format", "f", config.Format, stdoutStyles.FlagDesc.Render(help["format"]))
-	flags.BoolVarP(&config.Glamour, "glamour", "g", config.Glamour, stdoutStyles.FlagDesc.Render(help["glamour"]))
-	flags.IntVarP(&config.IncludePrompt, "prompt", "P", config.IncludePrompt, stdoutStyles.FlagDesc.Render(help["prompt"]))
-	flags.BoolVarP(&config.IncludePromptArgs, "prompt-args", "p", config.IncludePromptArgs, stdoutStyles.FlagDesc.Render(help["prompt-args"]))
-	flags.BoolVarP(&config.Quiet, "quiet", "q", config.Quiet, stdoutStyles.FlagDesc.Render(help["quiet"]))
-	flags.BoolVar(&config.Settings, "settings", false, stdoutStyles.FlagDesc.Render(help["settings"]))
-	flags.BoolVarP(&config.ShowHelp, "help", "h", false, stdoutStyles.FlagDesc.Render(help["help"]))
-	flags.BoolVarP(&config.Version, "version", "v", false, stdoutStyles.FlagDesc.Render(help["version"]))
-	flags.StringVarP(&config.Continue, "continue", "c", "", stdoutStyles.FlagDesc.Render(help["continue"]))
-	flags.BoolVarP(&config.ContinueLast, "continue-last", "C", false, stdoutStyles.FlagDesc.Render(help["continue-last"]))
-	flags.BoolVarP(&config.List, "list", "l", config.List, stdoutStyles.FlagDesc.Render(help["list"]))
-	flags.IntVar(&config.MaxRetries, "max-retries", config.MaxRetries, stdoutStyles.FlagDesc.Render(help["max-retries"]))
-	flags.BoolVar(&config.NoLimit, "no-limit", config.NoLimit, stdoutStyles.FlagDesc.Render(help["no-limit"]))
-	flags.IntVar(&config.MaxTokens, "max-tokens", config.MaxTokens, stdoutStyles.FlagDesc.Render(help["max-tokens"]))
-	flags.Float32Var(&config.Temperature, "temp", config.Temperature, stdoutStyles.FlagDesc.Render(help["temp"]))
-	flags.Float32Var(&config.TopP, "topp", config.TopP, stdoutStyles.FlagDesc.Render(help["topp"]))
-	flags.UintVar(&config.Fanciness, "fanciness", config.Fanciness, stdoutStyles.FlagDesc.Render(help["fanciness"]))
-	flags.StringVar(&config.StatusText, "status-text", config.StatusText, stdoutStyles.FlagDesc.Render(help["status-text"]))
-	flags.BoolVar(&config.ResetSettings, "reset-settings", config.ResetSettings, stdoutStyles.FlagDesc.Render(help["reset-settings"]))
-	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles.FlagDesc.Render(help["title"]))
-	flags.StringVar(&config.Delete, "delete", config.Delete, stdoutStyles.FlagDesc.Render(help["delete"]))
-	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles.FlagDesc.Render(help["show"]))
+	flags.StringVarP(&config.Model, "model", "m", config.Model, stdoutStyles().FlagDesc.Render(help["model"]))
+	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles().FlagDesc.Render(help["api"]))
+	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles().FlagDesc.Render(help["http-proxy"]))
+	flags.BoolVarP(&config.Format, "format", "f", config.Format, stdoutStyles().FlagDesc.Render(help["format"]))
+	flags.BoolVarP(&config.Glamour, "glamour", "g", config.Glamour, stdoutStyles().FlagDesc.Render(help["glamour"]))
+	flags.IntVarP(&config.IncludePrompt, "prompt", "P", config.IncludePrompt, stdoutStyles().FlagDesc.Render(help["prompt"]))
+	flags.BoolVarP(&config.IncludePromptArgs, "prompt-args", "p", config.IncludePromptArgs, stdoutStyles().FlagDesc.Render(help["prompt-args"]))
+	flags.BoolVarP(&config.Quiet, "quiet", "q", config.Quiet, stdoutStyles().FlagDesc.Render(help["quiet"]))
+	flags.BoolVar(&config.Settings, "settings", false, stdoutStyles().FlagDesc.Render(help["settings"]))
+	flags.BoolVarP(&config.ShowHelp, "help", "h", false, stdoutStyles().FlagDesc.Render(help["help"]))
+	flags.BoolVarP(&config.Version, "version", "v", false, stdoutStyles().FlagDesc.Render(help["version"]))
+	flags.StringVarP(&config.Continue, "continue", "c", "", stdoutStyles().FlagDesc.Render(help["continue"]))
+	flags.BoolVarP(&config.ContinueLast, "continue-last", "C", false, stdoutStyles().FlagDesc.Render(help["continue-last"]))
+	flags.BoolVarP(&config.List, "list", "l", config.List, stdoutStyles().FlagDesc.Render(help["list"]))
+	flags.IntVar(&config.MaxRetries, "max-retries", config.MaxRetries, stdoutStyles().FlagDesc.Render(help["max-retries"]))
+	flags.BoolVar(&config.NoLimit, "no-limit", config.NoLimit, stdoutStyles().FlagDesc.Render(help["no-limit"]))
+	flags.IntVar(&config.MaxTokens, "max-tokens", config.MaxTokens, stdoutStyles().FlagDesc.Render(help["max-tokens"]))
+	flags.Float32Var(&config.Temperature, "temp", config.Temperature, stdoutStyles().FlagDesc.Render(help["temp"]))
+	flags.Float32Var(&config.TopP, "topp", config.TopP, stdoutStyles().FlagDesc.Render(help["topp"]))
+	flags.UintVar(&config.Fanciness, "fanciness", config.Fanciness, stdoutStyles().FlagDesc.Render(help["fanciness"]))
+	flags.StringVar(&config.StatusText, "status-text", config.StatusText, stdoutStyles().FlagDesc.Render(help["status-text"]))
+	flags.BoolVar(&config.ResetSettings, "reset-settings", config.ResetSettings, stdoutStyles().FlagDesc.Render(help["reset-settings"]))
+	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles().FlagDesc.Render(help["title"]))
+	flags.StringVar(&config.Delete, "delete", config.Delete, stdoutStyles().FlagDesc.Render(help["delete"]))
+	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles().FlagDesc.Render(help["show"]))
 
 	for _, name := range []string{"show", "delete", "continue"} {
 		_ = rootCmd.RegisterFlagCompletionFunc(name, func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -184,7 +177,7 @@ func initFlags() {
 		})
 	}
 
-	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles.FlagDesc.Render(help["no-cache"]))
+	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles().FlagDesc.Render(help["no-cache"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -239,9 +232,11 @@ func main() {
 }
 
 func handleError(err error) {
-	const horizontalEdgePadding = 2
-	s := stderrRenderer.NewStyle().Padding(0, horizontalEdgePadding)
+	// exhaust stdin
+	_, _ = io.ReadAll(os.Stdin)
+
 	format := "\n%s\n\n"
+	style := stderrStyles().ErrPadding
 
 	var args []interface{}
 	var ferr flagParseError
@@ -251,23 +246,23 @@ func handleError(err error) {
 		args = []interface{}{
 			fmt.Sprintf(
 				"Check out %s %s",
-				stderrStyles.InlineCode.Render("mods -h"),
-				stderrStyles.Comment.Render("for help."),
+				stderrStyles().InlineCode.Render("mods -h"),
+				stderrStyles().Comment.Render("for help."),
 			),
 			fmt.Sprintf(
 				"Missing flag: %s",
-				stderrStyles.InlineCode.Render(ferr.Flag()),
+				stderrStyles().InlineCode.Render(ferr.Flag()),
 			),
 		}
 	} else if errors.As(err, &merr) {
 		format += "%s\n\n"
 		args = []interface{}{
-			s.Render(stderrStyles.ErrorHeader.String(), merr.reason),
-			s.Render(stderrStyles.ErrorDetails.Render(err.Error())),
+			style.Render(stderrStyles().ErrorHeader.String(), merr.reason),
+			style.Render(stderrStyles().ErrorDetails.Render(err.Error())),
 		}
 	} else {
 		args = []interface{}{
-			s.Render(stderrStyles.ErrorDetails.Render(err.Error())),
+			style.Render(stderrStyles().ErrorDetails.Render(err.Error())),
 		}
 	}
 
@@ -308,8 +303,8 @@ func resetSettings() error {
 	fmt.Fprintln(os.Stderr, "\nSettings restored to defaults!")
 	fmt.Fprintf(os.Stderr,
 		"\n  %s %s\n\n",
-		stderrStyles.Comment.Render("Your old settings have been saved to:"),
-		stderrStyles.Link.Render(config.SettingsPath+".bak"),
+		stderrStyles().Comment.Render("Your old settings have been saved to:"),
+		stderrStyles().Link.Render(config.SettingsPath+".bak"),
 	)
 	return nil
 }
@@ -348,8 +343,8 @@ func listConversations() error {
 			fmt.Fprintf(
 				os.Stdout,
 				"%s %s %s\n",
-				stdoutStyles.Comment.Render("•"),
-				stdoutStyles.SHA1.Render(conversation.ID[:sha1short]),
+				stdoutStyles().Comment.Render("•"),
+				stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
 				conversation.Title,
 			)
 			continue
@@ -369,8 +364,8 @@ func saveConversation(mods *Mods) error {
 		fmt.Fprintf(
 			os.Stderr,
 			"\nConversation was not saved because %s or %s is set.\n",
-			stderrStyles.InlineCode.Render("--no-cache"),
-			stderrStyles.InlineCode.Render("NO_CACHE"),
+			stderrStyles().InlineCode.Render("--no-cache"),
+			stderrStyles().InlineCode.Render("NO_CACHE"),
 		)
 		return nil
 	}
@@ -387,8 +382,8 @@ func saveConversation(mods *Mods) error {
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
 			config.cacheWriteToID,
-			stderrStyles.InlineCode.Render("--no-cache"),
-			stderrStyles.InlineCode.Render("NO_CACHE"),
+			stderrStyles().InlineCode.Render("--no-cache"),
+			stderrStyles().InlineCode.Render("NO_CACHE"),
 		)}
 	}
 	if err := db.Save(id, title); err != nil {
@@ -396,16 +391,16 @@ func saveConversation(mods *Mods) error {
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
 			config.cacheWriteToID,
-			stderrStyles.InlineCode.Render("--no-cache"),
-			stderrStyles.InlineCode.Render("NO_CACHE"),
+			stderrStyles().InlineCode.Render("--no-cache"),
+			stderrStyles().InlineCode.Render("NO_CACHE"),
 		)}
 	}
 
 	fmt.Fprintln(
 		os.Stderr,
 		"\nConversation saved:",
-		stderrStyles.InlineCode.Render(config.cacheWriteToID[:sha1short]),
-		stderrStyles.Comment.Render(title),
+		stderrStyles().InlineCode.Render(config.cacheWriteToID[:sha1short]),
+		stderrStyles().Comment.Render(title),
 	)
 	return nil
 }
