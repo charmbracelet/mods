@@ -233,7 +233,9 @@ func main() {
 
 func handleError(err error) {
 	// exhaust stdin
-	_, _ = io.ReadAll(os.Stdin)
+	if !isInputTTY() {
+		_, _ = io.ReadAll(os.Stdin)
+	}
 
 	format := "\n%s\n\n"
 
