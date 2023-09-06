@@ -127,6 +127,16 @@ func (f flagParseError) Error() string {
 	return fmt.Sprintf("missing flag: %s", f.Flag())
 }
 
+func (f flagParseError) ReasonFormat() string {
+	s := f.err.Error()
+	switch {
+	case strings.Contains(s, "flag needs an argument"):
+		return "Flag %s needs an argument."
+	default:
+		return "Flag %s is missing."
+	}
+}
+
 func (f flagParseError) Flag() string {
 	ps := strings.Split(f.err.Error(), "-")
 	switch len(ps) {
