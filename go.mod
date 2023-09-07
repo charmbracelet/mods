@@ -6,7 +6,7 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/caarlos0/env/v9 v9.0.0
 	github.com/charmbracelet/bubbles v0.16.1
-	github.com/charmbracelet/bubbletea v0.24.3-0.20230809191442-6a459f3bfe5e
+	github.com/charmbracelet/bubbletea v0.24.3-0.20230906172442-d55cfec13eae
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/charmbracelet/glow v1.5.1
 	github.com/charmbracelet/lipgloss v0.8.0

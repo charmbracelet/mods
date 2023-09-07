@@ -233,19 +233,10 @@ func (m *Mods) View() string {
 		m.content = []string{}
 		m.contentMutex.Unlock()
 	case doneState:
-		if m.Config.Glamour {
-			if m.viewportNeeded() {
-				return m.glamViewport.View()
-			}
-			// We don't need the viewport yet.
-			return m.glamOutput + "\n"
+		if !isOutputTTY() {
+			fmt.Printf("\n")
 		}
-
-		if isOutputTTY() {
-			return m.Output + "\n"
-		}
-
-		fmt.Print("\n")
+		return ""
 	}
 	return ""
 }
