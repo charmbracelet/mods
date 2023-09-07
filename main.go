@@ -73,7 +73,6 @@ var (
 			stderr := cmd.ErrOrStderr()
 			opts := []tea.ProgramOption{
 				tea.WithOutput(stderrRenderer().Output()),
-				// tea.WithoutEmptyRenders(),
 			}
 
 			if !isInputTTY() {
