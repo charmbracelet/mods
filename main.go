@@ -73,7 +73,7 @@ var (
 			stderr := cmd.ErrOrStderr()
 			opts := []tea.ProgramOption{
 				tea.WithOutput(stderrRenderer().Output()),
-				tea.WithoutEmptyRenders(),
+				// tea.WithoutEmptyRenders(),
 			}
 
 			if !isInputTTY() {
@@ -121,16 +121,25 @@ var (
 				return cmd.Usage()
 			}
 
-			if config.Show != "" {
-				return nil
-			}
-
 			if config.List {
 				return listConversations()
 			}
 
 			if config.Delete != "" {
 				return deleteConversation()
+			}
+
+			if isOutputTTY() {
+				switch {
+				case mods.glamOutput != "":
+					fmt.Print(mods.glamOutput)
+				case mods.Output != "":
+					fmt.Print(mods.Output)
+				}
+			}
+
+			if config.Show != "" {
+				return nil
 			}
 
 			if config.cacheWriteToID != "" {
