@@ -7,8 +7,8 @@ default-model: gpt-4
 format-text: Format the response as markdown without enclosing backticks.
 # {{ index .Help "format" }}
 format: false
-# {{ index .Help "glamour" }}
-glamour: false
+# {{ index .Help "raw" }}
+raw: false
 # {{ index .Help "quiet" }}
 quiet: false
 # {{ index .Help "temp" }}

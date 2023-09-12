@@ -166,6 +166,12 @@ Deletes the saved conversation with the given title or SHA1.
 Ask the LLM to format the response as markdown. You can edit the text passed to
 the LLM with `mods --settings` then changing the `format-text` value.
 
+#### Raw
+
+`-r`, `--raw`, `MODS_RAW`
+
+Print the raw response without syntax highlighting, even when connect to a TTY.
+
 #### Max Tokens
 
 `--max-tokens`, `MODS_MAX_TOKENS`

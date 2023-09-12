@@ -22,10 +22,11 @@ var help = map[string]string{
 	"http-proxy":      "HTTP proxy to use for API requests.",
 	"model":           "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
 	"max-input-chars": "Default character limit on input to model.",
-	"format":          "Ask for the response to be formatted as markdown (default).",
+	"format":          "Ask for the response to be formatted as markdown unless otherwise set.",
 	"format-text":     "Text to append when using the -f flag.",
 	"prompt":          "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
 	"prompt-args":     "Include the prompt from the arguments in the response.",
+	"raw":             "Render output as raw text when connected to a TTY.",
 	"quiet":           "Quiet mode (hide the spinner while loading).",
 	"help":            "Show help and exit.",
 	"version":         "Show version and exit.",
@@ -84,7 +85,7 @@ func (apis *APIs) UnmarshalYAML(node *yaml.Node) error {
 type Config struct {
 	Model             string  `yaml:"default-model" env:"MODEL"`
 	Format            bool    `yaml:"format" env:"FORMAT"`
-	Glamour           bool    `yaml:"glamour" env:"GLAMOUR,expand" envDefault:"${__MODS_GLAMOUR}"`
+	Raw               bool    `yaml:"raw" env:"RAW"`
 	Quiet             bool    `yaml:"quiet" env:"QUIET"`
 	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
 	MaxInputChars     int     `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
