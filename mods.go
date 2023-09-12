@@ -59,7 +59,6 @@ type Mods struct {
 
 	content      []string
 	contentMutex *sync.Mutex
-	clearOnce    *sync.Once
 }
 
 func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) *Mods {
@@ -73,7 +72,6 @@ func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) 
 		renderer:     r,
 		glamViewport: vp,
 		contentMutex: &sync.Mutex{},
-		clearOnce:    &sync.Once{},
 		db:           db,
 		cache:        cache,
 		Config:       cfg,
@@ -223,9 +221,6 @@ func (m *Mods) View() string {
 			return m.Output
 		}
 
-		m.clearOnce.Do(func() {
-			m.renderer.Output().ClearLine()
-		})
 		m.contentMutex.Lock()
 		for _, c := range m.content {
 			fmt.Print(c)
