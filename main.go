@@ -9,6 +9,7 @@ import (
 	"runtime/debug"
 	"strings"
 
+	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/glow/editor"
@@ -347,18 +348,20 @@ func listConversations() error {
 		if isOutputTTY() {
 			fmt.Fprintf(
 				os.Stdout,
-				"%s %s %s\n",
+				"%s %s %s %s\n",
 				stdoutStyles().Comment.Render("•"),
 				stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
 				conversation.Title,
+				stdoutStyles().Comment.Italic(true).Render(timeago.Of(conversation.UpdatedAt)),
 			)
 			continue
 		}
 		fmt.Fprintf(
 			os.Stdout,
-			"%s %s\n",
+			"%s\t%s\t%s\n",
 			conversation.ID[:sha1short],
 			conversation.Title,
+			timeago.Of(conversation.UpdatedAt),
 		)
 	}
 	return nil
