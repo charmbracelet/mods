@@ -111,7 +111,6 @@ func (m *Mods) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case cacheDetailsMsg:
@@ -122,7 +121,6 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
 		m.state = configLoadedState
 		cmds = append(cmds, readStdinCmd, m.anim.Init())
-
 	case completionInput:
 		if msg.content != "" {
 			m.Input = msg.content
@@ -181,16 +179,18 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.quit
 		}
 	}
-	if m.state == configLoadedState || m.state == requestState {
+	if !isOutputTTY() || m.state == configLoadedState || m.state == requestState {
+		var cmd tea.Cmd
 		m.anim, cmd = m.anim.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 	if m.viewportNeeded() {
 		// Only respond to keypresses when the viewport (i.e. the content) is
 		// taller than the window.
+		var cmd tea.Cmd
 		m.glamViewport, cmd = m.glamViewport.Update(msg)
+		cmds = append(cmds, cmd)
 	}
-	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
@@ -198,17 +198,31 @@ func (m Mods) viewportNeeded() bool {
 	return m.glamHeight > m.height
 }
 
+func (m Mods) animView() string {
+	if m.Config.Quiet {
+		return ""
+	}
+	return m.anim.View()
+}
+
 // View implements tea.Model.
 func (m *Mods) View() string {
-	//nolint:exhaustive
 	switch m.state {
-	case errorState:
+	case startState, errorState:
 		return ""
-	case requestState:
-		if !m.Config.Quiet {
-			return m.anim.View()
-		}
+	case configLoadedState, requestState:
+		return m.animView()
 	case responseState:
+		if !isOutputTTY() {
+			m.contentMutex.Lock()
+			for _, c := range m.content {
+				fmt.Print(c)
+			}
+			m.content = []string{}
+			m.contentMutex.Unlock()
+			return m.animView()
+		}
+
 		if m.Config.Glamour {
 			if m.viewportNeeded() {
 				return m.glamViewport.View()
@@ -216,24 +230,15 @@ func (m *Mods) View() string {
 			// We don't need the viewport yet.
 			return m.glamOutput
 		}
-
-		if isOutputTTY() {
-			return m.Output
-		}
-
-		m.contentMutex.Lock()
-		for _, c := range m.content {
-			fmt.Print(c)
-		}
-		m.content = []string{}
-		m.contentMutex.Unlock()
+		return m.Output
 	case doneState:
 		if !isOutputTTY() {
 			fmt.Printf("\n")
 		}
 		return ""
+	default:
+		return ""
 	}
-	return ""
 }
 
 func (m *Mods) quit() tea.Msg {
