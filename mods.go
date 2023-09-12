@@ -139,12 +139,11 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.content != "" {
 			m.Output += msg.content
-			if !isOutputTTY() {
+			if !isOutputTTY() || m.Config.Raw {
 				m.contentMutex.Lock()
 				m.content = append(m.content, msg.content)
 				m.contentMutex.Unlock()
-			}
-			if m.Config.Glamour {
+			} else {
 				const tabWidth = 4
 				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
 				oldHeight := m.glamHeight
@@ -209,7 +208,7 @@ func (m *Mods) View() string {
 			return m.anim.View()
 		}
 	case responseState:
-		if m.Config.Glamour {
+		if !m.Config.Raw && isOutputTTY() {
 			if m.viewportNeeded() {
 				return m.glamViewport.View()
 			}
