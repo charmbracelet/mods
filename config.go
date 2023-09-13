@@ -193,7 +193,6 @@ func ensureConfig() (Config, error) {
 	}
 	c.Models = ms
 
-	_ = os.Setenv("__MODS_GLAMOUR", fmt.Sprintf("%v", isOutputTTY()))
 	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
 		return c, modsError{err, "Could not parse environment into settings file."}
 	}
