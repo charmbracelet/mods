@@ -352,7 +352,7 @@ func listConversations() error {
 				stdoutStyles().Comment.Render("•"),
 				stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
 				conversation.Title,
-				stdoutStyles().Comment.Italic(true).Render(timeago.Of(conversation.UpdatedAt)),
+				stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt)),
 			)
 			continue
 		}
