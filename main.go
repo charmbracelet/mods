@@ -13,7 +13,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/glow/editor"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // Build vars.
@@ -344,15 +346,24 @@ func listConversations() error {
 		return nil
 	}
 
+	var width = 80
+	if isOutputTTY() {
+		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+			width = w
+		}
+	}
+
 	for _, conversation := range conversations {
 		if isOutputTTY() {
-			fmt.Fprintf(
+			timea := stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt))
+			left := stdoutStyles().Bullet.String() + stdoutStyles().SHA1.Render(conversation.ID[:sha1short])
+			right := stdoutStyles().ConversationList.
+				Width(width-lipgloss.Width(left)).
+				Render(conversation.Title, timea)
+			fmt.Fprint(
 				os.Stdout,
-				"%s %s %s %s\n",
-				stdoutStyles().Bullet,
-				stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
-				conversation.Title,
-				stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt)),
+				lipgloss.JoinHorizontal(lipgloss.Top, left, right),
+				"\n",
 			)
 			continue
 		}
