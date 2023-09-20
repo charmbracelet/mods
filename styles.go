@@ -3,21 +3,23 @@ package main
 import "github.com/charmbracelet/lipgloss"
 
 type styles struct {
-	AppName      lipgloss.Style
-	CliArgs      lipgloss.Style
-	Comment      lipgloss.Style
-	CyclingChars lipgloss.Style
-	ErrorHeader  lipgloss.Style
-	ErrorDetails lipgloss.Style
-	ErrPadding   lipgloss.Style
-	Flag         lipgloss.Style
-	FlagComma    lipgloss.Style
-	FlagDesc     lipgloss.Style
-	InlineCode   lipgloss.Style
-	Link         lipgloss.Style
-	Pipe         lipgloss.Style
-	Quote        lipgloss.Style
-	SHA1         lipgloss.Style
+	AppName,
+	CliArgs,
+	Comment,
+	CyclingChars,
+	ErrorHeader,
+	ErrorDetails,
+	ErrPadding,
+	Flag,
+	FlagComma,
+	FlagDesc,
+	InlineCode,
+	Link,
+	Pipe,
+	Quote,
+	SHA1,
+	Bullet,
+	Timeago lipgloss.Style
 }
 
 func makeStyles(r *lipgloss.Renderer) (s styles) {
@@ -36,6 +38,8 @@ func makeStyles(r *lipgloss.Renderer) (s styles) {
 	s.Link = r.NewStyle().Foreground(lipgloss.Color("#00AF87")).Underline(true)
 	s.Quote = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"})
 	s.Pipe = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
-	s.SHA1 = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#5DD6C0", Dark: "#427C72"})
+	s.SHA1 = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#00B594", Dark: "#11d4b1"}).Bold(true)
+	s.Bullet = r.NewStyle().SetString("•").Foreground(lipgloss.AdaptiveColor{Light: "#757575", Dark: "#777"})
+	s.Timeago = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#999", Dark: "#555"})
 	return s
 }
