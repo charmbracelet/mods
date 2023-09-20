@@ -349,7 +349,7 @@ func listConversations() error {
 			fmt.Fprintf(
 				os.Stdout,
 				"%s %s %s %s\n",
-				stdoutStyles().Comment.Render("•"),
+				stdoutStyles().Bullet,
 				stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
 				conversation.Title,
 				stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt)),
