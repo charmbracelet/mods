@@ -38,7 +38,7 @@ var help = map[string]string{
 	"fanciness":       "Number of cycling characters in the 'generating' animation.",
 	"status-text":     "Text to show while generating.",
 	"settings":        "Open settings in your $EDITOR.",
-	"reset-settings":  "Reset settings to the defaults, your old settings file will be backed up.",
+	"reset-settings":  "Backup your old settings file and reset everything to the defaults.",
 	"continue":        "Continue from the last response or a given save title.",
 	"continue-last":   "Continue from the last response.",
 	"no-cache":        "Disables caching of the prompt/response.",
