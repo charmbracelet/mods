@@ -35,7 +35,7 @@ var help = map[string]string{
 	"max-tokens":      "Maximum number of tokens in response.",
 	"temp":            "Temperature (randomness) of results, from 0.0 to 2.0.",
 	"topp":            "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
-	"fanciness":       "Number of cycling characters in the 'generating' animation.",
+	"fanciness":       "Your desired level of fanciness.",
 	"status-text":     "Text to show while generating.",
 	"settings":        "Open settings in your $EDITOR.",
 	"reset-settings":  "Backup your old settings file and reset everything to the defaults.",
