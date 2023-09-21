@@ -40,7 +40,7 @@ func makeStyles(r *lipgloss.Renderer) (s styles) {
 	s.Quote = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#FF71D0", Dark: "#FF78D2"})
 	s.Pipe = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
 	s.ConversationList = r.NewStyle().Padding(0, 1)
-	s.SHA1 = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#00B594", Dark: "#11d4b1"}).Bold(true)
+	s.SHA1 = s.Flag.Copy()
 	s.Bullet = r.NewStyle().SetString("• ").Foreground(lipgloss.AdaptiveColor{Light: "#757575", Dark: "#777"})
 	s.Timeago = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#999", Dark: "#555"})
 	return s
