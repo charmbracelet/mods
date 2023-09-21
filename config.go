@@ -159,12 +159,12 @@ func ensureConfig() (Config, error) {
 	c.SettingsPath = sp
 
 	dir := filepath.Dir(sp)
-	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gomnd
-		return c, modsError{err, "Could not create cache directory."}
+	if dirErr := os.MkdirAll(dir, 0o700); dirErr != nil { //nolint:gomnd
+		return c, modsError{dirErr, "Could not create cache directory."}
 	}
 
-	if err := writeConfigFile(sp); err != nil {
-		return c, err
+	if dirErr := writeConfigFile(sp); dirErr != nil {
+		return c, dirErr
 	}
 	content, err := os.ReadFile(sp)
 	if err != nil {
