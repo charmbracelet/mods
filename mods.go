@@ -19,6 +19,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/exp/ordered"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -500,8 +501,8 @@ type cacheDetailsMsg struct {
 func (m *Mods) findCacheOpsDetails() tea.Cmd {
 	return func() tea.Msg {
 		continueLast := m.Config.ContinueLast || (m.Config.Continue != "" && m.Config.Title == "")
-		readID := firstNonEmpty(m.Config.Continue, m.Config.Show)
-		writeID := firstNonEmpty(m.Config.Title, m.Config.Continue)
+		readID := ordered.First(m.Config.Continue, m.Config.Show)
+		writeID := ordered.First(m.Config.Title, m.Config.Continue)
 		title := writeID
 
 		if continueLast && m.Config.Prefix == "" {
