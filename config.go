@@ -60,6 +60,7 @@ type Model struct {
 // API represents an API endpoint and its models.
 type API struct {
 	Name      string
+	APIKey    string           `yaml:"api-key"`
 	APIKeyEnv string           `yaml:"api-key-env"`
 	BaseURL   string           `yaml:"base-url"`
 	Models    map[string]Model `yaml:"models"`
