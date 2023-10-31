@@ -308,7 +308,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		// tries to use API key value; otherwise searches for env variable
+		// Uses API key value if found; otherwise searches for env variable.
 		key = api.APIKey
 		if key == "" && api.APIKeyEnv != "" {
 			key = os.Getenv(api.APIKeyEnv)
