@@ -35,7 +35,7 @@ max-input-chars: 12250
 apis:
   openai:
     base-url: https://api.openai.com/v1
-	api-key: 
+    api-key: 
     api-key-env: OPENAI_API_KEY
     models:
       gpt-4:
