@@ -147,6 +147,12 @@ Continue from the last response or a given title or SHA1.
 
 Lists all saved conversations.
 
+#### Show last
+
+`-S`, `--show-last`
+
+Show the previous conversation.
+
 #### Show
 
 `-s`, `--show`

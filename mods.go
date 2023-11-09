@@ -128,7 +128,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.content != "" {
 			m.Input = msg.content
 		}
-		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" {
+		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
 			return m, m.quit
 		}
 		m.state = requestState
@@ -254,7 +254,7 @@ func (m *Mods) retry(content string, err modsError) tea.Msg {
 }
 
 func (m *Mods) startCompletionCmd(content string) tea.Cmd {
-	if m.Config.Show != "" {
+	if m.Config.Show != "" || m.Config.ShowLast {
 		return m.readFromCache()
 	}
 
@@ -512,7 +512,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 			}
 		}
 
-		if readID != "" || continueLast {
+		if readID != "" || continueLast || m.Config.ShowLast {
 			found, err := m.findReadID(readID)
 			if err != nil {
 				return modsError{
