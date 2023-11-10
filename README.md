@@ -235,7 +235,8 @@ Your desired level of fanciness.
 
 `-q`, `--quiet`, `MODS_QUIET`
 
-Output nothing to standard err.
+Only output errors to standard err. Hides the spinner and success messages
+that would go to standard err.
 
 #### Reset Settings
 

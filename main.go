@@ -106,7 +106,9 @@ var (
 					)}
 				}
 
-				fmt.Fprintln(stderr, "Wrote config file to:", config.SettingsPath)
+				if !config.Quiet {
+					fmt.Fprintln(stderr, "Wrote config file to:", config.SettingsPath)
+				}
 				return nil
 			}
 
@@ -308,12 +310,14 @@ func resetSettings() error {
 	if err != nil {
 		return modsError{err, "Couldn't write new config file."}
 	}
-	fmt.Fprintln(os.Stderr, "\nSettings restored to defaults!")
-	fmt.Fprintf(os.Stderr,
-		"\n  %s %s\n\n",
-		stderrStyles().Comment.Render("Your old settings have been saved to:"),
-		stderrStyles().Link.Render(config.SettingsPath+".bak"),
-	)
+	if !config.Quiet {
+		fmt.Fprintln(os.Stderr, "\nSettings restored to defaults!")
+		fmt.Fprintf(os.Stderr,
+			"\n  %s %s\n\n",
+			stderrStyles().Comment.Render("Your old settings have been saved to:"),
+			stderrStyles().Link.Render(config.SettingsPath+".bak"),
+		)
+	}
 	return nil
 }
 
@@ -331,7 +335,9 @@ func deleteConversation() error {
 		return modsError{err, "Couldn't delete conversation."}
 	}
 
-	fmt.Fprintln(os.Stderr, "Conversation deleted:", convo.ID[:sha1minLen])
+	if !config.Quiet {
+		fmt.Fprintln(os.Stderr, "Conversation deleted:", convo.ID[:sha1minLen])
+	}
 	return nil
 }
 
@@ -380,12 +386,14 @@ func listConversations() error {
 
 func saveConversation(mods *Mods) error {
 	if config.NoCache {
-		fmt.Fprintf(
-			os.Stderr,
-			"\nConversation was not saved because %s or %s is set.\n",
-			stderrStyles().InlineCode.Render("--no-cache"),
-			stderrStyles().InlineCode.Render("NO_CACHE"),
-		)
+		if !config.Quiet {
+			fmt.Fprintf(
+				os.Stderr,
+				"\nConversation was not saved because %s or %s is set.\n",
+				stderrStyles().InlineCode.Render("--no-cache"),
+				stderrStyles().InlineCode.Render("NO_CACHE"),
+			)
+		}
 		return nil
 	}
 
@@ -415,11 +423,13 @@ func saveConversation(mods *Mods) error {
 		)}
 	}
 
-	fmt.Fprintln(
-		os.Stderr,
-		"\nConversation saved:",
-		stderrStyles().InlineCode.Render(config.cacheWriteToID[:sha1short]),
-		stderrStyles().Comment.Render(title),
-	)
+	if !config.Quiet {
+		fmt.Fprintln(
+			os.Stderr,
+			"\nConversation saved:",
+			stderrStyles().InlineCode.Render(config.cacheWriteToID[:sha1short]),
+			stderrStyles().Comment.Render(title),
+		)
+	}
 	return nil
 }

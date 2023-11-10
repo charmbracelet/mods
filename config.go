@@ -27,7 +27,7 @@ var help = map[string]string{
 	"prompt":          "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
 	"prompt-args":     "Include the prompt from the arguments in the response.",
 	"raw":             "Render output as raw text when connected to a TTY.",
-	"quiet":           "Quiet mode (hide the spinner while loading).",
+	"quiet":           "Quiet mode (hide the spinner while loading and stderr messages for success).",
 	"help":            "Show help and exit.",
 	"version":         "Show version and exit.",
 	"max-retries":     "Maximum number of times to retry API calls.",
