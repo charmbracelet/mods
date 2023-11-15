@@ -38,6 +38,7 @@ var help = map[string]string{
 	"fanciness":       "Your desired level of fanciness.",
 	"status-text":     "Text to show while generating.",
 	"settings":        "Open settings in your $EDITOR.",
+	"dirs":            "Print the directories in which mods store its data",
 	"reset-settings":  "Backup your old settings file and reset everything to the defaults.",
 	"continue":        "Continue from the last response or a given save title.",
 	"continue-last":   "Continue from the last response.",
@@ -109,6 +110,7 @@ type Config struct {
 	Prefix            string
 	Version           bool
 	Settings          bool
+	Dirs              bool
 	SettingsPath      string
 	ContinueLast      bool
 	Continue          string
