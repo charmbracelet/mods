@@ -505,13 +505,6 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		writeID := ordered.First(m.Config.Title, m.Config.Continue)
 		title := writeID
 
-		if continueLast && m.Config.Prefix == "" {
-			return modsError{
-				err:    fmt.Errorf("Missing prompt"),
-				reason: "You must specify a prompt.",
-			}
-		}
-
 		if readID != "" || continueLast || m.Config.ShowLast {
 			found, err := m.findReadID(readID)
 			if err != nil {
