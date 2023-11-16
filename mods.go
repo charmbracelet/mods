@@ -307,7 +307,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				),
 			}
 		}
-		if api.APIKeyEnv != "" {
+
+		// Uses API key value if found; otherwise searches for env variable.
+		key = api.APIKey
+		if key == "" && api.APIKeyEnv != "" {
 			key = os.Getenv(api.APIKeyEnv)
 		}
 
@@ -319,7 +322,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if key == "" {
 				return modsError{
 					reason: fmt.Sprintf(
-						"%s environment variable is required.",
+						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
 						m.Styles.InlineCode.Render("OPENAI_API_KEY"),
 					),
 					err: fmt.Errorf(
@@ -339,7 +342,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if key == "" {
 				return modsError{
 					reason: fmt.Sprintf(
-						"%s environment variable is required.",
+						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
 						m.Styles.InlineCode.Render("AZURE_OPENAI_KEY"),
 					),
 					err: fmt.Errorf(
