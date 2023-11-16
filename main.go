@@ -94,6 +94,12 @@ var (
 				return *mods.Error
 			}
 
+			if config.Dirs {
+				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
+				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
+				return nil
+			}
+
 			if config.Settings {
 				c, err := editor.Cmd("mods", config.SettingsPath)
 				if err != nil {
@@ -188,6 +194,7 @@ func initFlags() {
 	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles().FlagDesc.Render(help["no-cache"]))
 	flags.BoolVar(&config.ResetSettings, "reset-settings", config.ResetSettings, stdoutStyles().FlagDesc.Render(help["reset-settings"]))
 	flags.BoolVar(&config.Settings, "settings", false, stdoutStyles().FlagDesc.Render(help["settings"]))
+	flags.BoolVar(&config.Dirs, "dirs", false, stdoutStyles().FlagDesc.Render(help["dirs"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
