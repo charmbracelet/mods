@@ -61,9 +61,10 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		require.NoError(t, mods.db.Save(id, "message 1"))
 		mods.Config.ContinueLast = true
 		msg := mods.findCacheOpsDetails()()
-		err := msg.(modsError)
-		require.Error(t, err.err)
-		require.Equal(t, "You must specify a prompt.", err.reason)
+		dets := msg.(cacheDetailsMsg)
+		require.Equal(t, id, dets.ReadID)
+		require.Equal(t, id, dets.WriteID)
+		require.Empty(t, dets.Title)
 	})
 
 	t.Run("continue title", func(t *testing.T) {
