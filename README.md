@@ -63,6 +63,7 @@ You can define more LocalAI models and endpoints with `mods --settings`.
 brew install charmbracelet/tap/mods
 
 # Windows
+winget install mods
 scoop install mods
 
 # Arch Linux (btw)
