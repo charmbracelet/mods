@@ -12,8 +12,8 @@ import (
 	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/glow/editor"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/editor"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -352,7 +352,7 @@ func listConversations() error {
 		return nil
 	}
 
-	var width = 80
+	width := 80
 	if isOutputTTY() {
 		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
 			width = w
