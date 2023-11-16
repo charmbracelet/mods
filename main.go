@@ -95,7 +95,10 @@ var (
 			}
 
 			if config.Settings {
-				c := editor.Cmd(config.SettingsPath)
+				c, err := editor.Cmd("mods", config.SettingsPath)
+				if err != nil {
+					return err
+				}
 				c.Stdin = stdin
 				c.Stdout = stdout
 				c.Stderr = stderr
