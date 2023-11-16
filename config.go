@@ -45,7 +45,8 @@ var help = map[string]string{
 	"title":           "Saves the current conversation with the given title.",
 	"list":            "Lists saved conversations.",
 	"delete":          "Deletes a saved conversation with the given title or ID.",
-	"show":            "Show a saved conversation with the given title or ID",
+	"show":            "Show a saved conversation with the given title or ID.",
+	"show-last":       "Show a the last saved conversation.",
 }
 
 // Model represents the LLM model used in the API call.
@@ -113,6 +114,7 @@ type Config struct {
 	ContinueLast      bool
 	Continue          string
 	Title             string
+	ShowLast          bool
 	Show              string
 	List              bool
 	Delete            string

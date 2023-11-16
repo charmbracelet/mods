@@ -122,6 +122,7 @@ var (
 			if config.ShowHelp || (mods.Input == "" &&
 				config.Prefix == "" &&
 				config.Show == "" &&
+				!config.ShowLast &&
 				config.Delete == "" &&
 				!config.List) {
 				//nolint: wrapcheck
@@ -145,7 +146,7 @@ var (
 				}
 			}
 
-			if config.Show != "" {
+			if config.Show != "" || config.ShowLast {
 				return nil
 			}
 
@@ -173,6 +174,7 @@ func initFlags() {
 	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles().FlagDesc.Render(help["title"]))
 	flags.StringVarP(&config.Delete, "delete", "d", config.Delete, stdoutStyles().FlagDesc.Render(help["delete"]))
 	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles().FlagDesc.Render(help["show"]))
+	flags.BoolVarP(&config.ShowLast, "show-last", "S", false, stdoutStyles().FlagDesc.Render(help["show-last"]))
 	flags.BoolVarP(&config.Quiet, "quiet", "q", config.Quiet, stdoutStyles().FlagDesc.Render(help["quiet"]))
 	flags.BoolVarP(&config.ShowHelp, "help", "h", false, stdoutStyles().FlagDesc.Render(help["help"]))
 	flags.BoolVarP(&config.Version, "version", "v", false, stdoutStyles().FlagDesc.Render(help["version"]))
@@ -203,6 +205,7 @@ func initFlags() {
 	rootCmd.MarkFlagsMutuallyExclusive(
 		"settings",
 		"show",
+		"show-last",
 		"delete",
 		"list",
 		"continue",
