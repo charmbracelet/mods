@@ -62,8 +62,11 @@ You can define more LocalAI models and endpoints with `mods --settings`.
 # macOS or Linux
 brew install charmbracelet/tap/mods
 
-# Windows
+# Windows (with Winget)
 winget install mods
+
+# Windows (with Scoop)
+scoop bucket add https://github.com/charmbracelet/scoop-bucket.git
 scoop install mods
 
 # Arch Linux (btw)
