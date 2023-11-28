@@ -1,7 +1,6 @@
 package main
 
-const configTemplate = `
-# {{ index .Help "model" }}
+const configTemplate = `# {{ index .Help "model" }}
 default-model: gpt-4
 # {{ index .Help "format-text" }}
 format-text: Format the response as markdown without enclosing backticks.
