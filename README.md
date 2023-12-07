@@ -270,6 +270,12 @@ Backup your old settings file and reset everything to the defaults.
 
 Disables conversation saving.
 
+#### Wrap Words
+
+`--word-wrap`, `MODS_WORD_WRAP`
+
+Wrap formatted output at specific width (default is 80)
+
 #### HTTP Proxy
 
 `-x`, `--http-proxy`, `MODS_HTTP_PROXY`

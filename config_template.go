@@ -16,6 +16,8 @@ temp: 1.0
 topp: 1.0
 # {{ index .Help "no-limit" }}
 no-limit: false
+# {{ index .Help "word-wrap" }}
+word-wrap: 80
 # {{ index .Help "prompt-args" }}
 include-prompt-args: false
 # {{ index .Help "prompt" }}
