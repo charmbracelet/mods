@@ -171,6 +171,7 @@ func initFlags() {
 	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles().FlagDesc.Render(help["api"]))
 	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles().FlagDesc.Render(help["http-proxy"]))
 	flags.BoolVarP(&config.Format, "format", "f", config.Format, stdoutStyles().FlagDesc.Render(help["format"]))
+	flags.BoolVarP(&config.JSON, "json", "j", config.JSON, stdoutStyles().FlagDesc.Render(help["json"]))
 	flags.BoolVarP(&config.Raw, "raw", "r", config.Raw, stdoutStyles().FlagDesc.Render(help["raw"]))
 	flags.IntVarP(&config.IncludePrompt, "prompt", "P", config.IncludePrompt, stdoutStyles().FlagDesc.Render(help["prompt"]))
 	flags.BoolVarP(&config.IncludePromptArgs, "prompt-args", "p", config.IncludePromptArgs, stdoutStyles().FlagDesc.Render(help["prompt-args"]))
@@ -205,8 +206,12 @@ func initFlags() {
 		})
 	}
 
-	if config.Format && config.FormatText == "" {
-		config.FormatText = "Format the response as markdown without enclosing backticks."
+	if config.FormatText == "" {
+		if config.JSON {
+			config.FormatText = "Format the response as a JSON object."
+		} else if config.Format {
+			config.FormatText = "Format the response as markdown without enclosing backticks."
+		}
 	}
 
 	rootCmd.MarkFlagsMutuallyExclusive(

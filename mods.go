@@ -375,10 +375,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
 		m.cancelRequest = cancel
-		prefix := cfg.Prefix
-		if cfg.Format {
-			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
+		if cfg.FormatText != "" {
+			m.messages = append(m.messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: cfg.FormatText,
+			})
 		}
+
+		prefix := cfg.Prefix
 		if prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
 		}
@@ -390,6 +394,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		m.messages = []openai.ChatCompletionMessage{}
+
+		responseFormat := openai.ChatCompletionResponseFormatTypeText
+		if cfg.JSON {
+			responseFormat = openai.ChatCompletionResponseFormatTypeJSONObject
+
+		}
+
 		if !cfg.NoCache && cfg.cacheReadFromID != "" {
 			if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
 				return modsError{
@@ -412,13 +423,17 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			ctx,
 			openai.ChatCompletionRequest{
 				Model:       mod.Name,
+				Messages:    m.messages,
+				MaxTokens:   cfg.MaxTokens,
 				Temperature: noOmitFloat(cfg.Temperature),
 				TopP:        noOmitFloat(cfg.TopP),
-				MaxTokens:   cfg.MaxTokens,
-				Messages:    m.messages,
 				Stream:      true,
+				ResponseFormat: &openai.ChatCompletionResponseFormat{
+					Type: responseFormat,
+				},
 			},
 		)
+
 		ae := &openai.APIError{}
 		if errors.As(err, &ae) {
 			return m.handleAPIError(ae, cfg, mod, content)

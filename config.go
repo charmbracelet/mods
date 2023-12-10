@@ -48,6 +48,7 @@ var help = map[string]string{
 	"delete":          "Deletes a saved conversation with the given title or ID.",
 	"show":            "Show a saved conversation with the given title or ID.",
 	"show-last":       "Show a the last saved conversation.",
+	"json":            "Output in JSON format (only works in newer models).",
 }
 
 // Model represents the LLM model used in the API call.
@@ -105,6 +106,7 @@ type Config struct {
 	FormatText        string  `yaml:"format-text" env:"FORMAT_TEXT"`
 	HTTPProxy         string  `yaml:"http-proxy" env:"HTTP_PROXY"`
 	APIs              APIs    `yaml:"apis"`
+	JSON              bool    `yaml:"json" env:"JSON_OUTPUT"`
 	API               string
 	Models            map[string]Model
 	ShowHelp          bool
