@@ -80,6 +80,8 @@ var (
 
 			if !isInputTTY() {
 				opts = append(opts, tea.WithInput(nil))
+				fmt.Printf("This program is not running in a terminal.\n\n")
+				return cmd.Usage()
 			}
 
 			mods := newMods(stderrRenderer(), &config, db, cache)
@@ -125,12 +127,15 @@ var (
 				return resetSettings()
 			}
 
-			if config.ShowHelp || (mods.Input == "" &&
-				config.Prefix == "" &&
+			if config.ShowHelp || (config.Prefix == "" &&
 				config.Show == "" &&
 				!config.ShowLast &&
 				config.Delete == "" &&
 				!config.List) {
+				if mods.Input == "" {
+					fmt.Printf("You haven't provided an input prompt.\n\n")
+					return nil
+				}
 				//nolint: wrapcheck
 				return cmd.Usage()
 			}
