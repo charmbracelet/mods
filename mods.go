@@ -131,6 +131,18 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
 			return m, m.quit
 		}
+
+		if m.Config.IncludePromptArgs {
+			m.appendToOutput(m.Config.Prefix + "\n\n")
+		}
+
+		if m.Config.IncludePrompt > 0 {
+			parts := strings.Split(m.Input, "\n")
+			if len(parts) > m.Config.IncludePrompt {
+				parts = parts[0:m.Config.IncludePrompt]
+			}
+			m.appendToOutput(strings.Join(parts, "\n") + "\n")
+		}
 		m.state = requestState
 		cmds = append(cmds, m.startCompletionCmd(msg.content))
 	case completionOutput:
@@ -139,29 +151,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.quit
 		}
 		if msg.content != "" {
-			m.Output += msg.content
-			if !isOutputTTY() || m.Config.Raw {
-				m.contentMutex.Lock()
-				m.content = append(m.content, msg.content)
-				m.contentMutex.Unlock()
-			} else {
-				const tabWidth = 4
-				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
-				oldHeight := m.glamHeight
-				m.glamOutput, _ = m.glam.Render(m.Output)
-				m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
-				m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
-				m.glamHeight = lipgloss.Height(m.glamOutput)
-				m.glamOutput += "\n"
-				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
-				m.glamViewport.SetContent(truncatedGlamOutput)
-				if oldHeight < m.glamHeight && wasAtBottom {
-					// If the viewport's at the bottom and we've received a new
-					// line of content, follow the output by auto scrolling to
-					// the bottom.
-					m.glamViewport.GotoBottom()
-				}
-			}
+			m.appendToOutput(msg.content)
 			m.state = responseState
 		}
 		cmds = append(cmds, m.receiveCompletionStreamCmd(msg))
@@ -598,5 +588,33 @@ func (m *Mods) readFromCache() tea.Cmd {
 				messages: messages,
 			},
 		})()
+	}
+}
+
+const tabWidth = 4
+
+func (m *Mods) appendToOutput(s string) {
+	m.Output += s
+	if !isOutputTTY() || m.Config.Raw {
+		m.contentMutex.Lock()
+		m.content = append(m.content, s)
+		m.contentMutex.Unlock()
+		return
+	}
+
+	wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
+	oldHeight := m.glamHeight
+	m.glamOutput, _ = m.glam.Render(m.Output)
+	m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
+	m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
+	m.glamHeight = lipgloss.Height(m.glamOutput)
+	m.glamOutput += "\n"
+	truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
+	m.glamViewport.SetContent(truncatedGlamOutput)
+	if oldHeight < m.glamHeight && wasAtBottom {
+		// If the viewport's at the bottom and we've received a new
+		// line of content, follow the output by auto scrolling to
+		// the bottom.
+		m.glamViewport.GotoBottom()
 	}
 }
