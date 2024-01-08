@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
+	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/caarlos0/env/v9"
@@ -125,36 +125,6 @@ type Config struct {
 	DeleteOlderThan   string
 
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
-}
-
-type flagParseError struct {
-	err error
-}
-
-func (f flagParseError) Error() string {
-	return fmt.Sprintf("missing flag: %s", f.Flag())
-}
-
-func (f flagParseError) ReasonFormat() string {
-	s := f.err.Error()
-	switch {
-	case strings.Contains(s, "flag needs an argument"):
-		return "Flag %s needs an argument."
-	default:
-		return "Flag %s is missing."
-	}
-}
-
-func (f flagParseError) Flag() string {
-	ps := strings.Split(f.err.Error(), "-")
-	switch len(ps) {
-	case 2: //nolint:gomnd
-		return "-" + ps[len(ps)-1]
-	case 3: //nolint:gomnd
-		return "--" + ps[len(ps)-1]
-	default:
-		return ""
-	}
 }
 
 func ensureConfig() (Config, error) {

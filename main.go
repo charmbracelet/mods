@@ -54,7 +54,7 @@ func init() {
 	buildVersion()
 	rootCmd.SetUsageFunc(usageFunc)
 	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
-		return flagParseError{err: err}
+		return newFlagParseError(err)
 	})
 
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
