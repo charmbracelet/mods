@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/adrg/xdg v0.4.0
-	github.com/caarlos0/duration v0.0.0-20220103233809-8df7c22fe305
+	github.com/caarlos0/duration v0.0.0-20240108180406-5d492514f3c7
 	github.com/caarlos0/env/v9 v9.0.0
 	github.com/caarlos0/timea.go v1.2.0
 	github.com/charmbracelet/bubbles v0.17.1
@@ -14,6 +14,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/charmbracelet/x/editor v0.0.0-20231116172829-450eedbca1ab
 	github.com/charmbracelet/x/exp/ordered v0.0.0-20231010190216-1cb11efc897d
+	github.com/charmbracelet/x/exp/strings v0.0.0-20231215171016-7ba2b450712d
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-isatty v0.0.20

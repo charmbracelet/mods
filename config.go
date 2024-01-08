@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
+	"github.com/caarlos0/duration"
 	"github.com/caarlos0/env/v9"
+	"github.com/charmbracelet/x/exp/strings"
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
@@ -46,7 +48,7 @@ var help = map[string]string{
 	"title":             "Saves the current conversation with the given title.",
 	"list":              "Lists saved conversations.",
 	"delete":            "Deletes a saved conversation with the given title or ID.",
-	"delete-older-than": "Deletes all saved conversations older than the specified duration.",
+	"delete-older-than": "Deletes all saved conversations older than the specified duration. Valid units are: " + strings.EnglishJoin(duration.ValidUnits(), true) + ".",
 	"show":              "Show a saved conversation with the given title or ID.",
 	"show-last":         "Show the last saved conversation.",
 }

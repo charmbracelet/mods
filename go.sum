@@ -9,8 +9,8 @@ github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiE
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
-github.com/caarlos0/duration v0.0.0-20220103233809-8df7c22fe305 h1:vJpZ14MU1/YhqsAyMst/70MHqRgCkPsIwZNoSgTm2Dc=
-github.com/caarlos0/duration v0.0.0-20220103233809-8df7c22fe305/go.mod h1:mSkwb/eZEwOJJJ4tqAKiuhLIPe0e9+FKhlU0oMCpbf8=
+github.com/caarlos0/duration v0.0.0-20240108180406-5d492514f3c7 h1:kJP/C2eL9DCKrCOlX6lPVmAUAb6U4u9xllgws1kP9ds=
+github.com/caarlos0/duration v0.0.0-20240108180406-5d492514f3c7/go.mod h1:mSkwb/eZEwOJJJ4tqAKiuhLIPe0e9+FKhlU0oMCpbf8=
 github.com/caarlos0/env/v9 v9.0.0 h1:SI6JNsOA+y5gj9njpgybykATIylrRMklbs5ch6wO6pc=
 github.com/caarlos0/env/v9 v9.0.0/go.mod h1:ye5mlCVMYh6tZ+vCgrs/B95sj88cg5Tlnc0XIzgZ020=
 github.com/caarlos0/timea.go v1.2.0 h1:JkjyWSUheN4nGO/OmYVGKbEv4ozHP/zuTZWD5Ih3Gog=
@@ -31,6 +31,8 @@ github.com/charmbracelet/x/editor v0.0.0-20231116172829-450eedbca1ab h1:95WbogoQ
 github.com/charmbracelet/x/editor v0.0.0-20231116172829-450eedbca1ab/go.mod h1:lrin7iXW742pX5pePBEWhLPDTp53YW15r/Lp4Rcfg0M=
 github.com/charmbracelet/x/exp/ordered v0.0.0-20231010190216-1cb11efc897d h1:+o+e/8hf7cG0SbAzEAm/usJ8qoZPgFXhudLjop+TM0g=
 github.com/charmbracelet/x/exp/ordered v0.0.0-20231010190216-1cb11efc897d/go.mod h1:aoG4bThKYIOnyB55r202eHqo6TkN7ZXV+cu4Do3eoBQ=
+github.com/charmbracelet/x/exp/strings v0.0.0-20231215171016-7ba2b450712d h1:xBbo1ljVhPfeAtR0fE0DNCVytd7xkUMbJ/7IoCsSugU=
+github.com/charmbracelet/x/exp/strings v0.0.0-20231215171016-7ba2b450712d/go.mod h1:pBhA0ybfXv6hDjQUZ7hk1lVxBiUbupdw5R31yPUViVQ=
 github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 h1:q2hJAaP1k2wIvVRd/hEHD7lacgqrCPS+k8g1MndzfWY=
 github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81/go.mod h1:YynlIjWYF8myEu6sdkwKIvGQq+cOckRm6So2avqoYAk=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
