@@ -63,3 +63,19 @@ func newDurationFlag(val time.Duration, p *time.Duration) *durationFlag {
 	*p = val
 	return (*durationFlag)(p)
 }
+
+type durationFlag time.Duration
+
+func (d *durationFlag) Set(s string) error {
+	v, err := duration.Parse(s)
+	*d = durationFlag(v)
+	return err
+}
+
+func (d *durationFlag) String() string {
+	return time.Duration(*d).String()
+}
+
+func (*durationFlag) Type() string {
+	return "duration"
+}

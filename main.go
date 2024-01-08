@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"time"
 
-	"github.com/caarlos0/duration"
 	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -132,7 +132,7 @@ var (
 				config.Show == "" &&
 				!config.ShowLast &&
 				config.Delete == "" &&
-				config.DeleteOlderThan == "" &&
+				config.DeleteOlderThan == 0 &&
 				!config.List) {
 				//nolint: wrapcheck
 				return cmd.Usage()
@@ -146,7 +146,7 @@ var (
 				return deleteConversation()
 			}
 
-			if config.DeleteOlderThan != "" {
+			if config.DeleteOlderThan > 0 {
 				return deleteConversationOlderThan()
 			}
 
@@ -186,7 +186,7 @@ func initFlags() {
 	flags.BoolVarP(&config.List, "list", "l", config.List, stdoutStyles().FlagDesc.Render(help["list"]))
 	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles().FlagDesc.Render(help["title"]))
 	flags.StringVarP(&config.Delete, "delete", "d", config.Delete, stdoutStyles().FlagDesc.Render(help["delete"]))
-	flags.StringVar(&config.DeleteOlderThan, "delete-older-than", config.DeleteOlderThan, stdoutStyles().FlagDesc.Render(help["delete-older-than"]))
+	flags.Var(newDurationFlag(config.DeleteOlderThan, &config.DeleteOlderThan), "delete-older-than", stdoutStyles().FlagDesc.Render(help["delete-older-than"]))
 	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles().FlagDesc.Render(help["show"]))
 	flags.BoolVarP(&config.ShowLast, "show-last", "S", false, stdoutStyles().FlagDesc.Render(help["show-last"]))
 	flags.BoolVarP(&config.Quiet, "quiet", "q", config.Quiet, stdoutStyles().FlagDesc.Render(help["quiet"]))
@@ -343,11 +343,7 @@ func resetSettings() error {
 }
 
 func deleteConversationOlderThan() error {
-	d, err := duration.Parse(config.DeleteOlderThan)
-	if err != nil {
-		return modsError{err, "Invalid duration"}
-	}
-	conversations, err := db.ListOlderThan(d)
+	conversations, err := db.ListOlderThan(time.Duration(config.DeleteOlderThan))
 	if err != nil {
 		return modsError{err, "Couldn't find conversation to delete."}
 	}

@@ -122,7 +122,7 @@ type Config struct {
 	Show              string
 	List              bool
 	Delete            string
-	DeleteOlderThan   string
+	DeleteOlderThan   time.Duration
 
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
 }
