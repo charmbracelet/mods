@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"time"
 
 	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
@@ -343,7 +342,7 @@ func resetSettings() error {
 }
 
 func deleteConversationOlderThan() error {
-	conversations, err := db.ListOlderThan(time.Duration(config.DeleteOlderThan))
+	conversations, err := db.ListOlderThan(config.DeleteOlderThan)
 	if err != nil {
 		return modsError{err, "Couldn't find conversation to delete."}
 	}
