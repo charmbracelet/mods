@@ -125,6 +125,21 @@ func (c *convoDB) Delete(id string) error {
 	return nil
 }
 
+func (c *convoDB) ListOlderThan(t time.Duration) ([]Conversation, error) {
+	var convos []Conversation
+	if err := c.db.Select(&convos, c.db.Rebind(`
+		SELECT
+		  *
+		FROM
+		  conversations
+		WHERE
+		  updated_at < ?
+		`), time.Now().Add(-t)); err != nil {
+		return nil, fmt.Errorf("ListOlderThan: %w", err)
+	}
+	return convos, nil
+}
+
 func (c *convoDB) FindHEAD() (*Conversation, error) {
 	var convo Conversation
 	if err := c.db.Get(&convo, `
