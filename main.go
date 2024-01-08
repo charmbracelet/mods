@@ -9,9 +9,11 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"github.com/caarlos0/duration"
 	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/editor"
 	"github.com/spf13/cobra"
@@ -130,6 +132,7 @@ var (
 				config.Show == "" &&
 				!config.ShowLast &&
 				config.Delete == "" &&
+				config.DeleteOlderThan == "" &&
 				!config.List) {
 				//nolint: wrapcheck
 				return cmd.Usage()
@@ -141,6 +144,10 @@ var (
 
 			if config.Delete != "" {
 				return deleteConversation()
+			}
+
+			if config.DeleteOlderThan != "" {
+				return deleteConversationOlderThan()
 			}
 
 			if isOutputTTY() {
@@ -179,6 +186,7 @@ func initFlags() {
 	flags.BoolVarP(&config.List, "list", "l", config.List, stdoutStyles().FlagDesc.Render(help["list"]))
 	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles().FlagDesc.Render(help["title"]))
 	flags.StringVarP(&config.Delete, "delete", "d", config.Delete, stdoutStyles().FlagDesc.Render(help["delete"]))
+	flags.StringVar(&config.DeleteOlderThan, "delete-older-than", config.DeleteOlderThan, stdoutStyles().FlagDesc.Render(help["delete-older-than"]))
 	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles().FlagDesc.Render(help["show"]))
 	flags.BoolVarP(&config.ShowLast, "show-last", "S", false, stdoutStyles().FlagDesc.Render(help["show-last"]))
 	flags.BoolVarP(&config.Quiet, "quiet", "q", config.Quiet, stdoutStyles().FlagDesc.Render(help["quiet"]))
@@ -334,6 +342,60 @@ func resetSettings() error {
 	return nil
 }
 
+func deleteConversationOlderThan() error {
+	d, err := duration.Parse(config.DeleteOlderThan)
+	if err != nil {
+		return modsError{err, "Invalid duration"}
+	}
+	conversations, err := db.ListOlderThan(d)
+	if err != nil {
+		return modsError{err, "Couldn't find conversation to delete."}
+	}
+
+	if len(conversations) == 0 {
+		if !config.Quiet {
+			fmt.Fprintln(os.Stderr, "No conversations found.")
+			return nil
+		}
+		return nil
+	}
+
+	if !config.Quiet {
+		printList(conversations)
+		fmt.Fprintln(os.Stderr)
+		var confirm bool
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
+					Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
+					Value(&confirm),
+			),
+		).Run(); err != nil {
+			return modsError{err, "Couldn't delete old conversations."}
+		}
+		if !confirm {
+			return fmt.Errorf("Aborted by user")
+		}
+	}
+
+	for _, c := range conversations {
+		if err := db.Delete(c.ID); err != nil {
+			return modsError{err, "Couldn't delete conversation."}
+		}
+
+		if err := cache.delete(c.ID); err != nil {
+			return modsError{err, "Couldn't delete conversation."}
+		}
+
+		if !config.Quiet {
+			fmt.Fprintln(os.Stderr, "Conversation deleted:", c.ID[:sha1minLen])
+		}
+	}
+
+	return nil
+}
+
 func deleteConversation() error {
 	convo, err := db.Find(config.Delete)
 	if err != nil {
@@ -365,6 +427,11 @@ func listConversations() error {
 		return nil
 	}
 
+	printList(conversations)
+	return nil
+}
+
+func printList(conversations []Conversation) {
 	width := 80
 	if isOutputTTY() {
 		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
@@ -394,7 +461,6 @@ func listConversations() error {
 			timeago.Of(conversation.UpdatedAt),
 		)
 	}
-	return nil
 }
 
 func saveConversation(mods *Mods) error {
