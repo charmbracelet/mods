@@ -377,7 +377,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		m.cancelRequest = cancel
 		prefix := cfg.Prefix
 		if cfg.Format {
-			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
+			prefix = fmt.Sprintf("%s\n%s", prefix, cfg.FormatText)
 		}
 		if prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
