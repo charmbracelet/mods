@@ -95,16 +95,6 @@ type chatCompletionReceiver interface {
 	Close()
 }
 
-// modsError is a wrapper around an error that adds additional context.
-type modsError struct {
-	err    error
-	reason string
-}
-
-func (m modsError) Error() string {
-	return m.err.Error()
-}
-
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
 	return m.findCacheOpsDetails()
@@ -264,7 +254,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"Model %s is not in the settings file.",
 						m.Styles.InlineCode.Render(cfg.Model),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"Please specify an API endpoint with %s or configure the model in the settings: %s",
 						m.Styles.InlineCode.Render("--api"),
 						m.Styles.InlineCode.Render("mods -s"),
@@ -287,7 +277,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				eps = append(eps, m.Styles.InlineCode.Render(a.Name))
 			}
 			return modsError{
-				err: fmt.Errorf(
+				err: newUserErrorf(
 					"Your configured API endpoints are: %s",
 					eps,
 				),
@@ -315,7 +305,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
 						m.Styles.InlineCode.Render("OPENAI_API_KEY"),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"You can grab one at %s",
 						m.Styles.Link.Render("https://platform.openai.com/account/api-keys."),
 					),
@@ -335,7 +325,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
 						m.Styles.InlineCode.Render("AZURE_OPENAI_KEY"),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"You can apply for one at %s",
 						m.Styles.Link.Render("https://aka.ms/oai/access"),
 					),
