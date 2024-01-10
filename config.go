@@ -34,6 +34,7 @@ var help = map[string]string{
 	"version":           "Show version and exit.",
 	"max-retries":       "Maximum number of times to retry API calls.",
 	"no-limit":          "Turn off the client-side limit on the size of the input into the model.",
+	"word-wrap":         "Wrap formatted output at specific width (default is 80)",
 	"max-tokens":        "Maximum number of tokens in response.",
 	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0.",
 	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
@@ -103,6 +104,7 @@ type Config struct {
 	IncludePromptArgs bool    `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
 	IncludePrompt     int     `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
 	MaxRetries        int     `yaml:"max-retries" env:"MAX_RETRIES"`
+	WordWrap          int     `yaml:"word-wrap" env:"WORD_WRAP"`
 	Fanciness         uint    `yaml:"fanciness" env:"FANCINESS"`
 	StatusText        string  `yaml:"status-text" env:"STATUS_TEXT"`
 	FormatText        string  `yaml:"format-text" env:"FORMAT_TEXT"`
@@ -182,6 +184,10 @@ func ensureConfig() (Config, error) {
 
 	if err := os.MkdirAll(c.CachePath, 0o700); err != nil { //nolint:gomnd
 		return c, modsError{err, "Could not create cache directory."}
+	}
+
+	if c.WordWrap == 0 {
+		c.WordWrap = 80
 	}
 
 	return c, nil

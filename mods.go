@@ -63,7 +63,7 @@ type Mods struct {
 }
 
 func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) *Mods {
-	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig())
+	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig(), glamour.WithWordWrap(cfg.WordWrap))
 	vp := viewport.New(0, 0)
 	vp.GotoBottom()
 	return &Mods{
