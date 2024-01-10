@@ -92,10 +92,9 @@ var (
 						huh.NewText().
 							Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
 							Lines(4).
-							Value(&config.Prefix).
-							WithKeyMap(km),
+							Value(&config.Prefix),
 					),
-				).Run(); err != nil {
+				).WithKeyMap(km).Run(); err != nil {
 					return modsError{
 						err:    err,
 						reason: "No prompt provided and failed to ask for one.",
@@ -384,17 +383,16 @@ func deleteConversationOlderThan() error {
 		fmt.Fprintln(os.Stderr)
 		var confirm bool
 		km := huh.NewDefaultKeyMap()
-		km.Confirm.Next.SetHelp("", "")
+		km.Confirm.Next.SetHelp("enter", "confirm")
 		km.Confirm.Prev.SetEnabled(false)
 		if err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewConfirm().
 					Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
 					Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
-					Value(&confirm).
-					WithKeyMap(km),
+					Value(&confirm),
 			),
-		).Run(); err != nil {
+		).WithKeyMap(km).Run(); err != nil {
 			return modsError{err, "Couldn't delete old conversations."}
 		}
 		if !confirm {
