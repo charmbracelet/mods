@@ -70,7 +70,7 @@ var (
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Prefix = strings.Join(args, " ")
+			config.Prefix = removeWhitespace(strings.Join(args, " "))
 
 			stdin := cmd.InOrStdin()
 			stdout := cmd.OutOrStdout()
@@ -81,6 +81,20 @@ var (
 
 			if !isInputTTY() {
 				opts = append(opts, tea.WithInput(nil))
+			}
+
+			if isNoArgs() && isInputTTY() {
+				if err := huh.Run(
+					huh.NewText().
+						Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
+						Lines(4). //nolint: gomnd
+						Value(&config.Prefix),
+				); err != nil {
+					return modsError{
+						err:    err,
+						reason: "No prompt provided and failed to ask for one.",
+					}
+				}
 			}
 
 			mods := newMods(stderrRenderer(), &config, db, cache)
@@ -97,6 +111,7 @@ var (
 
 			if config.Dirs {
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
+				//nolint: gomnd
 				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
 				return nil
 			}
@@ -104,7 +119,10 @@ var (
 			if config.Settings {
 				c, err := editor.Cmd("mods", config.SettingsPath)
 				if err != nil {
-					return err
+					return modsError{
+						err:    err,
+						reason: "Could not edit your settings file.",
+					}
 				}
 				c.Stdin = stdin
 				c.Stdout = stdout
@@ -126,13 +144,17 @@ var (
 				return resetSettings()
 			}
 
-			if config.ShowHelp || (mods.Input == "" &&
-				config.Prefix == "" &&
-				config.Show == "" &&
-				!config.ShowLast &&
-				config.Delete == "" &&
-				config.DeleteOlderThan == 0 &&
-				!config.List) {
+			if mods.Input == "" && isNoArgs() {
+				return modsError{
+					reason: "You haven't provided any prompt input.",
+					err: newUserErrorf(
+						"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
+							stdoutStyles().InlineCode.Render("mods [prompt]"),
+					),
+				}
+			}
+
+			if config.ShowHelp {
 				//nolint: wrapcheck
 				return cmd.Usage()
 			}
@@ -360,14 +382,12 @@ func deleteConversationOlderThan() error {
 		printList(conversations)
 		fmt.Fprintln(os.Stderr)
 		var confirm bool
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewConfirm().
-					Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
-					Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
-					Value(&confirm),
-			),
-		).Run(); err != nil {
+		if err := huh.Run(
+			huh.NewConfirm().
+				Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
+				Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
+				Value(&confirm),
+		); err != nil {
 			return modsError{err, "Couldn't delete old conversations."}
 		}
 		if !confirm {
@@ -507,4 +527,14 @@ func saveConversation(mods *Mods) error {
 		)
 	}
 	return nil
+}
+
+func isNoArgs() bool {
+	return config.Prefix == "" &&
+		config.Show == "" &&
+		!config.ShowLast &&
+		config.Delete == "" &&
+		config.DeleteOlderThan == 0 &&
+		!config.ShowHelp &&
+		!config.List
 }

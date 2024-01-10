@@ -116,9 +116,9 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case completionInput:
 		if msg.content != "" {
-			m.Input = msg.content
+			m.Input = removeWhitespace(msg.content)
 		}
-		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
+		if m.Input == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
 			return m, m.quit
 		}
 
@@ -607,4 +607,12 @@ func (m *Mods) appendToOutput(s string) {
 		// the bottom.
 		m.glamViewport.GotoBottom()
 	}
+}
+
+// if the input is whitespace only, make it empty.
+func removeWhitespace(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return ""
+	}
+	return s
 }

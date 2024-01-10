@@ -69,6 +69,7 @@ type durationFlag time.Duration
 func (d *durationFlag) Set(s string) error {
 	v, err := duration.Parse(s)
 	*d = durationFlag(v)
+	//nolint: wrapcheck
 	return err
 }
 
