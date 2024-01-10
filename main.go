@@ -87,7 +87,7 @@ var (
 				if err := huh.Run(
 					huh.NewText().
 						Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
-						Lines(4).
+						Lines(4). //nolint: gomnd
 						Value(&config.Prefix),
 				); err != nil {
 					return modsError{
@@ -111,6 +111,7 @@ var (
 
 			if config.Dirs {
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
+				//nolint: gomnd
 				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
 				return nil
 			}
@@ -118,7 +119,10 @@ var (
 			if config.Settings {
 				c, err := editor.Cmd("mods", config.SettingsPath)
 				if err != nil {
-					return err
+					return modsError{
+						err:    err,
+						reason: "Could not edit your settings file.",
+					}
 				}
 				c.Stdin = stdin
 				c.Stdout = stdout
