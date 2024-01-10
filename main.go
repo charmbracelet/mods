@@ -383,12 +383,16 @@ func deleteConversationOlderThan() error {
 		printList(conversations)
 		fmt.Fprintln(os.Stderr)
 		var confirm bool
+		km := huh.NewDefaultKeyMap()
+		km.Confirm.Next.SetHelp("", "")
+		km.Confirm.Prev.SetEnabled(false)
 		if err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewConfirm().
 					Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
 					Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
-					Value(&confirm),
+					Value(&confirm).
+					WithKeyMap(km),
 			),
 		).Run(); err != nil {
 			return modsError{err, "Couldn't delete old conversations."}
