@@ -95,16 +95,6 @@ type chatCompletionReceiver interface {
 	Close()
 }
 
-// modsError is a wrapper around an error that adds additional context.
-type modsError struct {
-	err    error
-	reason string
-}
-
-func (m modsError) Error() string {
-	return m.err.Error()
-}
-
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
 	return m.findCacheOpsDetails()
@@ -131,6 +121,18 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
 			return m, m.quit
 		}
+
+		if m.Config.IncludePromptArgs {
+			m.appendToOutput(m.Config.Prefix + "\n\n")
+		}
+
+		if m.Config.IncludePrompt > 0 {
+			parts := strings.Split(m.Input, "\n")
+			if len(parts) > m.Config.IncludePrompt {
+				parts = parts[0:m.Config.IncludePrompt]
+			}
+			m.appendToOutput(strings.Join(parts, "\n") + "\n")
+		}
 		m.state = requestState
 		cmds = append(cmds, m.startCompletionCmd(msg.content))
 	case completionOutput:
@@ -139,29 +141,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.quit
 		}
 		if msg.content != "" {
-			m.Output += msg.content
-			if !isOutputTTY() || m.Config.Raw {
-				m.contentMutex.Lock()
-				m.content = append(m.content, msg.content)
-				m.contentMutex.Unlock()
-			} else {
-				const tabWidth = 4
-				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
-				oldHeight := m.glamHeight
-				m.glamOutput, _ = m.glam.Render(m.Output)
-				m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
-				m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
-				m.glamHeight = lipgloss.Height(m.glamOutput)
-				m.glamOutput += "\n"
-				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
-				m.glamViewport.SetContent(truncatedGlamOutput)
-				if oldHeight < m.glamHeight && wasAtBottom {
-					// If the viewport's at the bottom and we've received a new
-					// line of content, follow the output by auto scrolling to
-					// the bottom.
-					m.glamViewport.GotoBottom()
-				}
-			}
+			m.appendToOutput(msg.content)
 			m.state = responseState
 		}
 		cmds = append(cmds, m.receiveCompletionStreamCmd(msg))
@@ -274,7 +254,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"Model %s is not in the settings file.",
 						m.Styles.InlineCode.Render(cfg.Model),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"Please specify an API endpoint with %s or configure the model in the settings: %s",
 						m.Styles.InlineCode.Render("--api"),
 						m.Styles.InlineCode.Render("mods -s"),
@@ -297,7 +277,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				eps = append(eps, m.Styles.InlineCode.Render(a.Name))
 			}
 			return modsError{
-				err: fmt.Errorf(
+				err: newUserErrorf(
 					"Your configured API endpoints are: %s",
 					eps,
 				),
@@ -325,7 +305,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
 						m.Styles.InlineCode.Render("OPENAI_API_KEY"),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"You can grab one at %s",
 						m.Styles.Link.Render("https://platform.openai.com/account/api-keys."),
 					),
@@ -345,7 +325,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
 						m.Styles.InlineCode.Render("AZURE_OPENAI_KEY"),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"You can apply for one at %s",
 						m.Styles.Link.Render("https://aka.ms/oai/access"),
 					),
@@ -377,7 +357,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		m.cancelRequest = cancel
 		prefix := cfg.Prefix
 		if cfg.Format {
-			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
+			prefix = fmt.Sprintf("%s\n%s", prefix, cfg.FormatText)
 		}
 		if prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
@@ -598,5 +578,33 @@ func (m *Mods) readFromCache() tea.Cmd {
 				messages: messages,
 			},
 		})()
+	}
+}
+
+const tabWidth = 4
+
+func (m *Mods) appendToOutput(s string) {
+	m.Output += s
+	if !isOutputTTY() || m.Config.Raw {
+		m.contentMutex.Lock()
+		m.content = append(m.content, s)
+		m.contentMutex.Unlock()
+		return
+	}
+
+	wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
+	oldHeight := m.glamHeight
+	m.glamOutput, _ = m.glam.Render(m.Output)
+	m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
+	m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
+	m.glamHeight = lipgloss.Height(m.glamOutput)
+	m.glamOutput += "\n"
+	truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
+	m.glamViewport.SetContent(truncatedGlamOutput)
+	if oldHeight < m.glamHeight && wasAtBottom {
+		// If the viewport's at the bottom and we've received a new
+		// line of content, follow the output by auto scrolling to
+		// the bottom.
+		m.glamViewport.GotoBottom()
 	}
 }

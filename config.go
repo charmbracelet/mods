@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
+	"time"
 
 	"github.com/adrg/xdg"
+	"github.com/caarlos0/duration"
 	"github.com/caarlos0/env/v9"
+	"github.com/charmbracelet/x/exp/strings"
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
@@ -17,38 +19,39 @@ import (
 )
 
 var help = map[string]string{
-	"api":             "OpenAI compatible REST API (openai, localai).",
-	"apis":            "Aliases and endpoints for OpenAI compatible REST API.",
-	"http-proxy":      "HTTP proxy to use for API requests.",
-	"model":           "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
-	"max-input-chars": "Default character limit on input to model.",
-	"format":          "Ask for the response to be formatted as markdown unless otherwise set.",
-	"format-text":     "Text to append when using the -f flag.",
-	"prompt":          "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
-	"prompt-args":     "Include the prompt from the arguments in the response.",
-	"raw":             "Render output as raw text when connected to a TTY.",
-	"quiet":           "Quiet mode (hide the spinner while loading and stderr messages for success).",
-	"help":            "Show help and exit.",
-	"version":         "Show version and exit.",
-	"max-retries":     "Maximum number of times to retry API calls.",
-	"no-limit":        "Turn off the client-side limit on the size of the input into the model.",
-	"word-wrap":       "Wrap formatted output at specific width (default is 80)",
-	"max-tokens":      "Maximum number of tokens in response.",
-	"temp":            "Temperature (randomness) of results, from 0.0 to 2.0.",
-	"topp":            "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
-	"fanciness":       "Your desired level of fanciness.",
-	"status-text":     "Text to show while generating.",
-	"settings":        "Open settings in your $EDITOR.",
-	"dirs":            "Print the directories in which mods store its data",
-	"reset-settings":  "Backup your old settings file and reset everything to the defaults.",
-	"continue":        "Continue from the last response or a given save title.",
-	"continue-last":   "Continue from the last response.",
-	"no-cache":        "Disables caching of the prompt/response.",
-	"title":           "Saves the current conversation with the given title.",
-	"list":            "Lists saved conversations.",
-	"delete":          "Deletes a saved conversation with the given title or ID.",
-	"show":            "Show a saved conversation with the given title or ID.",
-	"show-last":       "Show a the last saved conversation.",
+	"api":               "OpenAI compatible REST API (openai, localai).",
+	"apis":              "Aliases and endpoints for OpenAI compatible REST API.",
+	"http-proxy":        "HTTP proxy to use for API requests.",
+	"model":             "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
+	"max-input-chars":   "Default character limit on input to model.",
+	"format":            "Ask for the response to be formatted as markdown unless otherwise set.",
+	"format-text":       "Text to append when using the -f flag.",
+	"prompt":            "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
+	"prompt-args":       "Include the prompt from the arguments in the response.",
+	"raw":               "Render output as raw text when connected to a TTY.",
+	"quiet":             "Quiet mode (hide the spinner while loading and stderr messages for success).",
+	"help":              "Show help and exit.",
+	"version":           "Show version and exit.",
+	"max-retries":       "Maximum number of times to retry API calls.",
+	"no-limit":          "Turn off the client-side limit on the size of the input into the model.",
+  "word-wrap":         "Wrap formatted output at specific width (default is 80)",
+	"max-tokens":        "Maximum number of tokens in response.",
+	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0.",
+	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
+	"fanciness":         "Your desired level of fanciness.",
+	"status-text":       "Text to show while generating.",
+	"settings":          "Open settings in your $EDITOR.",
+	"dirs":              "Print the directories in which mods store its data",
+	"reset-settings":    "Backup your old settings file and reset everything to the defaults.",
+	"continue":          "Continue from the last response or a given save title.",
+	"continue-last":     "Continue from the last response.",
+	"no-cache":          "Disables caching of the prompt/response.",
+	"title":             "Saves the current conversation with the given title.",
+	"list":              "Lists saved conversations.",
+	"delete":            "Deletes a saved conversation with the given title or ID.",
+	"delete-older-than": "Deletes all saved conversations older than the specified duration. Valid units are: " + strings.EnglishJoin(duration.ValidUnits(), true) + ".",
+	"show":              "Show a saved conversation with the given title or ID.",
+	"show-last":         "Show the last saved conversation.",
 }
 
 // Model represents the LLM model used in the API call.
@@ -123,38 +126,9 @@ type Config struct {
 	Show              string
 	List              bool
 	Delete            string
+	DeleteOlderThan   time.Duration
 
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
-}
-
-type flagParseError struct {
-	err error
-}
-
-func (f flagParseError) Error() string {
-	return fmt.Sprintf("missing flag: %s", f.Flag())
-}
-
-func (f flagParseError) ReasonFormat() string {
-	s := f.err.Error()
-	switch {
-	case strings.Contains(s, "flag needs an argument"):
-		return "Flag %s needs an argument."
-	default:
-		return "Flag %s is missing."
-	}
-}
-
-func (f flagParseError) Flag() string {
-	ps := strings.Split(f.err.Error(), "-")
-	switch len(ps) {
-	case 2: //nolint:gomnd
-		return "-" + ps[len(ps)-1]
-	case 3: //nolint:gomnd
-		return "--" + ps[len(ps)-1]
-	default:
-		return ""
-	}
 }
 
 func ensureConfig() (Config, error) {
