@@ -133,6 +133,17 @@ var (
 				config.Delete == "" &&
 				config.DeleteOlderThan == 0 &&
 				!config.List) {
+
+				if mods.Input == "" && isInputTTY() {
+					return modsError{
+						reason: "You haven't provided any prompt input.",
+						err: newUserErrorf(
+							"You can give your prompt as arguments and/or pipe it from STDIN.\nExample:" +
+								stdoutStyles().InlineCode.Render("mods [prompt]"),
+						),
+					}
+				}
+
 				//nolint: wrapcheck
 				return cmd.Usage()
 			}
