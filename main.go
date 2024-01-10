@@ -370,7 +370,7 @@ func deleteConversationOlderThan() error {
 			return modsError{err, "Couldn't delete old conversations."}
 		}
 		if !confirm {
-			return newUserError("Aborted by user")
+			return newUserErrorf("Aborted by user")
 		}
 	}
 
