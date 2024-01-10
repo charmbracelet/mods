@@ -70,7 +70,7 @@ var (
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Prefix = strings.Join(args, " ")
+			config.Prefix = removeWhitespace(strings.Join(args, " "))
 
 			stdin := cmd.InOrStdin()
 			stdout := cmd.OutOrStdout()
