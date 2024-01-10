@@ -83,7 +83,7 @@ var (
 				opts = append(opts, tea.WithInput(nil))
 			}
 
-			if config.Prefix == "" && isInputTTY() {
+			if isNoArgs() && isInputTTY() {
 				km := huh.NewDefaultKeyMap()
 				km.Text.Prev.SetEnabled(false)
 				km.Text.Next.SetHelp("enter", "submit")
@@ -146,22 +146,17 @@ var (
 				return resetSettings()
 			}
 
-			if config.ShowHelp || (mods.Input == "" &&
-				config.Prefix == "" &&
-				config.Show == "" &&
-				!config.ShowLast &&
-				config.Delete == "" &&
-				config.DeleteOlderThan == 0 &&
-				!config.List) {
-				if mods.Input == "" && config.Prefix == "" {
-					return modsError{
-						reason: "You haven't provided any prompt input.",
-						err: newUserErrorf(
-							"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
-								stdoutStyles().InlineCode.Render("mods [prompt]"),
-						),
-					}
+			if mods.Input == "" && isNoArgs() {
+				return modsError{
+					reason: "You haven't provided any prompt input.",
+					err: newUserErrorf(
+						"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
+							stdoutStyles().InlineCode.Render("mods [prompt]"),
+					),
 				}
+			}
+
+			if config.ShowHelp {
 				//nolint: wrapcheck
 				return cmd.Usage()
 			}
@@ -535,4 +530,14 @@ func saveConversation(mods *Mods) error {
 		)
 	}
 	return nil
+}
+
+func isNoArgs() bool {
+	return config.Prefix == "" &&
+		config.Show == "" &&
+		!config.ShowLast &&
+		config.Delete == "" &&
+		config.DeleteOlderThan == 0 &&
+		!config.ShowHelp &&
+		!config.List
 }
