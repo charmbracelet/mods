@@ -84,12 +84,16 @@ var (
 			}
 
 			if config.Prefix == "" && isInputTTY() {
+				km := huh.NewDefaultKeyMap()
+				km.Text.Prev.SetEnabled(false)
+				km.Text.Next.SetHelp("enter", "submit")
 				if err := huh.NewForm(
 					huh.NewGroup(
 						huh.NewText().
 							Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
 							Lines(4).
-							Value(&config.Prefix),
+							Value(&config.Prefix).
+							WithKeyMap(km),
 					),
 				).Run(); err != nil {
 					return modsError{
