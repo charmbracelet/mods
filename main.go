@@ -83,6 +83,22 @@ var (
 				opts = append(opts, tea.WithInput(nil))
 			}
 
+			if config.Prefix == "" && isInputTTY() {
+				if err := huh.NewForm(
+					huh.NewGroup(
+						huh.NewText().
+							Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
+							Lines(4).
+							Value(&config.Prefix),
+					),
+				).Run(); err != nil {
+					return modsError{
+						err:    err,
+						reason: "No prompt provided and failed to ask for one.",
+					}
+				}
+			}
+
 			mods := newMods(stderrRenderer(), &config, db, cache)
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
@@ -133,17 +149,6 @@ var (
 				config.Delete == "" &&
 				config.DeleteOlderThan == 0 &&
 				!config.List) {
-
-				if mods.Input == "" && isInputTTY() {
-					return modsError{
-						reason: "You haven't provided any prompt input.",
-						err: newUserErrorf(
-							"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
-								stdoutStyles().InlineCode.Render("mods [prompt]"),
-						),
-					}
-				}
-
 				//nolint: wrapcheck
 				return cmd.Usage()
 			}
@@ -488,6 +493,20 @@ func saveConversation(mods *Mods) error {
 
 	if sha1reg.MatchString(title) || title == "" {
 		title = firstLine(lastPrompt(mods.messages))
+	}
+
+	// if title is empty, it means that the user probably run something like:
+	// cat emptyfile.txt | mods
+	// so the prompt was effectively empty but we didn't know it before.
+	if title == "" {
+		// no prompt
+		return modsError{
+			reason: "You haven't provided any prompt input.",
+			err: newUserErrorf(
+				"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
+					stdoutStyles().InlineCode.Render("mods [prompt]"),
+			),
+		}
 	}
 
 	if err := cache.write(id, &mods.messages); err != nil {
