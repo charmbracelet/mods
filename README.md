@@ -179,6 +179,17 @@ Show the saved conversation the given title or SHA1.
 
 Deletes the saved conversation with the given title or SHA1.
 
+`--delete-older-than=duration`
+
+Delete conversations older than the given duration (e.g. `10d`, `3w`, `1mo`,
+`1y`).
+
+If the terminal is interactive, it'll first list the conversations to be deleted
+and then will ask for confirmation.
+
+If the terminal is not interactive, or if `--quiet` is provided, it'll delete
+the conversations without any confirmation.
+
 #### Format As Markdown
 
 `-f`, `--format`, `MODS_FORMAT`
