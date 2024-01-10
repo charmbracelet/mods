@@ -118,7 +118,10 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.content != "" {
 			m.Input = msg.content
 		}
-		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
+		if strings.TrimSpace(msg.content) == "" &&
+			strings.TrimSpace(m.Config.Prefix) == "" &&
+			m.Config.Show == "" &&
+			!m.Config.ShowLast {
 			return m, m.quit
 		}
 
