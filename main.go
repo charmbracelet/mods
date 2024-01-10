@@ -84,17 +84,12 @@ var (
 			}
 
 			if isNoArgs() && isInputTTY() {
-				km := huh.NewDefaultKeyMap()
-				km.Text.Prev.SetEnabled(false)
-				km.Text.Next.SetHelp("enter", "submit")
-				if err := huh.NewForm(
-					huh.NewGroup(
-						huh.NewText().
-							Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
-							Lines(4).
-							Value(&config.Prefix),
-					),
-				).WithKeyMap(km).Run(); err != nil {
+				if err := huh.Run(
+					huh.NewText().
+						Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
+						Lines(4).
+						Value(&config.Prefix),
+				); err != nil {
 					return modsError{
 						err:    err,
 						reason: "No prompt provided and failed to ask for one.",
@@ -382,17 +377,12 @@ func deleteConversationOlderThan() error {
 		printList(conversations)
 		fmt.Fprintln(os.Stderr)
 		var confirm bool
-		km := huh.NewDefaultKeyMap()
-		km.Confirm.Next.SetHelp("enter", "confirm")
-		km.Confirm.Prev.SetEnabled(false)
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewConfirm().
-					Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
-					Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
-					Value(&confirm),
-			),
-		).WithKeyMap(km).Run(); err != nil {
+		if err := huh.Run(
+			huh.NewConfirm().
+				Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
+				Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
+				Value(&confirm),
+		); err != nil {
 			return modsError{err, "Couldn't delete old conversations."}
 		}
 		if !confirm {
