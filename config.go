@@ -34,7 +34,7 @@ var help = map[string]string{
 	"version":           "Show version and exit.",
 	"max-retries":       "Maximum number of times to retry API calls.",
 	"no-limit":          "Turn off the client-side limit on the size of the input into the model.",
-  "word-wrap":         "Wrap formatted output at specific width (default is 80)",
+	"word-wrap":         "Wrap formatted output at specific width (default is 80)",
 	"max-tokens":        "Maximum number of tokens in response.",
 	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0.",
 	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
