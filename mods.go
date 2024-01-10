@@ -118,10 +118,11 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.content != "" {
 			m.Input = msg.content
 		}
-		if strings.TrimSpace(msg.content) == "" &&
-			strings.TrimSpace(m.Config.Prefix) == "" &&
-			m.Config.Show == "" &&
-			!m.Config.ShowLast {
+		if strings.TrimSpace(m.Input) == "" {
+			// if the input is whitespace only, make it empty.
+			m.Input = ""
+		}
+		if m.Input == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
 			return m, m.quit
 		}
 

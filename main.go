@@ -149,6 +149,15 @@ var (
 				config.Delete == "" &&
 				config.DeleteOlderThan == 0 &&
 				!config.List) {
+				if mods.Input == "" && config.Prefix == "" {
+					return modsError{
+						reason: "You haven't provided any prompt input.",
+						err: newUserErrorf(
+							"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
+								stdoutStyles().InlineCode.Render("mods [prompt]"),
+						),
+					}
+				}
 				//nolint: wrapcheck
 				return cmd.Usage()
 			}
@@ -493,20 +502,6 @@ func saveConversation(mods *Mods) error {
 
 	if sha1reg.MatchString(title) || title == "" {
 		title = firstLine(lastPrompt(mods.messages))
-	}
-
-	// if title is empty, it means that the user probably run something like:
-	// cat emptyfile.txt | mods
-	// so the prompt was effectively empty but we didn't know it before.
-	if title == "" {
-		// no prompt
-		return modsError{
-			reason: "You haven't provided any prompt input.",
-			err: newUserErrorf(
-				"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
-					stdoutStyles().InlineCode.Render("mods [prompt]"),
-			),
-		}
 	}
 
 	if err := cache.write(id, &mods.messages); err != nil {
