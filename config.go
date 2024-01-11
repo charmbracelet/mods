@@ -88,8 +88,10 @@ func (apis *APIs) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
+// FormatText is a map[format]formatting_text.
 type FormatText map[string]string
 
+// UnmarshalYAML conforms with yaml.Unmarshaler.
 func (ft *FormatText) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var text string
 	if err := unmarshal(&text); err != nil {
