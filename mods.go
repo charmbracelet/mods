@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -433,7 +435,8 @@ func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, cont
 			if cfg.NoLimit {
 				return pe
 			}
-			return m.retry(content[:len(content)-10], pe)
+
+			return m.retry(cutPrompt(err.Message, content), pe)
 		}
 		// bad request (do not retry)
 		return modsError{err: err, reason: "OpenAI API request error."}
@@ -615,4 +618,29 @@ func removeWhitespace(s string) string {
 		return ""
 	}
 	return s
+}
+
+var tokenErrRe = regexp.MustCompile(`This model's maximum context length is (\d+) tokens. However, your messages resulted in (\d+) tokens`)
+
+func cutPrompt(msg, prompt string) string {
+	found := tokenErrRe.FindStringSubmatch(msg)
+	if len(found) != 3 {
+		return prompt
+	}
+
+	max, _ := strconv.Atoi(found[1])
+	current, _ := strconv.Atoi(found[2])
+
+	if max > current {
+		return prompt
+	}
+
+	// 1 token =~ 4 chars
+	// cut 10 extra chars 'just in case'
+	reduceBy := 10 + (current-max)*4
+	if len(prompt) > reduceBy {
+		return prompt[:len(prompt)-reduceBy]
+	}
+
+	return prompt
 }
