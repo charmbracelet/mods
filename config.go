@@ -88,28 +88,48 @@ func (apis *APIs) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
+type FormatText map[string]string
+
+func (ft *FormatText) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var text string
+	if err := unmarshal(&text); err != nil {
+		var formats map[string]string
+		if err := unmarshal(&formats); err != nil {
+			return err
+		}
+		*ft = (FormatText)(formats)
+		return nil
+	}
+
+	*ft = map[string]string{
+		"markdown": text,
+	}
+	return nil
+}
+
 // Config holds the main configuration and is mapped to the YAML settings file.
 type Config struct {
-	Model             string  `yaml:"default-model" env:"MODEL"`
-	Format            bool    `yaml:"format" env:"FORMAT"`
-	Raw               bool    `yaml:"raw" env:"RAW"`
-	Quiet             bool    `yaml:"quiet" env:"QUIET"`
-	MaxTokens         int     `yaml:"max-tokens" env:"MAX_TOKENS"`
-	MaxInputChars     int     `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
-	Temperature       float32 `yaml:"temp" env:"TEMP"`
-	TopP              float32 `yaml:"topp" env:"TOPP"`
-	NoLimit           bool    `yaml:"no-limit" env:"NO_LIMIT"`
-	CachePath         string  `yaml:"cache-path" env:"CACHE_PATH"`
-	NoCache           bool    `yaml:"no-cache" env:"NO_CACHE"`
-	IncludePromptArgs bool    `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
-	IncludePrompt     int     `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
-	MaxRetries        int     `yaml:"max-retries" env:"MAX_RETRIES"`
-	WordWrap          int     `yaml:"word-wrap" env:"WORD_WRAP"`
-	Fanciness         uint    `yaml:"fanciness" env:"FANCINESS"`
-	StatusText        string  `yaml:"status-text" env:"STATUS_TEXT"`
-	FormatText        string  `yaml:"format-text" env:"FORMAT_TEXT"`
-	HTTPProxy         string  `yaml:"http-proxy" env:"HTTP_PROXY"`
-	APIs              APIs    `yaml:"apis"`
+	Model             string     `yaml:"default-model" env:"MODEL"`
+	Format            bool       `yaml:"format" env:"FORMAT"`
+	Raw               bool       `yaml:"raw" env:"RAW"`
+	Quiet             bool       `yaml:"quiet" env:"QUIET"`
+	MaxTokens         int        `yaml:"max-tokens" env:"MAX_TOKENS"`
+	MaxInputChars     int        `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
+	Temperature       float32    `yaml:"temp" env:"TEMP"`
+	TopP              float32    `yaml:"topp" env:"TOPP"`
+	NoLimit           bool       `yaml:"no-limit" env:"NO_LIMIT"`
+	CachePath         string     `yaml:"cache-path" env:"CACHE_PATH"`
+	NoCache           bool       `yaml:"no-cache" env:"NO_CACHE"`
+	IncludePromptArgs bool       `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
+	IncludePrompt     int        `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
+	MaxRetries        int        `yaml:"max-retries" env:"MAX_RETRIES"`
+	WordWrap          int        `yaml:"word-wrap" env:"WORD_WRAP"`
+	Fanciness         uint       `yaml:"fanciness" env:"FANCINESS"`
+	StatusText        string     `yaml:"status-text" env:"STATUS_TEXT"`
+	FormatText        FormatText `yaml:"format-text" env:"FORMAT_TEXT"`
+	HTTPProxy         string     `yaml:"http-proxy" env:"HTTP_PROXY"`
+	APIs              APIs       `yaml:"apis"`
+	FormatAs          string
 	API               string
 	Models            map[string]Model
 	ShowHelp          bool

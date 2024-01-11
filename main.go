@@ -61,9 +61,11 @@ func init() {
 }
 
 var (
-	config Config
-	db     *convoDB
-	cache  *convoCache
+	config = Config{
+		FormatAs: "markdown",
+	}
+	db    *convoDB
+	cache *convoCache
 
 	rootCmd = &cobra.Command{
 		Use:           "mods",
@@ -199,6 +201,7 @@ func initFlags() {
 	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles().FlagDesc.Render(help["api"]))
 	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles().FlagDesc.Render(help["http-proxy"]))
 	flags.BoolVarP(&config.Format, "format", "f", config.Format, stdoutStyles().FlagDesc.Render(help["format"]))
+	flags.StringVar(&config.FormatAs, "format-as", config.FormatAs, stdoutStyles().FlagDesc.Render(help["format-as"]))
 	flags.BoolVarP(&config.Raw, "raw", "r", config.Raw, stdoutStyles().FlagDesc.Render(help["raw"]))
 	flags.IntVarP(&config.IncludePrompt, "prompt", "P", config.IncludePrompt, stdoutStyles().FlagDesc.Render(help["prompt"]))
 	flags.BoolVarP(&config.IncludePromptArgs, "prompt-args", "p", config.IncludePromptArgs, stdoutStyles().FlagDesc.Render(help["prompt-args"]))
@@ -235,8 +238,13 @@ func initFlags() {
 		})
 	}
 
-	if config.Format && config.FormatText == "" {
-		config.FormatText = "Format the response as markdown without enclosing backticks."
+	if config.Format && config.FormatText[config.FormatAs] == "" {
+		switch config.FormatAs {
+		case "json":
+			config.FormatText[config.FormatAs] = "Format the response as json without enclosing backticks."
+		default:
+			config.FormatText[config.FormatAs] = "Format the response as markdown without enclosing backticks."
+		}
 	}
 
 	rootCmd.MarkFlagsMutuallyExclusive(
@@ -244,6 +252,7 @@ func initFlags() {
 		"show",
 		"show-last",
 		"delete",
+		"delete-older-than",
 		"list",
 		"continue",
 		"continue-last",

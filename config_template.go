@@ -3,7 +3,9 @@ package main
 const configTemplate = `# {{ index .Help "model" }}
 default-model: gpt-4
 # {{ index .Help "format-text" }}
-format-text: Format the response as markdown without enclosing backticks.
+format-text:
+  markdown: Format the response as markdown without enclosing backticks.
+  json: Format the response as json without enclosing backticks.
 # {{ index .Help "format" }}
 format: false
 # {{ index .Help "raw" }}
@@ -36,7 +38,7 @@ max-input-chars: 12250
 apis:
   openai:
     base-url: https://api.openai.com/v1
-    api-key: 
+    api-key:
     api-key-env: OPENAI_API_KEY
     models:
       gpt-4:
@@ -47,9 +49,17 @@ apis:
         aliases: ["32k"]
         max-input-chars: 98000
         fallback: gpt-4
+      gpt-4-1106-preview:
+        aliases: ["4-preview"]
+        max-input-chars: 98000
+        fallback: gpt-4
       gpt-3.5-turbo:
         aliases: ["35t"]
         max-input-chars: 12250
+        fallback: gpt-3.5
+      gpt-3.5-turbo-1106:
+        aliases: ["35t1106"]
+        max-input-chars: 44500
         fallback: gpt-3.5
       gpt-3.5-turbo-16k:
         aliases: ["35t16k"]
@@ -71,7 +81,7 @@ apis:
     # Set to 'azure-ad' to use Active Directory
     # Azure OpenAI setup: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource
     base-url: https://YOUR_RESOURCE_NAME.openai.azure.com
-    api-key: 
+    api-key:
     api-key-env: AZURE_OPENAI_KEY
     models:
       gpt-4:
