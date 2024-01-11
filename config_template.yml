@@ -1,6 +1,4 @@
-package main
-
-const configTemplate = `# {{ index .Help "model" }}
+# {{ index .Help "model" }}
 default-model: gpt-4
 # {{ index .Help "format-text" }}
 format-text:
@@ -45,12 +43,12 @@ apis:
         aliases: ["4"]
         max-input-chars: 24500
         fallback: gpt-3.5-turbo
+      gpt-4-1106-preview:
+        aliases: ["128k"]
+        max-input-chars: 392000
+        fallback: gpt-4
       gpt-4-32k:
         aliases: ["32k"]
-        max-input-chars: 98000
-        fallback: gpt-4
-      gpt-4-1106-preview:
-        aliases: ["4-preview"]
         max-input-chars: 98000
         fallback: gpt-4
       gpt-3.5-turbo:
@@ -58,9 +56,9 @@ apis:
         max-input-chars: 12250
         fallback: gpt-3.5
       gpt-3.5-turbo-1106:
-        aliases: ["35t1106"]
-        max-input-chars: 44500
-        fallback: gpt-3.5
+        aliases: ["35t-1106"]
+        max-input-chars: 12250
+        fallback: gpt-3.5-turbo
       gpt-3.5-turbo-16k:
         aliases: ["35t16k"]
         max-input-chars: 44500
@@ -96,4 +94,3 @@ apis:
         aliases: ["az35"]
         max-input-chars: 12250
         fallback:
-`

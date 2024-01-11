@@ -8,6 +8,8 @@ import (
 	"text/template"
 	"time"
 
+	_ "embed"
+
 	"github.com/adrg/xdg"
 	"github.com/caarlos0/duration"
 	"github.com/caarlos0/env/v9"
@@ -17,6 +19,9 @@ import (
 	flag "github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed config_template.yml
+var configTemplate string
 
 var help = map[string]string{
 	"api":               "OpenAI compatible REST API (openai, localai).",
