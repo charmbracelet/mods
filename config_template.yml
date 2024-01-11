@@ -2,8 +2,8 @@
 default-model: gpt-4
 # {{ index .Help "format-text" }}
 format-text:
-  markdown: Format the response as markdown without enclosing backticks.
-  json: Format the response as json without enclosing backticks.
+  markdown: '{{ index .Config.FormatText "markdown" }}'
+  json: '{{ index .Config.FormatText "json" }}'
 # {{ index .Help "format" }}
 format: false
 # {{ index .Help "raw" }}

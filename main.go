@@ -61,11 +61,9 @@ func init() {
 }
 
 var (
-	config = Config{
-		FormatAs: "markdown",
-	}
-	db    *convoDB
-	cache *convoCache
+	config = defaultConfig()
+	db     *convoDB
+	cache  *convoCache
 
 	rootCmd = &cobra.Command{
 		Use:           "mods",
@@ -239,12 +237,7 @@ func initFlags() {
 	}
 
 	if config.Format && config.FormatText[config.FormatAs] == "" {
-		switch config.FormatAs {
-		case "json":
-			config.FormatText[config.FormatAs] = "Format the response as json without enclosing backticks."
-		default:
-			config.FormatText[config.FormatAs] = "Format the response as markdown without enclosing backticks."
-		}
+		config.FormatText[config.FormatAs] = defaultConfig().FormatText[config.FormatAs]
 	}
 
 	rootCmd.MarkFlagsMutuallyExclusive(

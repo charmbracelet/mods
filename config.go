@@ -23,6 +23,11 @@ import (
 //go:embed config_template.yml
 var configTemplate string
 
+const (
+	defaultMarkdownFormatText = "Format the response as markdown without enclosing backticks."
+	defaultJSONFormatText     = "Format the response as json without enclosing backticks."
+)
+
 var help = map[string]string{
 	"api":               "OpenAI compatible REST API (openai, localai).",
 	"apis":              "Aliases and endpoints for OpenAI compatible REST API.",
@@ -232,7 +237,6 @@ func writeConfigFile(path string) error {
 func createConfigFile(path string) error {
 	tmpl := template.Must(template.New("config").Parse(configTemplate))
 
-	var c Config
 	f, err := os.Create(path)
 	if err != nil {
 		return modsError{err, "Could not create configuration file."}
@@ -243,13 +247,23 @@ func createConfigFile(path string) error {
 		Config Config
 		Help   map[string]string
 	}{
-		Config: c,
+		Config: defaultConfig(),
 		Help:   help,
 	}
 	if err := tmpl.Execute(f, m); err != nil {
 		return modsError{err, "Could not render template."}
 	}
 	return nil
+}
+
+func defaultConfig() Config {
+	return Config{
+		FormatAs: "markdown",
+		FormatText: FormatText{
+			"markdown": defaultMarkdownFormatText,
+			"json":     defaultJSONFormatText,
+		},
+	}
 }
 
 func useLine() string {
