@@ -84,6 +84,27 @@ var (
 			}
 
 			if isNoArgs() && isInputTTY() {
+				var opts []huh.Option[string]
+				for _, api := range config.APIs {
+					for model := range api.Models {
+						opts = append(opts, huh.Option[string]{
+							Key:   model,
+							Value: model,
+						})
+					}
+				}
+
+				if err := huh.Run(
+					huh.NewSelect[string]().
+						Title("Model").
+						Options(opts...).
+						Value(&config.Model),
+				); err != nil {
+					return modsError{
+						err:    err,
+						reason: "Failed to ask for model.",
+					}
+				}
 				if err := huh.Run(
 					huh.NewText().
 						Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
