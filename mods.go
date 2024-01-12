@@ -359,7 +359,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		m.cancelRequest = cancel
 		prefix := cfg.Prefix
 		if cfg.Format {
-			prefix = fmt.Sprintf("%s\n%s", prefix, cfg.FormatText)
+			prefix = fmt.Sprintf("%s\n%s", prefix, cfg.FormatText[cfg.FormatAs])
 		}
 		if prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
@@ -399,6 +399,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				MaxTokens:   cfg.MaxTokens,
 				Messages:    m.messages,
 				Stream:      true,
+				ResponseFormat: &openai.ChatCompletionResponseFormat{
+					Type: responseType(cfg),
+				},
 			},
 		)
 		ae := &openai.APIError{}
@@ -618,6 +621,22 @@ func removeWhitespace(s string) string {
 		return ""
 	}
 	return s
+}
+
+func responseType(cfg *Config) openai.ChatCompletionResponseFormatType {
+	if !cfg.Format {
+		return openai.ChatCompletionResponseFormatTypeText
+	}
+	// only these two models support json
+	if cfg.Model != "gpt-4-1106-preview" && cfg.Model != "gpt-3.5-turbo-1106" {
+		return openai.ChatCompletionResponseFormatTypeText
+	}
+	switch cfg.FormatAs {
+	case "json":
+		return openai.ChatCompletionResponseFormatTypeJSONObject
+	default:
+		return openai.ChatCompletionResponseFormatTypeText
+	}
 }
 
 var tokenErrRe = regexp.MustCompile(`This model's maximum context length is (\d+) tokens. However, your messages resulted in (\d+) tokens`)
