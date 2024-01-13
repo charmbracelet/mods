@@ -559,5 +559,7 @@ func isNoArgs() bool {
 		config.Delete == "" &&
 		config.DeleteOlderThan == 0 &&
 		!config.ShowHelp &&
-		!config.List
+		!config.List &&
+		!config.Dirs &&
+		!config.ResetSettings
 }
