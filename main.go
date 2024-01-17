@@ -560,9 +560,9 @@ func isNoArgs() bool {
 }
 
 func newPromptInput() *huh.Text {
-	title := fmt.Sprintf("Write a prompt for %s:", config.Model)
+	title := fmt.Sprintf("Enter a prompt for %s:", config.Model)
 	if config.AskModel {
-		title = "Write a prompt:"
+		title = "Enter a prompt:"
 	}
 	return huh.NewText().
 		Title(title).
@@ -580,7 +580,7 @@ func newModelSelect() *huh.Select[string] {
 		}
 	}
 	return huh.NewSelect[string]().
-		Title("Select the model:").
+		Title("Choose a model:").
 		Options(opts...).
 		Value(&config.Model)
 }
