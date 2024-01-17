@@ -41,6 +41,12 @@ func buildVersion() {
 	rootCmd.Version = Version
 }
 
+func huhTheme() *huh.Theme {
+	t := huh.ThemeCharm()
+	t.Focused.Base = t.Focused.Base.BorderLeft(false).PaddingLeft(0)
+	return t
+}
+
 func init() {
 	// XXX: unset error styles in Glamour dark and light styles.
 	// On the glamour side, we should probably add constructors for generating
@@ -88,7 +94,7 @@ var (
 					huh.NewGroup(newModelSelect()).
 						WithHideFunc(func() bool { return !config.AskModel }),
 					huh.NewGroup(newPromptInput()),
-				).Run()
+				).WithTheme(huhTheme()).Run()
 				if err != nil && err == huh.ErrUserAborted {
 					return modsError{
 						err:    err,
