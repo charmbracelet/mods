@@ -84,36 +84,15 @@ var (
 			}
 
 			if isNoArgs() && isInputTTY() {
-				var opts []huh.Option[string]
-				for _, api := range config.APIs {
-					for model := range api.Models {
-						opts = append(opts, huh.Option[string]{
-							Key:   model,
-							Value: model,
-						})
-					}
+				var groups []*huh.Group
+				if config.AskModel {
+					groups = append(groups, huh.NewGroup(newModelSelect()))
 				}
-
-				if err := huh.Run(
-					huh.NewSelect[string]().
-						Title("Model").
-						Options(opts...).
-						Value(&config.Model),
-				); err != nil {
+				groups = append(groups, huh.NewGroup(newPromptInput()))
+				if err := huh.NewForm(groups...).Run(); err != nil {
 					return modsError{
 						err:    err,
-						reason: "Failed to ask for model.",
-					}
-				}
-				if err := huh.Run(
-					huh.NewText().
-						Title(fmt.Sprintf("Write a prompt for %s:", config.Model)).
-						Lines(4). //nolint: gomnd
-						Value(&config.Prefix),
-				); err != nil {
-					return modsError{
-						err:    err,
-						reason: "No prompt provided and failed to ask for one.",
+						reason: "Prompt failed",
 					}
 				}
 			}
@@ -217,6 +196,7 @@ var (
 func initFlags() {
 	flags := rootCmd.Flags()
 	flags.StringVarP(&config.Model, "model", "m", config.Model, stdoutStyles().FlagDesc.Render(help["model"]))
+	flags.BoolVarP(&config.AskModel, "ask-model", "M", config.AskModel, stdoutStyles().FlagDesc.Render(help["ask-model"]))
 	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles().FlagDesc.Render(help["api"]))
 	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles().FlagDesc.Render(help["http-proxy"]))
 	flags.BoolVarP(&config.Format, "format", "f", config.Format, stdoutStyles().FlagDesc.Render(help["format"]))
@@ -562,4 +542,30 @@ func isNoArgs() bool {
 		!config.List &&
 		!config.Dirs &&
 		!config.ResetSettings
+}
+
+func newPromptInput() *huh.Text {
+	title := fmt.Sprintf("Write a prompt for %s:", config.Model)
+	if config.AskModel {
+		title = "Write a prompt:"
+	}
+	return huh.NewText().
+		Title(title).
+		Value(&config.Prefix)
+}
+
+func newModelSelect() *huh.Select[string] {
+	var opts []huh.Option[string]
+	for _, api := range config.APIs {
+		for model := range api.Models {
+			opts = append(opts, huh.Option[string]{
+				Key:   model,
+				Value: model,
+			})
+		}
+	}
+	return huh.NewSelect[string]().
+		Title("Select the model:").
+		Options(opts...).
+		Value(&config.Model)
 }
