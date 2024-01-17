@@ -84,12 +84,11 @@ var (
 			}
 
 			if isNoArgs() && isInputTTY() {
-				var groups []*huh.Group
-				if config.AskModel {
-					groups = append(groups, huh.NewGroup(newModelSelect()))
-				}
-				groups = append(groups, huh.NewGroup(newPromptInput()))
-				if err := huh.NewForm(groups...).Run(); err != nil {
+				if err := huh.NewForm(
+					huh.NewGroup(newModelSelect()).
+						WithHideFunc(func() bool { return !config.AskModel }),
+					huh.NewGroup(newPromptInput()),
+				).Run(); err != nil {
 					return modsError{
 						err:    err,
 						reason: "Prompt failed",

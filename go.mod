@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/bubbles v0.17.1
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/glamour v0.6.0
-	github.com/charmbracelet/huh v0.2.3
+	github.com/charmbracelet/huh v0.2.4-0.20240117190532-a5a6807deb14
 	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/charmbracelet/x/editor v0.0.0-20231116172829-450eedbca1ab
 	github.com/charmbracelet/x/exp/ordered v0.0.0-20231010190216-1cb11efc897d
