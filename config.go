@@ -33,6 +33,7 @@ var help = map[string]string{
 	"apis":              "Aliases and endpoints for OpenAI compatible REST API.",
 	"http-proxy":        "HTTP proxy to use for API requests.",
 	"model":             "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
+	"ask-model":         "Shows a view to select the model to use.",
 	"max-input-chars":   "Default character limit on input to model.",
 	"format":            "Ask for the response to be formatted as markdown unless otherwise set.",
 	"format-text":       "Text to append when using the -f flag.",
@@ -141,6 +142,7 @@ type Config struct {
 	FormatText        FormatText `yaml:"format-text" env:"FORMAT_TEXT"`
 	HTTPProxy         string     `yaml:"http-proxy" env:"HTTP_PROXY"`
 	APIs              APIs       `yaml:"apis"`
+	AskModel          bool
 	FormatAs          string
 	API               string
 	Models            map[string]Model
