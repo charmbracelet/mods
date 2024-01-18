@@ -33,7 +33,7 @@ var help = map[string]string{
 	"apis":              "Aliases and endpoints for OpenAI compatible REST API.",
 	"http-proxy":        "HTTP proxy to use for API requests.",
 	"model":             "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...).",
-	"ask-model":         "Shows a view to select the model to use.",
+	"ask-model":         "Ask which model to use with an interactive prompt.",
 	"max-input-chars":   "Default character limit on input to model.",
 	"format":            "Ask for the response to be formatted as markdown unless otherwise set.",
 	"format-text":       "Text to append when using the -f flag.",
