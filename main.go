@@ -328,7 +328,6 @@ func handleError(err error) {
 			format += "%s\n\n"
 			args = append(args, stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())))
 		}
-
 	} else {
 		args = []interface{}{
 			stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())),
