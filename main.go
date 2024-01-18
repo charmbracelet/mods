@@ -84,14 +84,20 @@ var (
 			}
 
 			if isNoArgs() && isInputTTY() {
-				if err := huh.NewForm(
+				err := huh.NewForm(
 					huh.NewGroup(newModelSelect()).
 						WithHideFunc(func() bool { return !config.AskModel }),
 					huh.NewGroup(newPromptInput()),
-				).Run(); err != nil {
+				).Run()
+				if err != nil && err == huh.ErrUserAborted {
 					return modsError{
 						err:    err,
-						reason: "Prompt failed",
+						reason: "User canceled.",
+					}
+				} else if err != nil {
+					return modsError{
+						err:    err,
+						reason: "Prompt failed.",
 					}
 				}
 			}
@@ -313,11 +319,16 @@ func handleError(err error) {
 			),
 		}
 	} else if errors.As(err, &merr) {
-		format += "%s\n\n"
 		args = []interface{}{
 			stderrStyles().ErrPadding.Render(stderrStyles().ErrorHeader.String(), merr.reason),
-			stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())),
 		}
+
+		// Skip the error details if the user simply canceled out of huh.
+		if merr.err != huh.ErrUserAborted {
+			format += "%s\n\n"
+			args = append(args, stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())))
+		}
+
 	} else {
 		args = []interface{}{
 			stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())),
