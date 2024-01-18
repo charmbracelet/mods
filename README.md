@@ -137,6 +137,12 @@ You can add new models to the settings with `mods --settings`.
 You can also specify a model and an API endpoint with `-m` and `-a`
 to use models not in the settings file.
 
+#### Ask Model
+
+`-M` `--ask-model`
+
+Ask which model to use with an interactive prompt.
+
 #### Title
 
 `-t`, `--title`
