@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/bubbles v0.17.1
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/glamour v0.6.0
-	github.com/charmbracelet/huh v0.2.4-0.20240118180137-ee29f72c0e30
+	github.com/charmbracelet/huh v0.2.4-0.20240119002230-42853f5e6a3e
 	github.com/charmbracelet/lipgloss v0.9.1
 	github.com/charmbracelet/x/editor v0.0.0-20231116172829-450eedbca1ab
 	github.com/charmbracelet/x/exp/ordered v0.0.0-20231010190216-1cb11efc897d
@@ -23,7 +23,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/term v0.13.0
+	golang.org/x/term v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.26.0
 )
@@ -57,9 +57,9 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.2 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
