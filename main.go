@@ -556,6 +556,7 @@ func isNoArgs() bool {
 		!config.ShowHelp &&
 		!config.List &&
 		!config.Dirs &&
+		!config.Settings &&
 		!config.ResetSettings
 }
 
