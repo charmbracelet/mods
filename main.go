@@ -86,7 +86,7 @@ var (
 			}
 
 			if !isInputTTY() {
-				opts = append(opts, tea.WithInput(nil))
+				opts = append(opts, tea.WithInput(nil), tea.WithoutRenderer())
 			}
 
 			if isNoArgs() && isInputTTY() {
