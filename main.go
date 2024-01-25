@@ -91,6 +91,9 @@ var (
 			if !isOutputTTY() {
 				opts = append(opts, tea.WithoutRenderer())
 			}
+			if os.Getenv("VIMRUNTIME") != "" {
+				config.Quiet = true
+			}
 
 			if isNoArgs() && isInputTTY() {
 				err := huh.NewForm(
