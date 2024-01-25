@@ -299,6 +299,15 @@ Wrap formatted output at specific width (default is 80)
 
 Use the HTTP proxy to the connect the API endpoints.
 
+## Using within Vim/neovim
+
+You can use mods as an assistant inside Vim.
+Here are some examples:
+
+1. `:'<,'>w !mods explain this`
+1. `:.!mods -f write a copyright footer for mycompany, 2024`
+1. `:'<,'>.!mods improve this code`
+
 ## Whatcha Think?
 
 We’d love to hear your thoughts on this project. Feel free to drop us a note.
