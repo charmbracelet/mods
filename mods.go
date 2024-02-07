@@ -553,7 +553,7 @@ func (m *Mods) readStdinCmd() tea.Msg {
 			return modsError{err, "Unable to read stdin."}
 		}
 
-		return completionInput{"```\n" + string(stdinBytes) + "\n```"}
+		return completionInput{increaseIndent(string(stdinBytes))}
 	}
 	return completionInput{""}
 }
@@ -671,4 +671,12 @@ func cutPrompt(msg, prompt string) string {
 	}
 
 	return prompt
+}
+
+func increaseIndent(s string) string {
+	lines := strings.Split(s, "\n")
+	for i := 0; i < len(lines); i++ {
+		lines[i] = "\t" + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }
