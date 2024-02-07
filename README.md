@@ -308,6 +308,17 @@ Here are some examples:
 1. `:.!mods -f write a copyright footer for mycompany, 2024`
 1. `:'<,'>.!mods improve this code`
 
+You can also add user commands for common actions, for example:
+
+```vim
+command! -range -nargs=0 ModsExplain :'<,'>w !mods explain this, be very succint
+command! -range -nargs=* ModsRefactor :'<,'>!mods refactor this to improve its readability
+command! -range -nargs=+ Mods :'<,'>w !mods <q-args>
+```
+
+This allows you to visual select some test, and run `:ModsExplain`,
+`:ModsRefactor`, and `:Mods your prompt`.
+
 ## Whatcha Think?
 
 We’d love to hear your thoughts on this project. Feel free to drop us a note.
