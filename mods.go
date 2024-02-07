@@ -114,7 +114,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
 		m.state = configLoadedState
-		cmds = append(cmds, readStdinCmd, m.anim.Init())
+		cmds = append(cmds, m.readStdinCmd, m.anim.Init())
 
 	case completionInput:
 		if msg.content != "" {
@@ -547,14 +547,15 @@ func (m *Mods) findReadID(in string) (string, error) {
 	return "", err
 }
 
-func readStdinCmd() tea.Msg {
+func (m *Mods) readStdinCmd() tea.Msg {
 	if !isInputTTY() {
 		reader := bufio.NewReader(os.Stdin)
 		stdinBytes, err := io.ReadAll(reader)
 		if err != nil {
 			return modsError{err, "Unable to read stdin."}
 		}
-		return completionInput{string(stdinBytes)}
+
+		return completionInput{increaseIndent(string(stdinBytes))}
 	}
 	return completionInput{""}
 }
@@ -672,4 +673,12 @@ func cutPrompt(msg, prompt string) string {
 	}
 
 	return prompt
+}
+
+func increaseIndent(s string) string {
+	lines := strings.Split(s, "\n")
+	for i := 0; i < len(lines); i++ {
+		lines[i] = "\t" + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }
