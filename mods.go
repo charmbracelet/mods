@@ -476,7 +476,9 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 			msg.stream.Close()
 			return modsError{err, "There was an error when streaming the API response."}
 		}
-		msg.content = resp.Choices[0].Delta.Content
+		if len(resp.Choices) > 0 {
+			msg.content = resp.Choices[0].Delta.Content
+		}
 		return msg
 	}
 }
