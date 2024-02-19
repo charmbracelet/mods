@@ -12,6 +12,7 @@ import (
 	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/editor"
 	"github.com/spf13/cobra"
@@ -40,6 +41,12 @@ func buildVersion() {
 	rootCmd.Version = Version
 }
 
+func huhTheme() *huh.Theme {
+	t := huh.ThemeCharm()
+	t.Focused.Base = t.Focused.Base.BorderLeft(false).PaddingLeft(0)
+	return t
+}
+
 func init() {
 	// XXX: unset error styles in Glamour dark and light styles.
 	// On the glamour side, we should probably add constructors for generating
@@ -52,7 +59,7 @@ func init() {
 	buildVersion()
 	rootCmd.SetUsageFunc(usageFunc)
 	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
-		return flagParseError{err: err}
+		return newFlagParseError(err)
 	})
 
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
@@ -60,7 +67,7 @@ func init() {
 }
 
 var (
-	config Config
+	config = defaultConfig()
 	db     *convoDB
 	cache  *convoCache
 
@@ -69,7 +76,7 @@ var (
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config.Prefix = strings.Join(args, " ")
+			config.Prefix = removeWhitespace(strings.Join(args, " "))
 
 			stdin := cmd.InOrStdin()
 			stdout := cmd.OutOrStdout()
@@ -80,6 +87,31 @@ var (
 
 			if !isInputTTY() {
 				opts = append(opts, tea.WithInput(nil))
+			}
+			if !isOutputTTY() {
+				opts = append(opts, tea.WithoutRenderer())
+			}
+			if os.Getenv("VIMRUNTIME") != "" {
+				config.Quiet = true
+			}
+
+			if isNoArgs() && isInputTTY() {
+				err := huh.NewForm(
+					huh.NewGroup(newModelSelect()).
+						WithHideFunc(func() bool { return !config.AskModel }),
+					huh.NewGroup(newPromptInput()),
+				).WithTheme(huhTheme()).Run()
+				if err != nil && err == huh.ErrUserAborted {
+					return modsError{
+						err:    err,
+						reason: "User canceled.",
+					}
+				} else if err != nil {
+					return modsError{
+						err:    err,
+						reason: "Prompt failed.",
+					}
+				}
 			}
 
 			mods := newMods(stderrRenderer(), &config, db, cache)
@@ -96,6 +128,7 @@ var (
 
 			if config.Dirs {
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
+				//nolint: gomnd
 				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
 				return nil
 			}
@@ -103,7 +136,10 @@ var (
 			if config.Settings {
 				c, err := editor.Cmd("mods", config.SettingsPath)
 				if err != nil {
-					return err
+					return modsError{
+						err:    err,
+						reason: "Could not edit your settings file.",
+					}
 				}
 				c.Stdin = stdin
 				c.Stdout = stdout
@@ -125,12 +161,17 @@ var (
 				return resetSettings()
 			}
 
-			if config.ShowHelp || (mods.Input == "" &&
-				config.Prefix == "" &&
-				config.Show == "" &&
-				!config.ShowLast &&
-				config.Delete == "" &&
-				!config.List) {
+			if mods.Input == "" && isNoArgs() {
+				return modsError{
+					reason: "You haven't provided any prompt input.",
+					err: newUserErrorf(
+						"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
+							stdoutStyles().InlineCode.Render("mods [prompt]"),
+					),
+				}
+			}
+
+			if config.ShowHelp {
 				//nolint: wrapcheck
 				return cmd.Usage()
 			}
@@ -141,6 +182,10 @@ var (
 
 			if config.Delete != "" {
 				return deleteConversation()
+			}
+
+			if config.DeleteOlderThan > 0 {
+				return deleteConversationOlderThan()
 			}
 
 			if isOutputTTY() {
@@ -168,9 +213,11 @@ var (
 func initFlags() {
 	flags := rootCmd.Flags()
 	flags.StringVarP(&config.Model, "model", "m", config.Model, stdoutStyles().FlagDesc.Render(help["model"]))
+	flags.BoolVarP(&config.AskModel, "ask-model", "M", config.AskModel, stdoutStyles().FlagDesc.Render(help["ask-model"]))
 	flags.StringVarP(&config.API, "api", "a", config.API, stdoutStyles().FlagDesc.Render(help["api"]))
 	flags.StringVarP(&config.HTTPProxy, "http-proxy", "x", config.HTTPProxy, stdoutStyles().FlagDesc.Render(help["http-proxy"]))
 	flags.BoolVarP(&config.Format, "format", "f", config.Format, stdoutStyles().FlagDesc.Render(help["format"]))
+	flags.StringVar(&config.FormatAs, "format-as", config.FormatAs, stdoutStyles().FlagDesc.Render(help["format-as"]))
 	flags.BoolVarP(&config.Raw, "raw", "r", config.Raw, stdoutStyles().FlagDesc.Render(help["raw"]))
 	flags.IntVarP(&config.IncludePrompt, "prompt", "P", config.IncludePrompt, stdoutStyles().FlagDesc.Render(help["prompt"]))
 	flags.BoolVarP(&config.IncludePromptArgs, "prompt-args", "p", config.IncludePromptArgs, stdoutStyles().FlagDesc.Render(help["prompt-args"]))
@@ -179,6 +226,7 @@ func initFlags() {
 	flags.BoolVarP(&config.List, "list", "l", config.List, stdoutStyles().FlagDesc.Render(help["list"]))
 	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles().FlagDesc.Render(help["title"]))
 	flags.StringVarP(&config.Delete, "delete", "d", config.Delete, stdoutStyles().FlagDesc.Render(help["delete"]))
+	flags.Var(newDurationFlag(config.DeleteOlderThan, &config.DeleteOlderThan), "delete-older-than", stdoutStyles().FlagDesc.Render(help["delete-older-than"]))
 	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles().FlagDesc.Render(help["show"]))
 	flags.BoolVarP(&config.ShowLast, "show-last", "S", false, stdoutStyles().FlagDesc.Render(help["show-last"]))
 	flags.BoolVarP(&config.Quiet, "quiet", "q", config.Quiet, stdoutStyles().FlagDesc.Render(help["quiet"]))
@@ -206,8 +254,8 @@ func initFlags() {
 		})
 	}
 
-	if config.Format && config.FormatText == "" {
-		config.FormatText = "Format the response as markdown without enclosing backticks."
+	if config.Format && config.FormatText[config.FormatAs] == "" {
+		config.FormatText[config.FormatAs] = defaultConfig().FormatText[config.FormatAs]
 	}
 
 	rootCmd.MarkFlagsMutuallyExclusive(
@@ -215,6 +263,7 @@ func initFlags() {
 		"show",
 		"show-last",
 		"delete",
+		"delete-older-than",
 		"list",
 		"continue",
 		"continue-last",
@@ -282,10 +331,14 @@ func handleError(err error) {
 			),
 		}
 	} else if errors.As(err, &merr) {
-		format += "%s\n\n"
 		args = []interface{}{
 			stderrStyles().ErrPadding.Render(stderrStyles().ErrorHeader.String(), merr.reason),
-			stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())),
+		}
+
+		// Skip the error details if the user simply canceled out of huh.
+		if merr.err != huh.ErrUserAborted {
+			format += "%s\n\n"
+			args = append(args, stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())))
 		}
 	} else {
 		args = []interface{}{
@@ -335,6 +388,54 @@ func resetSettings() error {
 	return nil
 }
 
+func deleteConversationOlderThan() error {
+	conversations, err := db.ListOlderThan(config.DeleteOlderThan)
+	if err != nil {
+		return modsError{err, "Couldn't find conversation to delete."}
+	}
+
+	if len(conversations) == 0 {
+		if !config.Quiet {
+			fmt.Fprintln(os.Stderr, "No conversations found.")
+			return nil
+		}
+		return nil
+	}
+
+	if !config.Quiet {
+		printList(conversations)
+		fmt.Fprintln(os.Stderr)
+		var confirm bool
+		if err := huh.Run(
+			huh.NewConfirm().
+				Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
+				Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
+				Value(&confirm),
+		); err != nil {
+			return modsError{err, "Couldn't delete old conversations."}
+		}
+		if !confirm {
+			return newUserErrorf("Aborted by user")
+		}
+	}
+
+	for _, c := range conversations {
+		if err := db.Delete(c.ID); err != nil {
+			return modsError{err, "Couldn't delete conversation."}
+		}
+
+		if err := cache.delete(c.ID); err != nil {
+			return modsError{err, "Couldn't delete conversation."}
+		}
+
+		if !config.Quiet {
+			fmt.Fprintln(os.Stderr, "Conversation deleted:", c.ID[:sha1minLen])
+		}
+	}
+
+	return nil
+}
+
 func deleteConversation() error {
 	convo, err := db.Find(config.Delete)
 	if err != nil {
@@ -366,6 +467,11 @@ func listConversations() error {
 		return nil
 	}
 
+	printList(conversations)
+	return nil
+}
+
+func printList(conversations []Conversation) {
 	width := 80
 	if isOutputTTY() {
 		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
@@ -395,7 +501,6 @@ func listConversations() error {
 			timeago.Of(conversation.UpdatedAt),
 		)
 	}
-	return nil
 }
 
 func saveConversation(mods *Mods) error {
@@ -446,4 +551,43 @@ func saveConversation(mods *Mods) error {
 		)
 	}
 	return nil
+}
+
+func isNoArgs() bool {
+	return config.Prefix == "" &&
+		config.Show == "" &&
+		!config.ShowLast &&
+		config.Delete == "" &&
+		config.DeleteOlderThan == 0 &&
+		!config.ShowHelp &&
+		!config.List &&
+		!config.Dirs &&
+		!config.Settings &&
+		!config.ResetSettings
+}
+
+func newPromptInput() *huh.Text {
+	title := fmt.Sprintf("Enter a prompt for %s:", config.Model)
+	if config.AskModel {
+		title = "Enter a prompt:"
+	}
+	return huh.NewText().
+		Title(title).
+		Value(&config.Prefix)
+}
+
+func newModelSelect() *huh.Select[string] {
+	var opts []huh.Option[string]
+	for _, api := range config.APIs {
+		for model := range api.Models {
+			opts = append(opts, huh.Option[string]{
+				Key:   model,
+				Value: model,
+			})
+		}
+	}
+	return huh.NewSelect[string]().
+		Title("Choose a model:").
+		Options(opts...).
+		Value(&config.Model)
 }

@@ -137,6 +137,12 @@ You can add new models to the settings with `mods --settings`.
 You can also specify a model and an API endpoint with `-m` and `-a`
 to use models not in the settings file.
 
+#### Ask Model
+
+`-M` `--ask-model`
+
+Ask which model to use with an interactive prompt.
+
 #### Title
 
 `-t`, `--title`
@@ -178,6 +184,17 @@ Show the saved conversation the given title or SHA1.
 `--delete`
 
 Deletes the saved conversation with the given title or SHA1.
+
+`--delete-older-than=duration`
+
+Delete conversations older than the given duration (e.g. `10d`, `3w`, `1mo`,
+`1y`).
+
+If the terminal is interactive, it'll first list the conversations to be deleted
+and then will ask for confirmation.
+
+If the terminal is not interactive, or if `--quiet` is provided, it'll delete
+the conversations without any confirmation.
 
 #### Format As Markdown
 
@@ -281,6 +298,26 @@ Wrap formatted output at specific width (default is 80)
 `-x`, `--http-proxy`, `MODS_HTTP_PROXY`
 
 Use the HTTP proxy to the connect the API endpoints.
+
+## Using within Vim/neovim
+
+You can use mods as an assistant inside Vim.
+Here are some examples:
+
+1. `:'<,'>w !mods explain this`
+1. `:.!mods -f write a copyright footer for mycompany, 2024`
+1. `:'<,'>.!mods improve this code`
+
+You can also add user commands for common actions, for example:
+
+```vim
+command! -range -nargs=0 ModsExplain :'<,'>w !mods explain this, be very succint
+command! -range -nargs=* ModsRefactor :'<,'>!mods refactor this to improve its readability
+command! -range -nargs=+ Mods :'<,'>w !mods <q-args>
+```
+
+This allows you to visual select some test, and run `:ModsExplain`,
+`:ModsRefactor`, and `:Mods your prompt`.
 
 ## Whatcha Think?
 

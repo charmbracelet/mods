@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -95,16 +97,6 @@ type chatCompletionReceiver interface {
 	Close()
 }
 
-// modsError is a wrapper around an error that adds additional context.
-type modsError struct {
-	err    error
-	reason string
-}
-
-func (m modsError) Error() string {
-	return m.err.Error()
-}
-
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
 	return m.findCacheOpsDetails()
@@ -122,14 +114,26 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
 		m.state = configLoadedState
-		cmds = append(cmds, readStdinCmd, m.anim.Init())
+		cmds = append(cmds, m.readStdinCmd, m.anim.Init())
 
 	case completionInput:
 		if msg.content != "" {
-			m.Input = msg.content
+			m.Input = removeWhitespace(msg.content)
 		}
-		if msg.content == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
+		if m.Input == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
 			return m, m.quit
+		}
+
+		if m.Config.IncludePromptArgs {
+			m.appendToOutput(m.Config.Prefix + "\n\n")
+		}
+
+		if m.Config.IncludePrompt > 0 {
+			parts := strings.Split(m.Input, "\n")
+			if len(parts) > m.Config.IncludePrompt {
+				parts = parts[0:m.Config.IncludePrompt]
+			}
+			m.appendToOutput(strings.Join(parts, "\n") + "\n")
 		}
 		m.state = requestState
 		cmds = append(cmds, m.startCompletionCmd(msg.content))
@@ -139,29 +143,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.quit
 		}
 		if msg.content != "" {
-			m.Output += msg.content
-			if !isOutputTTY() || m.Config.Raw {
-				m.contentMutex.Lock()
-				m.content = append(m.content, msg.content)
-				m.contentMutex.Unlock()
-			} else {
-				const tabWidth = 4
-				wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
-				oldHeight := m.glamHeight
-				m.glamOutput, _ = m.glam.Render(m.Output)
-				m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
-				m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
-				m.glamHeight = lipgloss.Height(m.glamOutput)
-				m.glamOutput += "\n"
-				truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
-				m.glamViewport.SetContent(truncatedGlamOutput)
-				if oldHeight < m.glamHeight && wasAtBottom {
-					// If the viewport's at the bottom and we've received a new
-					// line of content, follow the output by auto scrolling to
-					// the bottom.
-					m.glamViewport.GotoBottom()
-				}
-			}
+			m.appendToOutput(msg.content)
 			m.state = responseState
 		}
 		cmds = append(cmds, m.receiveCompletionStreamCmd(msg))
@@ -274,7 +256,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"Model %s is not in the settings file.",
 						m.Styles.InlineCode.Render(cfg.Model),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"Please specify an API endpoint with %s or configure the model in the settings: %s",
 						m.Styles.InlineCode.Render("--api"),
 						m.Styles.InlineCode.Render("mods -s"),
@@ -297,7 +279,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				eps = append(eps, m.Styles.InlineCode.Render(a.Name))
 			}
 			return modsError{
-				err: fmt.Errorf(
+				err: newUserErrorf(
 					"Your configured API endpoints are: %s",
 					eps,
 				),
@@ -325,7 +307,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
 						m.Styles.InlineCode.Render("OPENAI_API_KEY"),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"You can grab one at %s",
 						m.Styles.Link.Render("https://platform.openai.com/account/api-keys."),
 					),
@@ -345,7 +327,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
 						m.Styles.InlineCode.Render("AZURE_OPENAI_KEY"),
 					),
-					err: fmt.Errorf(
+					err: newUserErrorf(
 						"You can apply for one at %s",
 						m.Styles.Link.Render("https://aka.ms/oai/access"),
 					),
@@ -377,7 +359,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		m.cancelRequest = cancel
 		prefix := cfg.Prefix
 		if cfg.Format {
-			prefix = fmt.Sprintf("%s %s", prefix, cfg.FormatText)
+			prefix = fmt.Sprintf("%s\n%s", prefix, cfg.FormatText[cfg.FormatAs])
 		}
 		if prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
@@ -411,12 +393,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		stream, err := client.CreateChatCompletionStream(
 			ctx,
 			openai.ChatCompletionRequest{
-				Model:       mod.Name,
-				Temperature: noOmitFloat(cfg.Temperature),
-				TopP:        noOmitFloat(cfg.TopP),
-				MaxTokens:   cfg.MaxTokens,
-				Messages:    m.messages,
-				Stream:      true,
+				Model:          mod.Name,
+				Temperature:    noOmitFloat(cfg.Temperature),
+				TopP:           noOmitFloat(cfg.TopP),
+				MaxTokens:      cfg.MaxTokens,
+				Messages:       m.messages,
+				Stream:         true,
+				ResponseFormat: responseFormat(cfg),
 			},
 		)
 		ae := &openai.APIError{}
@@ -453,7 +436,8 @@ func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, cont
 			if cfg.NoLimit {
 				return pe
 			}
-			return m.retry(content[:len(content)-10], pe)
+
+			return m.retry(cutPrompt(err.Message, content), pe)
 		}
 		// bad request (do not retry)
 		return modsError{err: err, reason: "OpenAI API request error."}
@@ -492,7 +476,9 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 			msg.stream.Close()
 			return modsError{err, "There was an error when streaming the API response."}
 		}
-		msg.content = resp.Choices[0].Delta.Content
+		if len(resp.Choices) > 0 {
+			msg.content = resp.Choices[0].Delta.Content
+		}
 		return msg
 	}
 }
@@ -561,14 +547,15 @@ func (m *Mods) findReadID(in string) (string, error) {
 	return "", err
 }
 
-func readStdinCmd() tea.Msg {
+func (m *Mods) readStdinCmd() tea.Msg {
 	if !isInputTTY() {
 		reader := bufio.NewReader(os.Stdin)
 		stdinBytes, err := io.ReadAll(reader)
 		if err != nil {
 			return modsError{err, "Unable to read stdin."}
 		}
-		return completionInput{string(stdinBytes)}
+
+		return completionInput{increaseIndent(string(stdinBytes))}
 	}
 	return completionInput{""}
 }
@@ -599,4 +586,99 @@ func (m *Mods) readFromCache() tea.Cmd {
 			},
 		})()
 	}
+}
+
+const tabWidth = 4
+
+func (m *Mods) appendToOutput(s string) {
+	m.Output += s
+	if !isOutputTTY() || m.Config.Raw {
+		m.contentMutex.Lock()
+		m.content = append(m.content, s)
+		m.contentMutex.Unlock()
+		return
+	}
+
+	wasAtBottom := m.glamViewport.ScrollPercent() == 1.0
+	oldHeight := m.glamHeight
+	m.glamOutput, _ = m.glam.Render(m.Output)
+	m.glamOutput = strings.TrimRightFunc(m.glamOutput, unicode.IsSpace)
+	m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
+	m.glamHeight = lipgloss.Height(m.glamOutput)
+	m.glamOutput += "\n"
+	truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
+	m.glamViewport.SetContent(truncatedGlamOutput)
+	if oldHeight < m.glamHeight && wasAtBottom {
+		// If the viewport's at the bottom and we've received a new
+		// line of content, follow the output by auto scrolling to
+		// the bottom.
+		m.glamViewport.GotoBottom()
+	}
+}
+
+// if the input is whitespace only, make it empty.
+func removeWhitespace(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return ""
+	}
+	return s
+}
+
+func responseFormat(cfg *Config) *openai.ChatCompletionResponseFormat {
+	if cfg.API != "openai" {
+		// only openai's api supports ChatCompletionResponseFormat
+		return nil
+	}
+	return &openai.ChatCompletionResponseFormat{
+		Type: responseType(cfg),
+	}
+}
+
+func responseType(cfg *Config) openai.ChatCompletionResponseFormatType {
+	if !cfg.Format {
+		return openai.ChatCompletionResponseFormatTypeText
+	}
+	// only these two models support json
+	if cfg.Model != "gpt-4-1106-preview" && cfg.Model != "gpt-3.5-turbo-1106" {
+		return openai.ChatCompletionResponseFormatTypeText
+	}
+	switch cfg.FormatAs {
+	case "json":
+		return openai.ChatCompletionResponseFormatTypeJSONObject
+	default:
+		return openai.ChatCompletionResponseFormatTypeText
+	}
+}
+
+var tokenErrRe = regexp.MustCompile(`This model's maximum context length is (\d+) tokens. However, your messages resulted in (\d+) tokens`)
+
+func cutPrompt(msg, prompt string) string {
+	found := tokenErrRe.FindStringSubmatch(msg)
+	if len(found) != 3 {
+		return prompt
+	}
+
+	max, _ := strconv.Atoi(found[1])
+	current, _ := strconv.Atoi(found[2])
+
+	if max > current {
+		return prompt
+	}
+
+	// 1 token =~ 4 chars
+	// cut 10 extra chars 'just in case'
+	reduceBy := 10 + (current-max)*4
+	if len(prompt) > reduceBy {
+		return prompt[:len(prompt)-reduceBy]
+	}
+
+	return prompt
+}
+
+func increaseIndent(s string) string {
+	lines := strings.Split(s, "\n")
+	for i := 0; i < len(lines); i++ {
+		lines[i] = "\t" + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }
