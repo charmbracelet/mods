@@ -17,3 +17,7 @@ type modsError struct {
 func (m modsError) Error() string {
 	return m.err.Error()
 }
+
+func (m modsError) Reason() string {
+	return m.reason
+}
