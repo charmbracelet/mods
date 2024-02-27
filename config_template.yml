@@ -67,6 +67,16 @@ apis:
         aliases: ["35"]
         max-input-chars: 12250
         fallback:
+  groq:
+    base-url: https://api.groq.com/openai/v1
+    api-key-env: GROQ_API_KEY
+    models:
+      mixtral-8x7b-32768:
+        aliases: ["mixtral"]
+        max-input-chars: 98000
+      llama2-70b-4096:
+        aliases: ["llama2"]
+        max-input-chars: 12250
   localai:
     # LocalAI setup instructions: https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model
     base-url: http://localhost:8080
