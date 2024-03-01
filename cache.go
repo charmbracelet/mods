@@ -89,16 +89,15 @@ func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, er
 
 	switch msg.Role {
 	case openai.ChatMessageRoleSystem:
-		prefix += "\n**Response**:\n"
+		prefix += "\n**System**: "
 	case openai.ChatMessageRoleUser:
-		if c.read > 0 {
-			prefix = "\n---\n"
-		}
 		prefix += "\n**Prompt**: "
 	case openai.ChatMessageRoleAssistant:
 		prefix += "\n**Assistant**: "
 	case openai.ChatMessageRoleFunction:
 		prefix += "\n**Function**: "
+	case openai.ChatMessageRoleTool:
+		prefix += "\n**Tool**: "
 	}
 
 	c.read++

@@ -14,7 +14,10 @@ AI for the command line, built for pipelines.
 LLM based AI is really good at interpreting the output of commands and
 returning the results in CLI friendly text formats like Markdown. Mods is a
 simple tool that makes it super easy to use AI on the command line and in your
-pipelines. Mods works with [OpenAI](https://platform.openai.com/account/api-keys)
+pipelines.
+Mods works with [OpenAI](https://platform.openai.com/account/api-keys),
+[Groq](https://console.groq.com/keys),
+[Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service),
 and [LocalAI](https://github.com/go-skynet/LocalAI)
 
 To get started, [install Mods](#installation) and check out some of the
@@ -55,6 +58,14 @@ Azure endpoint with `mods --settings`.
 LocalAI allows you to run a multitude of models locally. Mods works with the
 GPT4ALL-J model as setup in [this tutorial](https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model).
 You can define more LocalAI models and endpoints with `mods --settings`.
+
+### Groq
+
+Groq provides some models powered by their LPU inference engine.
+Mods will work with both their models (`mixtral-8x7b-32768` and
+`llama2-70b-4096`).
+Set the `GROQ_API_KEY` environment variable to a valid kwy, which you can get
+[from here](https://console.groq.com/keys).
 
 ### Install Mods
 
@@ -196,12 +207,30 @@ and then will ask for confirmation.
 If the terminal is not interactive, or if `--quiet` is provided, it'll delete
 the conversations without any confirmation.
 
-#### Format As Markdown
+#### Format
 
 `-f`, `--format`, `MODS_FORMAT`
 
-Ask the LLM to format the response as markdown. You can edit the text passed to
-the LLM with `mods --settings` then changing the `format-text` value.
+Ask the LLM to format the response in a given format.
+You can edit the text passed to the LLM with `mods --settings` then changing the
+`format-text` value.
+You'll likely want to use this in with `--format-as`.
+
+### Format As
+
+`--format-as`, `MODS_FORMAT_AS`
+
+When `--format` is on, instructs the LLM about which format you want the output
+to be.
+This can be customized with `mods --settings`.
+
+### Role
+
+`--role`, `MODS_ROLE`
+
+You can have customized roles in your settings file, which will be fed to the
+LLM as system messages in order to change its behavior.
+The `--role` flag allows you to change which of these custom roles to use.
 
 #### Raw
 

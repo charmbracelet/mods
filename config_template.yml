@@ -4,8 +4,13 @@ default-model: gpt-4
 format-text:
   markdown: '{{ index .Config.FormatText "markdown" }}'
   json: '{{ index .Config.FormatText "json" }}'
+# {{ index .Help "roles" }}
+roles:
+  "default": []
 # {{ index .Help "format" }}
 format: false
+# {{ index .Help "role" }}
+role: "default"
 # {{ index .Help "raw" }}
 raw: false
 # {{ index .Help "quiet" }}

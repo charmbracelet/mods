@@ -357,21 +357,30 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
 		m.cancelRequest = cancel
-		prefix := cfg.Prefix
+
+		m.messages = []openai.ChatCompletionMessage{}
 		if cfg.Format {
-			prefix = fmt.Sprintf("%s\n%s", prefix, cfg.FormatText[cfg.FormatAs])
+			m.messages = append(m.messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: cfg.FormatText[cfg.FormatAs],
+			})
 		}
-		if prefix != "" {
+
+		for _, msg := range cfg.Roles[cfg.Role] {
+			m.messages = append(m.messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: msg,
+			})
+		}
+
+		if prefix := cfg.Prefix; prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
 		}
 
-		if !cfg.NoLimit {
-			if len(content) > mod.MaxChars {
-				content = content[:mod.MaxChars]
-			}
+		if !cfg.NoLimit && len(content) > mod.MaxChars {
+			content = content[:mod.MaxChars]
 		}
 
-		m.messages = []openai.ChatCompletionMessage{}
 		if !cfg.NoCache && cfg.cacheReadFromID != "" {
 			if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
 				return modsError{
@@ -467,7 +476,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		if errors.Is(err, io.EOF) {
 			msg.stream.Close()
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    openai.ChatMessageRoleAssistant,
 				Content: m.Output,
 			})
 			return completionOutput{}
