@@ -358,8 +358,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		ctx, cancel := context.WithCancel(context.Background())
 		m.cancelRequest = cancel
 		prefix := cfg.Prefix
+
+		m.messages = []openai.ChatCompletionMessage{}
 		if cfg.Format {
-			prefix = fmt.Sprintf("%s\n%s", prefix, cfg.FormatText[cfg.FormatAs])
+			m.messages = append(m.messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: cfg.FormatText[cfg.FormatAs],
+			})
 		}
 		if prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
@@ -371,7 +376,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		m.messages = []openai.ChatCompletionMessage{}
 		if !cfg.NoCache && cfg.cacheReadFromID != "" {
 			if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
 				return modsError{
@@ -467,7 +471,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		if errors.Is(err, io.EOF) {
 			msg.stream.Close()
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    openai.ChatMessageRoleAssistant,
 				Content: m.Output,
 			})
 			return completionOutput{}

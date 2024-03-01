@@ -31,7 +31,7 @@ func TestCache(t *testing.T) {
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    openai.ChatMessageRoleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 		}
@@ -70,11 +70,15 @@ func TestCachedCompletionStream(t *testing.T) {
 	stream := cachedCompletionStream{
 		messages: []openai.ChatCompletionMessage{
 			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: "you are a medieval king",
+			},
+			{
 				Role:    openai.ChatMessageRoleUser,
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    openai.ChatMessageRoleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 
@@ -83,7 +87,7 @@ func TestCachedCompletionStream(t *testing.T) {
 				Content: "as a json array",
 			},
 			{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    openai.ChatMessageRoleAssistant,
 				Content: "[ 1, 2, 3, 4 ]",
 			},
 			{

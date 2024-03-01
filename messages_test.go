@@ -28,7 +28,7 @@ func TestLastPrompt(t *testing.T) {
 				Content: "first",
 			},
 			{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    openai.ChatMessageRoleAssistant,
 				Content: "hallo",
 			},
 			{
