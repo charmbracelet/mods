@@ -37,6 +37,8 @@ var help = map[string]string{
 	"max-input-chars":   "Default character limit on input to model.",
 	"format":            "Ask for the response to be formatted as markdown unless otherwise set.",
 	"format-text":       "Text to append when using the -f flag.",
+	"role":              "System role to use.",
+	"roles":             "List of predefined system messages that can be used as roles.",
 	"prompt":            "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
 	"prompt-args":       "Include the prompt from the arguments in the response.",
 	"raw":               "Render output as raw text when connected to a TTY.",
@@ -142,10 +144,12 @@ type Config struct {
 	FormatText        FormatText `yaml:"format-text" env:"FORMAT_TEXT"`
 	HTTPProxy         string     `yaml:"http-proxy" env:"HTTP_PROXY"`
 	APIs              APIs       `yaml:"apis"`
+	Role              string
 	AskModel          bool
 	FormatAs          string
 	API               string
 	Models            map[string]Model
+	Roles             map[string][]string
 	ShowHelp          bool
 	ResetSettings     bool
 	Prefix            string

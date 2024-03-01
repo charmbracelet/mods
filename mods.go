@@ -357,7 +357,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		client := openai.NewClientWithConfig(ccfg)
 		ctx, cancel := context.WithCancel(context.Background())
 		m.cancelRequest = cancel
-		prefix := cfg.Prefix
 
 		m.messages = []openai.ChatCompletionMessage{}
 		if cfg.Format {
@@ -366,14 +365,20 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				Content: cfg.FormatText[cfg.FormatAs],
 			})
 		}
-		if prefix != "" {
+
+		for _, msg := range cfg.Roles[cfg.Role] {
+			m.messages = append(m.messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: msg,
+			})
+		}
+
+		if prefix := cfg.Prefix; prefix != "" {
 			content = strings.TrimSpace(prefix + "\n\n" + content)
 		}
 
-		if !cfg.NoLimit {
-			if len(content) > mod.MaxChars {
-				content = content[:mod.MaxChars]
-			}
+		if !cfg.NoLimit && len(content) > mod.MaxChars {
+			content = content[:mod.MaxChars]
 		}
 
 		if !cfg.NoCache && cfg.cacheReadFromID != "" {
