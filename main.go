@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	timeago "github.com/caarlos0/timea.go"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/huh"
@@ -478,28 +480,61 @@ func listConversations() error {
 	return nil
 }
 
-func printList(conversations []Conversation) {
-	width := 80
-	if isOutputTTY() {
-		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-			width = w
-		}
-	}
+type listModel struct {
+	vp viewport.Model
+}
 
-	for _, conversation := range conversations {
-		if isOutputTTY() {
+// Init implements tea.Model.
+func (l *listModel) Init() tea.Cmd {
+	return nil
+}
+
+// Update implements tea.Model.
+func (l *listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	l.vp, cmd = l.vp.Update(msg)
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q", "esc":
+			return l, tea.Quit
+		}
+	case tea.WindowSizeMsg:
+		l.vp.Height = msg.Height
+		l.vp.Width = msg.Width
+	}
+	return l, cmd
+}
+
+// View implements tea.Model.
+func (l *listModel) View() string {
+	return l.vp.View()
+}
+
+func printList(conversations []Conversation) {
+	if isOutputTTY() {
+		w, h, _ := term.GetSize(int(os.Stdout.Fd()))
+		vp := viewport.New(w, h)
+		var buffer bytes.Buffer
+		for _, conversation := range conversations {
 			timea := stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt))
 			left := stdoutStyles().Bullet.String() + stdoutStyles().SHA1.Render(conversation.ID[:sha1short])
-			right := stdoutStyles().ConversationList.
-				Width(width-lipgloss.Width(left)).
-				Render(conversation.Title, timea)
+			right := stdoutStyles().ConversationList.Render(conversation.Title, timea)
 			fmt.Fprint(
-				os.Stdout,
+				&buffer,
 				lipgloss.JoinHorizontal(lipgloss.Top, left, right),
 				"\n",
 			)
-			continue
 		}
+		vp.SetContent(buffer.String())
+		if _, err := tea.NewProgram(&listModel{vp: vp}, tea.WithAltScreen()).Run(); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return nil
+		}
+		return
+	}
+
+	for _, conversation := range conversations {
 		fmt.Fprintf(
 			os.Stdout,
 			"%s\t%s\t%s\n",
