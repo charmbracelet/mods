@@ -396,6 +396,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				Model:          mod.Name,
 				Temperature:    noOmitFloat(cfg.Temperature),
 				TopP:           noOmitFloat(cfg.TopP),
+				Stop:           cfg.Stop,
 				MaxTokens:      cfg.MaxTokens,
 				Messages:       m.messages,
 				Stream:         true,

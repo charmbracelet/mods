@@ -224,6 +224,12 @@ Sampling temperature is a number between 0.0 and 2.0 and determines how
 confident the model is in its choices. Higher values make the output more
 random and lower values make it more deterministic.
 
+#### Stop
+
+`--stop`, `MODS_STOP`
+
+Up to 4 sequences where the API will stop generating further tokens.
+
 #### TopP
 
 `--topp`, `MODS_TOPP`
