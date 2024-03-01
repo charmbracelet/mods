@@ -529,7 +529,7 @@ func printList(conversations []Conversation) {
 		vp.SetContent(buffer.String())
 		if _, err := tea.NewProgram(&listModel{vp: vp}, tea.WithAltScreen()).Run(); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
-			return nil
+			return
 		}
 		return
 	}
