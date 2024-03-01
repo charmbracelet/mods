@@ -50,6 +50,7 @@ var help = map[string]string{
 	"word-wrap":         "Wrap formatted output at specific width (default is 80)",
 	"max-tokens":        "Maximum number of tokens in response.",
 	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0.",
+	"stop":              "Up to 4 sequences where the API will stop generating further tokens.",
 	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
 	"fanciness":         "Your desired level of fanciness.",
 	"status-text":       "Text to show while generating.",
@@ -133,6 +134,7 @@ type Config struct {
 	MaxTokens         int        `yaml:"max-tokens" env:"MAX_TOKENS"`
 	MaxInputChars     int        `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
 	Temperature       float32    `yaml:"temp" env:"TEMP"`
+	Stop              []string   `yaml:"stop" env:"STOP"`
 	TopP              float32    `yaml:"topp" env:"TOPP"`
 	NoLimit           bool       `yaml:"no-limit" env:"NO_LIMIT"`
 	CachePath         string     `yaml:"cache-path" env:"CACHE_PATH"`
