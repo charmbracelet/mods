@@ -14,7 +14,10 @@ AI for the command line, built for pipelines.
 LLM based AI is really good at interpreting the output of commands and
 returning the results in CLI friendly text formats like Markdown. Mods is a
 simple tool that makes it super easy to use AI on the command line and in your
-pipelines. Mods works with [OpenAI](https://platform.openai.com/account/api-keys)
+pipelines.
+Mods works with [OpenAI](https://platform.openai.com/account/api-keys),
+[Groq](https://console.groq.com/keys),
+[Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service),
 and [LocalAI](https://github.com/go-skynet/LocalAI)
 
 To get started, [install Mods](#installation) and check out some of the
@@ -55,6 +58,14 @@ Azure endpoint with `mods --settings`.
 LocalAI allows you to run a multitude of models locally. Mods works with the
 GPT4ALL-J model as setup in [this tutorial](https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model).
 You can define more LocalAI models and endpoints with `mods --settings`.
+
+### Groq
+
+Groq provides some models powered by their LPU inference engine.
+Mods will work with both their models (`mixtral-8x7b-32768` and
+`llama2-70b-4096`).
+Set the `GROQ_API_KEY` environment variable to a valid kwy, which you can get
+[from here](https://console.groq.com/keys).
 
 ### Install Mods
 
