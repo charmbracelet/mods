@@ -196,12 +196,30 @@ and then will ask for confirmation.
 If the terminal is not interactive, or if `--quiet` is provided, it'll delete
 the conversations without any confirmation.
 
-#### Format As Markdown
+#### Format
 
 `-f`, `--format`, `MODS_FORMAT`
 
-Ask the LLM to format the response as markdown. You can edit the text passed to
-the LLM with `mods --settings` then changing the `format-text` value.
+Ask the LLM to format the response in a given format.
+You can edit the text passed to the LLM with `mods --settings` then changing the
+`format-text` value.
+You'll likely want to use this in with `--format-as`.
+
+### Format As
+
+`--format-as`, `MODS_FORMAT_AS`
+
+When `--format` is on, instructs the LLM about which format you want the output
+to be.
+This can be customized with `mods --settings`.
+
+### Role
+
+`--role`, `MODS_ROLE`
+
+You can have customized roles in your settings file, which will be fed to the
+LLM as system messages in order to change its behavior.
+The `--role` flag allows you to change which of these custom roles to use.
 
 #### Raw
 

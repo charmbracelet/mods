@@ -126,6 +126,8 @@ func (ft *FormatText) UnmarshalYAML(unmarshal func(interface{}) error) error {
 type Config struct {
 	Model             string     `yaml:"default-model" env:"MODEL"`
 	Format            bool       `yaml:"format" env:"FORMAT"`
+	FormatText        FormatText `yaml:"format-text"`
+	FormatAs          string     `yaml:"format-as" env:"FORMAT_AS"`
 	Raw               bool       `yaml:"raw" env:"RAW"`
 	Quiet             bool       `yaml:"quiet" env:"QUIET"`
 	MaxTokens         int        `yaml:"max-tokens" env:"MAX_TOKENS"`
@@ -141,12 +143,10 @@ type Config struct {
 	WordWrap          int        `yaml:"word-wrap" env:"WORD_WRAP"`
 	Fanciness         uint       `yaml:"fanciness" env:"FANCINESS"`
 	StatusText        string     `yaml:"status-text" env:"STATUS_TEXT"`
-	FormatText        FormatText `yaml:"format-text" env:"FORMAT_TEXT"`
 	HTTPProxy         string     `yaml:"http-proxy" env:"HTTP_PROXY"`
 	APIs              APIs       `yaml:"apis"`
-	Role              string
+	Role              string     `yaml:"role" env:"ROLE"`
 	AskModel          bool
-	FormatAs          string
 	API               string
 	Models            map[string]Model
 	Roles             map[string][]string

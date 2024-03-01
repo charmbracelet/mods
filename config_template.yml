@@ -9,6 +9,8 @@ roles:
   "default": []
 # {{ index .Help "format" }}
 format: false
+# {{ index .Help "role" }}
+role: "default"
 # {{ index .Help "raw" }}
 raw: false
 # {{ index .Help "quiet" }}
