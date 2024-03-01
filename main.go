@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strings"
 
 	timeago "github.com/caarlos0/timea.go"
@@ -276,7 +277,11 @@ func main() {
 	config, err = ensureConfig()
 	if err != nil {
 		handleError(modsError{err, "Could not load your configuration file."})
-		os.Exit(1)
+		// if user is editing the settings, only print out the error, but do
+		// not exit.
+		if !slices.Contains(os.Args, "--settings") {
+			os.Exit(1)
+		}
 	}
 
 	cache = newCache(config.CachePath)
