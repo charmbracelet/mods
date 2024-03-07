@@ -588,7 +588,7 @@ func newModelSelect() *huh.Select[string] {
 	for _, api := range config.APIs {
 		for model := range api.Models {
 			opts = append(opts, huh.Option[string]{
-				Key:   model,
+				Key:   fmt.Sprintf("%s • %s", api.Name, model),
 				Value: model,
 			})
 		}
