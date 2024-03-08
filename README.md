@@ -77,7 +77,7 @@ brew install charmbracelet/tap/mods
 winget install mods
 
 # Windows (with Scoop)
-scoop bucket add https://github.com/charmbracelet/scoop-bucket.git
+scoop bucket add charm https://github.com/charmbracelet/scoop-bucket.git
 scoop install mods
 
 # Arch Linux (btw)
