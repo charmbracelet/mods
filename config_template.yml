@@ -135,3 +135,11 @@ apis:
         aliases: ["az35"]
         max-input-chars: 12250
         fallback:
+  runpod:
+    # https://docs.runpod.io/serverless/workers/vllm/openai-compatibility
+    base-url: https://api.runpod.ai/v2/${YOUR_ENDPOINT}/openai/v1
+    api-key: RUNPOD_API_KEY
+    models:
+      openchat/openchat-3.5-1210:
+        aliases: ["openchat"]
+        max-input-chars: 8192
