@@ -80,27 +80,21 @@ apis:
       codellama-70b-instruct:
         aliases: ["codellama"]
         max-input-chars: 16384
-        fallback:
       mistral-7b-instruct:
         aliases: ["mistral"]
         max-input-chars: 16384
-        fallback:
       mixtral-8x7b-instruct:
         aliases: ["mixtral-8x"]
         max-input-chars: 16384
-        fallback:
       sonar-medium-online:
         aliases: ["smo", "o"]
         max-input-chars: 1200
-        fallback:
       sonar-medium-chat:
         aliases: ["smc"]
         max-input-chars: 16384
-        fallback:
       sonar-small-chat:
         aliases: ["ssc"]
         max-input-chars: 16384
-        fallback:
       sonar-small-online:
         aliases: ["sso"]
         max-input-chars: 1200
