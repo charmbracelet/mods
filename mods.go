@@ -399,19 +399,21 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			Content: content,
 		})
 
-		stream, err := client.CreateChatCompletionStream(
-			ctx,
-			openai.ChatCompletionRequest{
-				Model:          mod.Name,
-				Temperature:    noOmitFloat(cfg.Temperature),
-				TopP:           noOmitFloat(cfg.TopP),
-				Stop:           cfg.Stop,
-				MaxTokens:      cfg.MaxTokens,
-				Messages:       m.messages,
-				Stream:         true,
-				ResponseFormat: responseFormat(cfg),
-			},
-		)
+		req := openai.ChatCompletionRequest{
+			Model:    mod.Name,
+			Messages: m.messages,
+			Stream:   true,
+		}
+
+		if !(mod.API == "perplexity" && strings.Contains(mod.Name, "online")) {
+			req.Temperature = noOmitFloat(cfg.Temperature)
+			req.TopP = noOmitFloat(cfg.TopP)
+			req.Stop = cfg.Stop
+			req.MaxTokens = cfg.MaxTokens
+			req.ResponseFormat = responseFormat(cfg)
+		}
+
+		stream, err := client.CreateChatCompletionStream(ctx, req)
 		ae := &openai.APIError{}
 		if errors.As(err, &ae) {
 			return m.handleAPIError(ae, cfg, mod, content)
