@@ -72,6 +72,12 @@ apis:
         aliases: ["35"]
         max-input-chars: 12250
         fallback:
+  anthropic:
+    base-url: https://api.anthropic.com/v1
+    models:
+      claude-3-opus-20240229:
+        aliases: ["claude3-opus", "opus"]
+        max-input-chars: 680000
   perplexity:
     base-url: https://api.perplexity.ai
     api-key:
@@ -144,3 +150,4 @@ apis:
       openchat/openchat-3.5-1210:
         aliases: ["openchat"]
         max-input-chars: 8192
+
