@@ -45,6 +45,7 @@ type Mods struct {
 	Error         *modsError
 	state         state
 	retries       int
+	system        string
 	renderer      *lipgloss.Renderer
 	glam          *glamour.TermRenderer
 	glamViewport  viewport.Model
@@ -250,6 +251,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var api API
 		var key string
 		var ccfg openai.ClientConfig
+		var accfg AnthropicClientConfig
 
 		cfg := m.Config
 		mod, ok = cfg.Models[cfg.Model]
@@ -321,6 +323,29 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
+		case "anthropic":
+			if key == "" {
+				key = os.Getenv("ANTHROPIC_API_KEY")
+			}
+			if key == "" {
+				return modsError{
+					reason: fmt.Sprintf(
+						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
+						m.Styles.InlineCode.Render("ANTHROPIC_API_KEY"),
+					),
+					err: newUserErrorf(
+						"You can grab one at %s",
+						m.Styles.Link.Render("https://console.anthropic.com/settings/keys"),
+					),
+				}
+			}
+			accfg = DefaultAnthropicConfig(key)
+			if api.BaseURL != "" {
+				ccfg.BaseURL = api.BaseURL
+			}
+			if api.APIKey != "" {
+				accfg.Version = AnthropicApiVersion(api.APIKey)
+			}
 		case "azure", "azure-ad":
 			if key == "" {
 				key = os.Getenv("AZURE_OPENAI_KEY")
@@ -356,6 +381,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			httpClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)}}
 			ccfg.HTTPClient = httpClient
+		}
+
+		if mod.API == "anthropic" {
+			return m.createAnthropicStream(content, accfg, mod)
 		}
 
 		client := openai.NewClientWithConfig(ccfg)
@@ -446,6 +475,75 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 	}
+}
+
+func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig, mod Model) tea.Msg {
+	cfg := m.Config
+
+	client := NewAnthropicClientWithConfig(accfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelRequest = cancel
+
+	if cfg.Format {
+		m.system += cfg.FormatText[cfg.FormatAs] + "\n"
+	}
+
+	for _, msg := range cfg.Roles[cfg.Role] {
+		m.system += msg + "\n"
+	}
+
+	if prefix := cfg.Prefix; prefix != "" {
+		content = strings.TrimSpace(prefix + "\n\n" + content)
+	}
+
+	if !cfg.NoLimit && len(content) > mod.MaxChars {
+		content = content[:mod.MaxChars]
+	}
+
+	m.messages = []openai.ChatCompletionMessage{}
+
+	if !cfg.NoCache && cfg.cacheReadFromID != "" {
+		if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
+			return modsError{
+				err: err,
+				reason: fmt.Sprintf(
+					"There was a problem reading the cache. Use %s / %s to disable it.",
+					m.Styles.InlineCode.Render("--no-cache"),
+					m.Styles.InlineCode.Render("NO_CACHE"),
+				),
+			}
+		}
+	}
+
+	m.messages = append(m.messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: content,
+	})
+
+	req := AnthropicMessageCompletionRequest{
+		Model:         mod.Name,
+		Messages:      m.messages,
+		System:        m.system,
+		Stream:        true,
+		Temperature:   noOmitFloat(cfg.Temperature),
+		TopP:          noOmitFloat(cfg.TopP),
+		StopSequences: cfg.Stop,
+	}
+
+	if cfg.MaxTokens > 0 {
+		req.MaxTokens = cfg.MaxTokens
+	} else {
+		// TODO: Improve this logic so that we don't depend on a fixed number.
+		req.MaxTokens = 4096
+	}
+
+	stream, err := client.CreateChatCompletionStream(ctx, req)
+	ae := &openai.APIError{}
+	if errors.As(err, &ae) {
+		return m.handleAPIError(ae, cfg, mod, content)
+	}
+
+	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 }
 
 func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, content string) tea.Msg {
