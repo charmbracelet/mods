@@ -10,16 +10,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	timeago "github.com/caarlos0/timea.go"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/list"
 	"github.com/charmbracelet/x/editor"
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 // Build vars.
@@ -480,53 +478,39 @@ func listConversations() error {
 	return nil
 }
 
-type listModel struct {
-	vp viewport.Model
-}
+func makeOptions(conversations []Conversation) []huh.Option[string] {
+	opts := make([]huh.Option[string], 0, len(conversations))
+	for _, c := range conversations {
+		timea := stdoutStyles().Timeago.Render(timeago.Of(c.UpdatedAt))
+		left := stdoutStyles().SHA1.Render(c.ID[:sha1short])
+		right := stdoutStyles().ConversationList.Render(c.Title, timea)
+		opts = append(opts, huh.NewOption(left+" "+right, c.ID))
 
-// Init implements tea.Model.
-func (l *listModel) Init() tea.Cmd {
-	return nil
-}
-
-// Update implements tea.Model.
-func (l *listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	l.vp, cmd = l.vp.Update(msg)
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q", "esc":
-			return l, tea.Quit
-		}
-	case tea.WindowSizeMsg:
-		l.vp.Height = msg.Height
-		l.vp.Width = msg.Width
 	}
-	return l, cmd
-}
-
-// View implements tea.Model.
-func (l *listModel) View() string {
-	return l.vp.View()
+	return opts
 }
 
 func printList(conversations []Conversation) {
-	if isOutputTTY() {
-		w, h, _ := term.GetSize(int(os.Stdout.Fd()))
-		vp := viewport.New(w, h)
-		list := list.New()
-		for _, conversation := range conversations {
-			timea := stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt))
-			left := stdoutStyles().SHA1.Render(conversation.ID[:sha1short])
-			right := stdoutStyles().ConversationList.Render(conversation.Title, timea)
-			list.Item(lipgloss.JoinHorizontal(lipgloss.Top, left, right))
-		}
-		vp.SetContent(list.String())
-		if _, err := tea.NewProgram(&listModel{vp: vp}, tea.WithAltScreen()).Run(); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
+	if isOutputTTY() && isInputTTY() {
+		var selected string
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Conversations").
+					Value(&selected).
+					Options(makeOptions(conversations)...),
+			),
+		).Run(); err != nil {
+			if !errors.Is(err, huh.ErrUserAborted) {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
 			return
 		}
+
+		clipboard.WriteAll(selected)
+		termenv.Copy(selected)
+		fmt.Println(selected)
+
 		return
 	}
 
