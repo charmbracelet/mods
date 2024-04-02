@@ -72,6 +72,32 @@ apis:
         aliases: ["35"]
         max-input-chars: 12250
         fallback:
+  perplexity:
+    base-url: https://api.perplexity.ai
+    api-key:
+    api-key-env: PERPLEXITY_API_KEY
+    models:
+      codellama-70b-instruct:
+        aliases: ["codellama"]
+        max-input-chars: 16384
+      mistral-7b-instruct:
+        aliases: ["mistral"]
+        max-input-chars: 16384
+      mixtral-8x7b-instruct:
+        aliases: ["mixtral-8x"]
+        max-input-chars: 16384
+      sonar-medium-online:
+        aliases: ["smo", "o"]
+        max-input-chars: 1200
+      sonar-medium-chat:
+        aliases: ["smc"]
+        max-input-chars: 16384
+      sonar-small-chat:
+        aliases: ["ssc"]
+        max-input-chars: 16384
+      sonar-small-online:
+        aliases: ["sso"]
+        max-input-chars: 1200
   groq:
     base-url: https://api.groq.com/openai/v1
     api-key-env: GROQ_API_KEY
@@ -109,3 +135,12 @@ apis:
         aliases: ["az35"]
         max-input-chars: 12250
         fallback:
+  runpod:
+    # https://docs.runpod.io/serverless/workers/vllm/openai-compatibility
+    base-url: https://api.runpod.ai/v2/${YOUR_ENDPOINT}/openai/v1
+    api-key:
+    api-key-env: RUNPOD_API_KEY
+    models:
+      openchat/openchat-3.5-1210:
+        aliases: ["openchat"]
+        max-input-chars: 8192

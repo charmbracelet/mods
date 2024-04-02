@@ -45,7 +45,7 @@ You can configure additional endpoints in your settings file by running
 
 ### OpenAI
 
-Mods uses GPT-4 by default and will fallback to GPT-3.5 Turbo if it's not
+Mods uses GPT-4 by default and will fall back to GPT-3.5 Turbo if it's not
 available. Set the `OPENAI_API_KEY` environment variable to a valid OpenAI key,
 which you can get [from here](https://platform.openai.com/account/api-keys).
 
@@ -64,7 +64,7 @@ You can define more LocalAI models and endpoints with `mods --settings`.
 Groq provides some models powered by their LPU inference engine.
 Mods will work with both their models (`mixtral-8x7b-32768` and
 `llama2-70b-4096`).
-Set the `GROQ_API_KEY` environment variable to a valid kwy, which you can get
+Set the `GROQ_API_KEY` environment variable to a valid key, which you can get
 [from here](https://console.groq.com/keys).
 
 ### Install Mods
@@ -77,7 +77,7 @@ brew install charmbracelet/tap/mods
 winget install mods
 
 # Windows (with Scoop)
-scoop bucket add https://github.com/charmbracelet/scoop-bucket.git
+scoop bucket add charm https://github.com/charmbracelet/scoop-bucket.git
 scoop install mods
 
 # Arch Linux (btw)
@@ -141,7 +141,7 @@ Useful if you want to back your conversations up, for example.
 
 `-m`, `--model`, `MODS_MODEL`
 
-Mods uses `gpt-4` with OpenAI by default but you can specify any model as long
+Mods uses `gpt-4` with OpenAI by default, but you can specify any model as long
 as your account has access to it or you have installed locally with LocalAI.
 
 You can add new models to the settings with `mods --settings`.
@@ -259,7 +259,7 @@ random and lower values make it more deterministic.
 
 Up to 4 sequences where the API will stop generating further tokens.
 
-#### TopP
+#### Top P
 
 `--topp`, `MODS_TOPP`
 
@@ -271,7 +271,7 @@ its response.
 
 `--no-limit`, `MODS_NO_LIMIT`
 
-By default Mods attempts to size the input to the maximum size the allowed by
+By default, Mods attempts to size the input to the maximum size the allowed by
 the model. You can potentially squeeze a few more tokens into the input by
 setting this but also risk getting a max token exceeded error from the OpenAI API.
 

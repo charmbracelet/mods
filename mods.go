@@ -399,19 +399,21 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			Content: content,
 		})
 
-		stream, err := client.CreateChatCompletionStream(
-			ctx,
-			openai.ChatCompletionRequest{
-				Model:          mod.Name,
-				Temperature:    noOmitFloat(cfg.Temperature),
-				TopP:           noOmitFloat(cfg.TopP),
-				Stop:           cfg.Stop,
-				MaxTokens:      cfg.MaxTokens,
-				Messages:       m.messages,
-				Stream:         true,
-				ResponseFormat: responseFormat(cfg),
-			},
-		)
+		req := openai.ChatCompletionRequest{
+			Model:    mod.Name,
+			Messages: m.messages,
+			Stream:   true,
+		}
+
+		if !(mod.API == "perplexity" && strings.Contains(mod.Name, "online")) {
+			req.Temperature = noOmitFloat(cfg.Temperature)
+			req.TopP = noOmitFloat(cfg.TopP)
+			req.Stop = cfg.Stop
+			req.MaxTokens = cfg.MaxTokens
+			req.ResponseFormat = responseFormat(cfg)
+		}
+
+		stream, err := client.CreateChatCompletionStream(ctx, req)
 		ae := &openai.APIError{}
 		if errors.As(err, &ae) {
 			return m.handleAPIError(ae, cfg, mod, content)
@@ -433,7 +435,10 @@ func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, cont
 	case http.StatusNotFound:
 		if mod.Fallback != "" {
 			m.Config.Model = mod.Fallback
-			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
+			return m.retry(content, modsError{
+				err:    err,
+				reason: fmt.Sprintf("%s API server error.", mod.API),
+			})
 		}
 		return modsError{err: err, reason: fmt.Sprintf(
 			"Missing model '%s' for API '%s'.",
@@ -450,13 +455,15 @@ func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, cont
 			return m.retry(cutPrompt(err.Message, content), pe)
 		}
 		// bad request (do not retry)
-		return modsError{err: err, reason: "OpenAI API request error."}
+		return modsError{err: err, reason: fmt.Sprintf("%s API request error.", mod.API)}
 	case http.StatusUnauthorized:
 		// invalid auth or key (do not retry)
-		return modsError{err: err, reason: "Invalid OpenAI API key."}
+		return modsError{err: err, reason: fmt.Sprintf("Invalid %s API key.", mod.API)}
 	case http.StatusTooManyRequests:
 		// rate limiting or engine overload (wait and retry)
-		return m.retry(content, modsError{err: err, reason: "You’ve hit your OpenAI API rate limit."})
+		return m.retry(content, modsError{
+			err: err, reason: fmt.Sprintf("You’ve hit your %s API rate limit.", mod.API),
+		})
 	case http.StatusInternalServerError:
 		if mod.API == "openai" {
 			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
