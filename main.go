@@ -508,7 +508,7 @@ func printList(conversations []Conversation) {
 
 		_ = clipboard.WriteAll(selected)
 		termenv.Copy(selected)
-		fmt.Println(selected)
+		printConfirmation("COPIED", selected)
 
 		return
 	}
