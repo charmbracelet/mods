@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +16,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/list"
 	"github.com/charmbracelet/x/editor"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -515,18 +515,14 @@ func printList(conversations []Conversation) {
 	if isOutputTTY() {
 		w, h, _ := term.GetSize(int(os.Stdout.Fd()))
 		vp := viewport.New(w, h)
-		var buffer bytes.Buffer
+		list := list.New()
 		for _, conversation := range conversations {
 			timea := stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt))
-			left := stdoutStyles().Bullet.String() + stdoutStyles().SHA1.Render(conversation.ID[:sha1short])
+			left := stdoutStyles().SHA1.Render(conversation.ID[:sha1short])
 			right := stdoutStyles().ConversationList.Render(conversation.Title, timea)
-			fmt.Fprint(
-				&buffer,
-				lipgloss.JoinHorizontal(lipgloss.Top, left, right),
-				"\n",
-			)
+			list.Item(lipgloss.JoinHorizontal(lipgloss.Top, left, right))
 		}
-		vp.SetContent(buffer.String())
+		vp.SetContent(list.String())
 		if _, err := tea.NewProgram(&listModel{vp: vp}, tea.WithAltScreen()).Run(); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return

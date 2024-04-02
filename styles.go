@@ -19,7 +19,6 @@ type styles struct {
 	Quote,
 	ConversationList,
 	SHA1,
-	Bullet,
 	Timeago lipgloss.Style
 }
 
@@ -41,7 +40,6 @@ func makeStyles(r *lipgloss.Renderer) (s styles) {
 	s.Pipe = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#8470FF", Dark: "#745CFF"})
 	s.ConversationList = r.NewStyle().Padding(0, 1)
 	s.SHA1 = s.Flag.Copy()
-	s.Bullet = r.NewStyle().SetString("• ").Foreground(lipgloss.AdaptiveColor{Light: "#757575", Dark: "#777"})
 	s.Timeago = r.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#999", Dark: "#555"})
 	return s
 }
