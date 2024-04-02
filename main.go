@@ -485,7 +485,6 @@ func makeOptions(conversations []Conversation) []huh.Option[string] {
 		left := stdoutStyles().SHA1.Render(c.ID[:sha1short])
 		right := stdoutStyles().ConversationList.Render(c.Title, timea)
 		opts = append(opts, huh.NewOption(left+" "+right, c.ID))
-
 	}
 	return opts
 }
@@ -507,7 +506,7 @@ func printList(conversations []Conversation) {
 			return
 		}
 
-		clipboard.WriteAll(selected)
+		_ = clipboard.WriteAll(selected)
 		termenv.Copy(selected)
 		fmt.Println(selected)
 
