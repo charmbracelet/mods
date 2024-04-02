@@ -10,14 +10,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/editor"
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 // Build vars.
@@ -478,28 +478,42 @@ func listConversations() error {
 	return nil
 }
 
+func makeOptions(conversations []Conversation) []huh.Option[string] {
+	opts := make([]huh.Option[string], 0, len(conversations))
+	for _, c := range conversations {
+		timea := stdoutStyles().Timeago.Render(timeago.Of(c.UpdatedAt))
+		left := stdoutStyles().SHA1.Render(c.ID[:sha1short])
+		right := stdoutStyles().ConversationList.Render(c.Title, timea)
+		opts = append(opts, huh.NewOption(left+" "+right, c.ID))
+	}
+	return opts
+}
+
 func printList(conversations []Conversation) {
-	width := 80
-	if isOutputTTY() {
-		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-			width = w
+	if isOutputTTY() && isInputTTY() {
+		var selected string
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Conversations").
+					Value(&selected).
+					Options(makeOptions(conversations)...),
+			),
+		).Run(); err != nil {
+			if !errors.Is(err, huh.ErrUserAborted) {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+			return
 		}
+
+		_ = clipboard.WriteAll(selected)
+		termenv.Copy(selected)
+		printConfirmation("COPIED", selected)
+
+		return
 	}
 
 	for _, conversation := range conversations {
-		if isOutputTTY() {
-			timea := stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt))
-			left := stdoutStyles().Bullet.String() + stdoutStyles().SHA1.Render(conversation.ID[:sha1short])
-			right := stdoutStyles().ConversationList.
-				Width(width-lipgloss.Width(left)).
-				Render(conversation.Title, timea)
-			fmt.Fprint(
-				os.Stdout,
-				lipgloss.JoinHorizontal(lipgloss.Top, left, right),
-				"\n",
-			)
-			continue
-		}
 		fmt.Fprintf(
 			os.Stdout,
 			"%s\t%s\t%s\n",
