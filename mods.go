@@ -366,7 +366,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			})
 		}
 
-		for _, msg := range cfg.Roles[cfg.Role] {
+		roleSetup, ok := cfg.Roles[cfg.Role]
+		if !ok {
+			return modsError{
+				err:    fmt.Errorf("role %q does not exist", cfg.Role),
+				reason: "Could not use given role",
+			}
+		}
+		for _, msg := range roleSetup {
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleSystem,
 				Content: msg,
