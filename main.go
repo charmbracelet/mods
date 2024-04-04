@@ -478,6 +478,18 @@ func listConversations() error {
 	return nil
 }
 
+func makeOptionsString(strs []string) []huh.Option[string] {
+	opts := make([]huh.Option[string], 0, len(strs))
+	for _, s := range strs {
+		opts = append(opts, huh.NewOption(fmt.Sprintf(
+			"%s %s",
+			stdoutStyles().Flag.Render("--"+s),
+			stdoutStyles().FlagDesc.Render(help[s]),
+		), s))
+	}
+	return opts
+}
+
 func makeOptions(conversations []Conversation) []huh.Option[string] {
 	opts := make([]huh.Option[string], 0, len(conversations))
 	for _, c := range conversations {
@@ -513,14 +525,23 @@ func printList(conversations []Conversation) {
 		fmt.Println(stdoutStyles().Comment.Render(
 			"You can use this conversation ID with the following commands:",
 		))
-		suggestions := []string{"show", "continue", "delete"}
-		for _, flag := range suggestions {
-			fmt.Printf(
-				"  %-44s %s\n",
-				stdoutStyles().Flag.Render("--"+flag),
-				stdoutStyles().FlagDesc.Render(help[flag]),
-			)
+
+		var next string
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("What's next?").
+					Description("You can use that conversation ID with any of the following commands:").
+					Options(makeOptionsString([]string{"show", "continue", "delete"})...).
+					Value(&next),
+			),
+		).Run(); err != nil {
+			if !errors.Is(err, huh.ErrUserAborted) {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+			return
 		}
+		fmt.Println(next)
 		return
 	}
 
