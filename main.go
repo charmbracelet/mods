@@ -509,7 +509,18 @@ func printList(conversations []Conversation) {
 		_ = clipboard.WriteAll(selected)
 		termenv.Copy(selected)
 		printConfirmation("COPIED", selected)
-
+		// suggest actions to use this conversation ID
+		fmt.Println(stdoutStyles().Comment.Render(
+			"You can use this conversation ID with the following commands:",
+		))
+		suggestions := []string{"show", "continue", "delete"}
+		for _, flag := range suggestions {
+			fmt.Printf(
+				"  %-44s %s\n",
+				stdoutStyles().Flag.Render("--"+flag),
+				stdoutStyles().FlagDesc.Render(help[flag]),
+			)
+		}
 		return
 	}
 
