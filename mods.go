@@ -370,7 +370,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !ok {
 			return modsError{
 				err:    fmt.Errorf("role %q does not exist", cfg.Role),
-				reason: "Could not role",
+				reason: "Could not use role",
 			}
 		}
 		for _, msg := range roleSetup {
