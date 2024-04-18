@@ -370,13 +370,20 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if !ok {
 			return modsError{
 				err:    fmt.Errorf("role %q does not exist", cfg.Role),
-				reason: "Could not use given role",
+				reason: "Could not role",
 			}
 		}
 		for _, msg := range roleSetup {
+			content, err := loadMsg(msg)
+			if err != nil {
+				return modsError{
+					err:    err,
+					reason: "Could not use role",
+				}
+			}
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: msg,
+				Content: content,
 			})
 		}
 
