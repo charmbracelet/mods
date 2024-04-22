@@ -290,21 +290,10 @@ func main() {
 	var err error
 	config, err = ensureConfig()
 	if err != nil {
-<<<<<<< HEAD
 		handleError(modsError{err, "Could not load your configuration file."})
 		// if user is editing the settings, only print out the error, but do
 		// not exit.
 		if !slices.Contains(os.Args, "--settings") {
-=======
-		var modErr modsError
-		if errors.As(err, &modErr) && modErr.Reason() == "Could not parse settings file." {
-			// If it's a modsError with a specific reason, handle it without exiting.
-			handleError(modErr)
-		} else {
-			// For all other errors, including modsError with different reasons,
-			// handle the error and then exit.
-			handleError(modsError{err, "Could not load your configuration file."})
->>>>>>> aa0fd21 (fix: Implement conditional error handling based on specific error reasons (#220))
 			os.Exit(1)
 		}
 	}
