@@ -484,12 +484,12 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelRequest = cancel
 
-	if cfg.Format {
-		m.system += cfg.FormatText[cfg.FormatAs] + "\n"
+	if cfg.Role != "" {
+		m.system += cfg.Role + "\n"
 	}
 
-	for _, msg := range cfg.Roles[cfg.Role] {
-		m.system += msg + "\n"
+	if cfg.Format {
+		m.system += cfg.FormatText[cfg.FormatAs] + "\n"
 	}
 
 	if prefix := cfg.Prefix; prefix != "" {
@@ -499,8 +499,6 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	if !cfg.NoLimit && len(content) > mod.MaxChars {
 		content = content[:mod.MaxChars]
 	}
-
-	m.messages = []openai.ChatCompletionMessage{}
 
 	if !cfg.NoCache && cfg.cacheReadFromID != "" {
 		if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
@@ -514,6 +512,8 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 			}
 		}
 	}
+
+	m.messages = []openai.ChatCompletionMessage{}
 
 	m.messages = append(m.messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
