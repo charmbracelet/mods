@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"runtime/pprof"
 	"slices"
 	"strings"
 
@@ -211,6 +212,8 @@ var (
 	}
 )
 
+var memprofile bool
+
 func initFlags() {
 	flags := rootCmd.Flags()
 	flags.StringVarP(&config.Model, "model", "m", config.Model, stdoutStyles().FlagDesc.Render(help["model"]))
@@ -250,6 +253,9 @@ func initFlags() {
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
+	flags.BoolVar(&memprofile, "memprofile", false, "Write memory profiles to CWD")
+	_ = flags.MarkHidden("memprofile")
+
 	for _, name := range []string{"show", "delete", "continue"} {
 		_ = rootCmd.RegisterFlagCompletionFunc(name, func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			results, _ := db.Completions(toComplete)
@@ -275,6 +281,7 @@ func initFlags() {
 }
 
 func main() {
+	defer maybeWriteMemProfile()
 	var err error
 	config, err = ensureConfig()
 	if err != nil {
@@ -313,7 +320,47 @@ func main() {
 	}
 }
 
+func maybeWriteMemProfile() {
+	if !memprofile {
+		return
+	}
+
+	closers := []func() error{db.Close}
+	defer func() {
+		for _, cl := range closers {
+			_ = cl()
+		}
+	}()
+
+	handle := func(err error) {
+		fmt.Println(err)
+		for _, cl := range closers {
+			_ = cl()
+		}
+		os.Exit(1)
+	}
+
+	heap, err := os.Create("mods_heap.profile")
+	if err != nil {
+		handle(err)
+	}
+	closers = append(closers, heap.Close)
+	allocs, err := os.Create("mods_allocs.profile")
+	if err != nil {
+		handle(err)
+	}
+	closers = append(closers, allocs.Close)
+
+	if err := pprof.Lookup("heap").WriteTo(heap, 0); err != nil {
+		handle(err)
+	}
+	if err := pprof.Lookup("allocs").WriteTo(allocs, 0); err != nil {
+		handle(err)
+	}
+}
+
 func handleError(err error) {
+	maybeWriteMemProfile()
 	// exhaust stdin
 	if !isInputTTY() {
 		_, _ = io.ReadAll(os.Stdin)
