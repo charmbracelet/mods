@@ -112,9 +112,12 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Config.cacheWriteToTitle = msg.Title
 		m.Config.cacheReadFromID = msg.ReadID
 
-		m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
+		if !m.Config.Quiet {
+			m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
+			cmds = append(cmds, m.anim.Init())
+		}
 		m.state = configLoadedState
-		cmds = append(cmds, m.readStdinCmd, m.anim.Init())
+		cmds = append(cmds, m.readStdinCmd)
 
 	case completionInput:
 		if msg.content != "" {
@@ -163,7 +166,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.quit
 		}
 	}
-	if m.state == configLoadedState || m.state == requestState {
+	if !m.Config.Quiet && (m.state == configLoadedState || m.state == requestState) {
 		m.anim, cmd = m.anim.Update(msg)
 		cmds = append(cmds, cmd)
 	}
