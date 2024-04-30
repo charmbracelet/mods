@@ -104,7 +104,6 @@ func (m *Mods) Init() tea.Cmd {
 
 // Update implements tea.Model.
 func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case cacheDetailsMsg:
@@ -167,15 +166,17 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	if !m.Config.Quiet && (m.state == configLoadedState || m.state == requestState) {
+		var cmd tea.Cmd
 		m.anim, cmd = m.anim.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 	if m.viewportNeeded() {
 		// Only respond to keypresses when the viewport (i.e. the content) is
 		// taller than the window.
+		var cmd tea.Cmd
 		m.glamViewport, cmd = m.glamViewport.Update(msg)
+		cmds = append(cmds, cmd)
 	}
-	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
