@@ -296,6 +296,9 @@ func usageFunc(cmd *cobra.Command) error {
 	)
 	fmt.Println("Options:")
 	cmd.Flags().VisitAll(func(f *flag.Flag) {
+		if f.Hidden {
+			return
+		}
 		if f.Shorthand == "" {
 			fmt.Printf(
 				"  %-44s %s\n",
