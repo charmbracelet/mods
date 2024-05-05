@@ -52,6 +52,7 @@ type Mods struct {
 	glamOutput    string
 	glamHeight    int
 	messages      []openai.ChatCompletionMessage
+	prompt        string
 	cancelRequest context.CancelFunc
 	anim          tea.Model
 	width         int
@@ -252,6 +253,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var key string
 		var ccfg openai.ClientConfig
 		var accfg AnthropicClientConfig
+		var occfg OllamaClientConfig
 
 		cfg := m.Config
 		mod, ok = cfg.Models[cfg.Model]
@@ -323,6 +325,11 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
+		case "ollama":
+			occfg = DefaultOllamaConfig()
+			if api.BaseURL != "" {
+				ccfg.BaseURL = api.BaseURL
+			}
 		case "anthropic":
 			if key == "" {
 				key = os.Getenv("ANTHROPIC_API_KEY")
@@ -385,6 +392,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		if mod.API == "anthropic" {
 			return m.createAnthropicStream(content, accfg, mod)
+		}
+
+		if mod.API == "ollama" {
+			return m.createOllamaStream(content, occfg, mod)
 		}
 
 		client := openai.NewClientWithConfig(ccfg)
@@ -475,6 +486,83 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 	}
+}
+
+func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod Model) tea.Msg {
+	cfg := m.Config
+
+	client := NewOllamaClientWithConfig(occfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelRequest = cancel
+
+	if cfg.Role != "" {
+		m.system += cfg.Role + "\n"
+	}
+
+	if cfg.Format {
+		m.system += cfg.FormatText[cfg.FormatAs] + "\n"
+	}
+
+	if prefix := cfg.Prefix; prefix != "" {
+		content = strings.TrimSpace(prefix + "\n\n" + content)
+	}
+
+	if !cfg.NoLimit && len(content) > mod.MaxChars {
+		content = content[:mod.MaxChars]
+	}
+
+	if !cfg.NoCache && cfg.cacheReadFromID != "" {
+		if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
+			return modsError{
+				err: err,
+				reason: fmt.Sprintf(
+					"There was a problem reading the cache. Use %s / %s to disable it.",
+					m.Styles.InlineCode.Render("--no-cache"),
+					m.Styles.InlineCode.Render("NO_CACHE"),
+				),
+			}
+		}
+	}
+
+	m.prompt = content
+
+	m.messages = []openai.ChatCompletionMessage{}
+
+	m.messages = append(m.messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: content,
+	})
+
+	var stopValue string
+	if len(cfg.Stop) > 0 {
+		stopValue = cfg.Stop[0]
+	} else {
+		stopValue = ""
+	}
+
+	req := OllamaMessageCompletionRequest{
+		Model:  mod.Name,
+		Prompt: m.prompt,
+		System: m.system,
+		Stream: true,
+		Options: OllamaMessageCompletionRequestOptions{
+			Temperature: noOmitFloat(cfg.Temperature),
+			TopP:        noOmitFloat(cfg.TopP),
+			Stop:        stopValue,
+		},
+	}
+
+	if cfg.MaxTokens > 0 {
+		req.Options.NumCtx = cfg.MaxTokens
+	}
+
+	stream, err := client.CreateChatCompletionStream(ctx, req)
+	ae := &openai.APIError{}
+	if errors.As(err, &ae) {
+		return m.handleAPIError(ae, cfg, mod, content)
+	}
+
+	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 }
 
 func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig, mod Model) tea.Msg {

@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -20,23 +18,16 @@ type (
 	AnthropicAPIBeta string
 )
 
-type httpHeader http.Header
-
 const (
 	// AnthropicV20230601 represents the version of the Anthropic API.
 	AnthropicV20230601 AnthropicAPIVersion = "2023-06-01"
 	// AnthropicBeta represents the beta version of the Anthropic API.
 	AnthropicBeta AnthropicAPIBeta = "messages-2023-12-15"
-
-	defaultEmptyMessagesLimit uint = 300
 )
 
 var (
 	headerData  = []byte("data: ")
 	errorPrefix = []byte(`event: error`)
-
-	// ErrTooManyEmptyStreamMessages represents an error when a stream has sent too many empty messages.
-	ErrTooManyEmptyStreamMessages = errors.New("stream has sent too many empty messages")
 )
 
 // AnthropicClientConfig represents the configuration for the Anthropic API client.
@@ -73,58 +64,9 @@ type AnthropicMessageCompletionRequest struct {
 	StopSequences []string                       `json:"stop_sequences,omitempty"`
 }
 
-// Marshaller is an interface for marshalling values to bytes.
-type Marshaller interface {
-	Marshal(value any) ([]byte, error)
-}
-
-// JSONMarshaller is a marshaller that marshals values to JSON.
-type JSONMarshaller struct{}
-
-// Marshal marshals a value to JSON.
-func (jm *JSONMarshaller) Marshal(value any) ([]byte, error) {
-	return json.Marshal(value)
-}
-
 // AnthropicRequestBuilder is an interface for building HTTP requests for the Anthropic API.
 type AnthropicRequestBuilder interface {
 	Build(ctx context.Context, method, url string, body any, header http.Header) (*http.Request, error)
-}
-
-// HTTPRequestBuilder is an implementation of AnthropicRequestBuilder that builds HTTP requests.
-type HTTPRequestBuilder struct {
-	marshaller Marshaller
-}
-
-// Build builds an HTTP request.
-func (b *HTTPRequestBuilder) Build(
-	ctx context.Context,
-	method string,
-	url string,
-	body any,
-	header http.Header,
-) (req *http.Request, err error) {
-	var bodyReader io.Reader
-	if body != nil {
-		if v, ok := body.(io.Reader); ok {
-			bodyReader = v
-		} else {
-			var reqBytes []byte
-			reqBytes, err = b.marshaller.Marshal(body)
-			if err != nil {
-				return
-			}
-			bodyReader = bytes.NewBuffer(reqBytes)
-		}
-	}
-	req, err = http.NewRequestWithContext(ctx, method, url, bodyReader)
-	if err != nil {
-		return
-	}
-	if header != nil {
-		req.Header = header
-	}
-	return
 }
 
 // NewAnthropicRequestBuilder creates a new HTTPRequestBuilder.
@@ -149,24 +91,11 @@ func NewAnthropicClientWithConfig(config AnthropicClientConfig) *AnthropicClient
 	}
 }
 
-type requestOptions struct {
-	body   any
-	header http.Header
-}
-
-type requestOption func(*requestOptions)
-
-const chatCompletionsSuffix = "/messages"
+const anthropicChatCompletionsSuffix = "/messages"
 
 func (c *AnthropicClient) setCommonHeaders(req *http.Request) {
 	req.Header.Set("anthropic-version", string(c.config.Version))
 	req.Header.Set("x-api-key", c.config.AuthToken)
-}
-
-func withBody(body any) requestOption {
-	return func(args *requestOptions) {
-		args.body = body
-	}
 }
 
 func (c *AnthropicClient) newRequest(ctx context.Context, method, url string, setters ...requestOption) (*http.Request, error) {
@@ -203,40 +132,6 @@ func (c *AnthropicClient) handleErrorResp(resp *http.Response) error {
 
 	errRes.Error.HTTPStatusCode = resp.StatusCode
 	return errRes.Error
-}
-
-// ErrorAccumulator is an interface for accumulating errors.
-type ErrorAccumulator interface {
-	Write(p []byte) error
-	Bytes() []byte
-}
-
-// Unmarshaler is an interface for unmarshalling bytes.
-type Unmarshaler interface {
-	Unmarshal(data []byte, v any) error
-}
-
-type streamReader struct {
-	emptyMessagesLimit uint
-	isFinished         bool
-
-	reader         *bufio.Reader
-	response       *http.Response
-	errAccumulator ErrorAccumulator
-	unmarshaler    Unmarshaler
-
-	httpHeader
-}
-
-// Recv reads the next response from the stream.
-func (stream *streamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
-	if stream.isFinished {
-		err = io.EOF
-		return
-	}
-
-	response, err = stream.processLines()
-	return
 }
 
 // AnthropicMessageUsage represents the usage of an Anthropic message.
@@ -278,8 +173,41 @@ type AnthropicCompletionMessageResponse struct {
 	Delta        *AnthropicMessageTextDelta    `json:"delta,omitempty"`
 }
 
+// AnthropicChatCompletionStream represents a stream for chat completion.
+type AnthropicChatCompletionStream struct {
+	*anthropicStreamReader
+}
+
+type anthropicStreamReader struct {
+	emptyMessagesLimit uint
+	isFinished         bool
+
+	reader         *bufio.Reader
+	response       *http.Response
+	errAccumulator ErrorAccumulator
+	unmarshaler    Unmarshaler
+
+	httpHeader
+}
+
+// Recv reads the next response from the stream.
+func (stream *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+	if stream.isFinished {
+		err = io.EOF
+		return
+	}
+
+	response, err = stream.processLines()
+	return
+}
+
+// Close closes the stream.
+func (stream *anthropicStreamReader) Close() {
+	stream.response.Body.Close() //nolint:errcheck
+}
+
 //nolint:gocognit
-func (stream *streamReader) processLines() (openai.ChatCompletionStreamResponse, error) {
+func (stream *anthropicStreamReader) processLines() (openai.ChatCompletionStreamResponse, error) {
 	var (
 		emptyMessagesCount uint
 		hasError           bool
@@ -349,71 +277,18 @@ func (stream *streamReader) processLines() (openai.ChatCompletionStreamResponse,
 	}
 }
 
-// Close closes the stream.
-func (stream *streamReader) Close() {
-	stream.response.Body.Close() //nolint:errcheck
-}
-
-type errorBuffer interface {
-	io.Writer
-	Len() int
-	Bytes() []byte
-}
-
-// DefaultErrorAccumulator is a default implementation of ErrorAccumulator.
-type DefaultErrorAccumulator struct {
-	Buffer errorBuffer
-}
-
-// NewErrorAccumulator creates a new ErrorAccumulator.
-func NewErrorAccumulator() ErrorAccumulator {
-	return &DefaultErrorAccumulator{
-		Buffer: &bytes.Buffer{},
-	}
-}
-
-// Write writes data to the error accumulator.
-func (e *DefaultErrorAccumulator) Write(p []byte) error {
-	_, err := e.Buffer.Write(p)
-	if err != nil {
-		return fmt.Errorf("error accumulator write error, %w", err)
-	}
-	return nil
-}
-
-// Bytes returns the accumulated error bytes.
-func (e *DefaultErrorAccumulator) Bytes() (errBytes []byte) {
-	if e.Buffer.Len() == 0 {
-		return
-	}
-	errBytes = e.Buffer.Bytes()
-	return
-}
-
-func isFailureStatusCode(resp *http.Response) bool {
-	return resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest
-}
-
-// JSONUnmarshaler is an unmarshaler that unmarshals JSON data.
-type JSONUnmarshaler struct{}
-
-// Unmarshal unmarshals JSON data.
-func (jm *JSONUnmarshaler) Unmarshal(data []byte, v any) error {
-	return json.Unmarshal(data, v)
-}
-
-func sendRequestStream(client *AnthropicClient, req *http.Request) (*streamReader, error) {
+func anthropicSendRequestStream(client *AnthropicClient, req *http.Request) (*anthropicStreamReader, error) {
 	req.Header.Set("content-type", "application/json")
 	req.Header.Set("anthropic-beta", string(client.config.Beta))
 
 	resp, err := client.config.HTTPClient.Do(req) //nolint:bodyclose // body is closed in stream.Close()
 	if err != nil {
-		return new(streamReader), err
+		return new(anthropicStreamReader), err
 	}
 	if isFailureStatusCode(resp) {
-		return new(streamReader), client.handleErrorResp(resp)
+		return new(anthropicStreamReader), client.handleErrorResp(resp)
 	}
-	return &streamReader{
+	return &anthropicStreamReader{
 		emptyMessagesLimit: client.config.EmptyMessagesLimit,
 		reader:             bufio.NewReader(resp.Body),
 		response:           resp,
@@ -423,11 +298,6 @@ func sendRequestStream(client *AnthropicClient, req *http.Request) (*streamReade
 	}, nil
 }
 
-// ChatCompletionStream represents a stream for chat completion.
-type ChatCompletionStream struct {
-	*streamReader
-}
-
 // CreateChatCompletionStream — API call to create a chat completion w/ streaming
 // support. It sets whether to stream back partial progress. If set, tokens will be
 // sent as data-only server-sent events as they become available, with the
@@ -435,8 +305,8 @@ type ChatCompletionStream struct {
 func (c *AnthropicClient) CreateChatCompletionStream(
 	ctx context.Context,
 	request AnthropicMessageCompletionRequest,
-) (stream *ChatCompletionStream, err error) {
-	urlSuffix := chatCompletionsSuffix
+) (stream *AnthropicChatCompletionStream, err error) {
+	urlSuffix := anthropicChatCompletionsSuffix
 
 	request.Stream = true
 	req, err := c.newRequest(ctx, http.MethodPost, c.config.BaseURL+urlSuffix, withBody(request))
@@ -444,12 +314,12 @@ func (c *AnthropicClient) CreateChatCompletionStream(
 		return nil, err
 	}
 
-	resp, err := sendRequestStream(c, req)
+	resp, err := anthropicSendRequestStream(c, req)
 	if err != nil {
 		return
 	}
-	stream = &ChatCompletionStream{
-		streamReader: resp,
+	stream = &AnthropicChatCompletionStream{
+		anthropicStreamReader: resp,
 	}
 	return
 }
