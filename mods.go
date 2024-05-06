@@ -249,7 +249,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var ok bool
 		var mod Model
 		var api API
-		var key string
 		var ccfg openai.ClientConfig
 		var accfg AnthropicClientConfig
 		var occfg OllamaClientConfig
@@ -297,83 +296,35 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		// Uses API key value if found; otherwise searches for env variable.
-		key = api.APIKey
-		if key == "" && api.APIKeyEnv != "" {
-			key = os.Getenv(api.APIKeyEnv)
-		}
-
 		switch mod.API {
-		case "openai":
-			if key == "" {
-				key = os.Getenv("OPENAI_API_KEY")
-			}
-			if key == "" {
-				return modsError{
-					reason: fmt.Sprintf(
-						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
-						m.Styles.InlineCode.Render("OPENAI_API_KEY"),
-					),
-					err: newUserErrorf(
-						"You can grab one at %s",
-						m.Styles.Link.Render("https://platform.openai.com/account/api-keys."),
-					),
-				}
-			}
-			ccfg = openai.DefaultConfig(key)
-			if api.BaseURL != "" {
-				ccfg.BaseURL = api.BaseURL
-			}
 		case "ollama":
 			occfg = DefaultOllamaConfig()
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
 		case "anthropic":
-			if key == "" {
-				key = os.Getenv("ANTHROPIC_API_KEY")
-			}
-			if key == "" {
-				return modsError{
-					reason: fmt.Sprintf(
-						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
-						m.Styles.InlineCode.Render("ANTHROPIC_API_KEY"),
-					),
-					err: newUserErrorf(
-						"You can grab one at %s",
-						m.Styles.Link.Render("https://console.anthropic.com/settings/keys"),
-					),
-				}
+			key, err := m.ensureKey(api, "ANTHROPIC_API_KEY", "https://console.anthropic.com/settings/keys")
+			if err != nil {
+				return err
 			}
 			accfg = DefaultAnthropicConfig(key)
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
-			if api.APIKey != "" {
-				accfg.Version = AnthropicAPIVersion(api.APIKey)
-			}
 		case "azure", "azure-ad":
-			if key == "" {
-				key = os.Getenv("AZURE_OPENAI_KEY")
-			}
-			if key == "" {
-				return modsError{
-					reason: fmt.Sprintf(
-						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
-						m.Styles.InlineCode.Render("AZURE_OPENAI_KEY"),
-					),
-					err: newUserErrorf(
-						"You can apply for one at %s",
-						m.Styles.Link.Render("https://aka.ms/oai/access"),
-					),
-				}
+			key, err := m.ensureKey(api, "AZURE_OPENAI_KEY", "https://aka.ms/oai/access")
+			if err != nil {
+				return err
 			}
 			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
 			if mod.API == "azure-ad" {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
-
 		default:
+			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
+			if err != nil {
+				return err
+			}
 			ccfg = openai.DefaultConfig(key)
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
@@ -464,7 +415,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			Stream:   true,
 		}
 
-		if !(mod.API == "perplexity" && strings.Contains(mod.Name, "online")) {
+		if mod.API != "perplexity" || !strings.Contains(mod.Name, "online") {
 			req.Temperature = noOmitFloat(cfg.Temperature)
 			req.TopP = noOmitFloat(cfg.TopP)
 			req.Stop = cfg.Stop
@@ -486,6 +437,31 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
+	}
+}
+
+func (m Mods) ensureKey(api API, defaultEnv, docsURL string) (string, error) {
+	key := api.APIKey
+	if key == "" && api.APIKeyEnv != "" {
+		key = os.Getenv(api.APIKeyEnv)
+	}
+	if key == "" {
+		key = os.Getenv(defaultEnv)
+	}
+	if key != "" {
+		return key, nil
+	}
+	return "", modsError{
+		reason: fmt.Sprintf(
+			"%[1]s required; set the environment variable %[1]s or update %[2]s through %[3]s.",
+			m.Styles.InlineCode.Render(defaultEnv),
+			m.Styles.InlineCode.Render("mods.yaml"),
+			m.Styles.InlineCode.Render("mods --settings"),
+		),
+		err: newUserErrorf(
+			"You can grab one at %s.",
+			m.Styles.Link.Render(docsURL),
+		),
 	}
 }
 
