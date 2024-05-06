@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -47,14 +48,9 @@ type OllamaMessageCompletionRequestOptions struct {
 // OllamaMessageCompletionRequest represents the request body for the generate completion API.
 type OllamaMessageCompletionRequest struct {
 	Model     string                                `json:"model"`
-	Prompt    string                                `json:"prompt"`
-	Images    string                                `json:"images,omitempty"`
+	Messages  []openai.ChatCompletionMessage        `json:"messages"`
 	Options   OllamaMessageCompletionRequestOptions `json:"options,omitempty"`
-	System    string                                `json:"system,omitempty"`
-	Template  string                                `json:"template,omitempty"`
-	Context   string                                `json:"context,omitempty"`
 	Stream    bool                                  `json:"stream,omitempty"`
-	Raw       bool                                  `json:"raw,omitempty"`
 	KeepAlive string                                `json:"keep_alive,omitempty"`
 }
 
@@ -85,7 +81,7 @@ func NewOllamaClientWithConfig(config OllamaClientConfig) *OllamaClient {
 	}
 }
 
-const ollamaGenerateCompletionsSuffix = "/generate"
+const ollamaChatCompletionsSuffix = "/chat"
 
 func (c *OllamaClient) newRequest(ctx context.Context, method, url string, setters ...requestOption) (*http.Request, error) {
 	// Default Options
@@ -154,17 +150,16 @@ type OllamaMessageTextDelta struct {
 
 // OllamaMessageCompletionRequest represents the response body for the generate completion API.
 type OllamaCompletionMessageResponse struct {
-	Model              string `json:"model"`
-	CreatedAt          string `json:"created_at"`
-	Response           string `json:"response"`
-	Done               bool   `json:"done"`
-	Context            []int  `json:"context"`
-	TotalDuration      int    `json:"total_duration"`
-	LoadDuration       int    `json:"load_duration"`
-	PromptEvalCount    int    `json:"prompt_eval_count"`
-	PromptEvalDuration int    `json:"prompt_eval_duration"`
-	EvalCount          int    `json:"eval_count"`
-	EvalDuration       int    `json:"eval_duration"`
+	Model              string                       `json:"model"`
+	CreatedAt          string                       `json:"created_at"`
+	Message            openai.ChatCompletionMessage `json:"message"`
+	Done               bool                         `json:"done"`
+	TotalDuration      int                          `json:"total_duration"`
+	LoadDuration       int                          `json:"load_duration"`
+	PromptEvalCount    int                          `json:"prompt_eval_count"`
+	PromptEvalDuration int                          `json:"prompt_eval_duration"`
+	EvalCount          int                          `json:"eval_count"`
+	EvalDuration       int                          `json:"eval_duration"`
 }
 
 // ChatCompletionStream represents a stream for chat completion.
@@ -206,7 +201,7 @@ func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionStreamRes
 		rawLine, readErr := stream.reader.ReadBytes('\n')
 
 		if readErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), readErr
+			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("ollamaStreamReader.processLines: %w", readErr)
 		}
 
 		noSpaceLine := bytes.TrimSpace(rawLine)
@@ -214,7 +209,15 @@ func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionStreamRes
 		var chunk OllamaCompletionMessageResponse
 		unmarshalErr := stream.unmarshaler.Unmarshal(noSpaceLine, &chunk)
 		if unmarshalErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), unmarshalErr
+			return openai.ChatCompletionStreamResponse{}, fmt.Errorf("ollamaStreamReader.processLines: %w", unmarshalErr)
+		}
+
+		if chunk.Done {
+			return openai.ChatCompletionStreamResponse{}, nil
+		}
+
+		if chunk.Message.Content == "" {
+			continue
 		}
 
 		// NOTE: Leverage the existing logic based on OpenAI ChatCompletionStreamResponse by
@@ -224,7 +227,7 @@ func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionStreamRes
 				{
 					Index: 0,
 					Delta: openai.ChatCompletionStreamChoiceDelta{
-						Content: chunk.Response,
+						Content: chunk.Message.Content,
 						Role:    "assistant",
 					},
 				},
@@ -264,7 +267,7 @@ func (c *OllamaClient) CreateChatCompletionStream(
 	ctx context.Context,
 	request OllamaMessageCompletionRequest,
 ) (stream *OllamaChatCompletionStream, err error) {
-	urlSuffix := ollamaGenerateCompletionsSuffix
+	urlSuffix := ollamaChatCompletionsSuffix
 
 	request.Stream = true
 	req, err := c.newRequest(ctx, http.MethodPost, c.config.BaseURL+urlSuffix, withBody(request))

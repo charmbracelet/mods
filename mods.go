@@ -495,12 +495,27 @@ func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod 
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelRequest = cancel
 
-	if cfg.Role != "" {
-		m.system += cfg.Role + "\n"
-	}
-
+	m.messages = []openai.ChatCompletionMessage{}
 	if cfg.Format {
 		m.system += cfg.FormatText[cfg.FormatAs] + "\n"
+	}
+
+	roleSetup, ok := cfg.Roles[cfg.Role]
+	if !ok {
+		return modsError{
+			err:    fmt.Errorf("role %q does not exist", cfg.Role),
+			reason: "Could not use role",
+		}
+	}
+	for _, msg := range roleSetup {
+		content, err := loadMsg(msg)
+		if err != nil {
+			return modsError{
+				err:    err,
+				reason: "Could not use role",
+			}
+		}
+		m.system += content
 	}
 
 	if prefix := cfg.Prefix; prefix != "" {
@@ -510,6 +525,11 @@ func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod 
 	if !cfg.NoLimit && len(content) > mod.MaxChars {
 		content = content[:mod.MaxChars]
 	}
+
+	m.messages = append(m.messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: m.system,
+	})
 
 	if !cfg.NoCache && cfg.cacheReadFromID != "" {
 		if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
@@ -524,32 +544,23 @@ func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod 
 		}
 	}
 
-	m.prompt = content
-
-	m.messages = []openai.ChatCompletionMessage{}
-
 	m.messages = append(m.messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
 		Content: content,
 	})
 
-	var stopValue string
-	if len(cfg.Stop) > 0 {
-		stopValue = cfg.Stop[0]
-	} else {
-		stopValue = ""
-	}
-
 	req := OllamaMessageCompletionRequest{
-		Model:  mod.Name,
-		Prompt: m.prompt,
-		System: m.system,
-		Stream: true,
+		Model:    mod.Name,
+		Messages: m.messages,
+		Stream:   true,
 		Options: OllamaMessageCompletionRequestOptions{
 			Temperature: noOmitFloat(cfg.Temperature),
 			TopP:        noOmitFloat(cfg.TopP),
-			Stop:        stopValue,
 		},
+	}
+
+	if len(cfg.Stop) > 0 {
+		req.Options.Stop = cfg.Stop[0]
 	}
 
 	if cfg.MaxTokens > 0 {
@@ -560,6 +571,13 @@ func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod 
 	ae := &openai.APIError{}
 	if errors.As(err, &ae) {
 		return m.handleAPIError(ae, cfg, mod, content)
+	}
+
+	if err != nil {
+		return modsError{err, fmt.Sprintf(
+			"There was a problem with the %s API request.",
+			mod.API,
+		)}
 	}
 
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
