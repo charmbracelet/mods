@@ -311,6 +311,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
+			if api.Version != "" {
+				accfg.Version = AnthropicAPIVersion(api.Version)
+			}
 		case "azure", "azure-ad":
 			key, err := m.ensureKey(api, "AZURE_OPENAI_KEY", "https://aka.ms/oai/access")
 			if err != nil {
