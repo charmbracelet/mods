@@ -52,7 +52,6 @@ type Mods struct {
 	glamOutput    string
 	glamHeight    int
 	messages      []openai.ChatCompletionMessage
-	prompt        string
 	cancelRequest context.CancelFunc
 	anim          tea.Model
 	width         int
@@ -652,7 +651,6 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	if cfg.MaxTokens > 0 {
 		req.MaxTokens = cfg.MaxTokens
 	} else {
-		// TODO: Improve this logic so that we don't depend on a fixed number.
 		req.MaxTokens = 4096
 	}
 

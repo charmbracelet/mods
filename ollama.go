@@ -31,8 +31,8 @@ func DefaultOllamaConfig() OllamaClientConfig {
 // OllamaMessageCompletionRequestOptions represents the valid parameters and values options for the request.
 type OllamaMessageCompletionRequestOptions struct {
 	Mirostat      int     `json:"mirostat,omitempty"`
-	Mirostat_eta  int     `json:"mirostat_eta,omitempty"`
-	Mirostat_tau  int     `json:"mirostat_tau,omitempty"`
+	MirostatEta   int     `json:"mirostat_eta,omitempty"`
+	MirostatTau   int     `json:"mirostat_tau,omitempty"`
 	NumCtx        int     `json:"num_ctx,omitempty"`
 	RepeatLastN   int     `json:"repeat_last_n,omitempty"`
 	RepeatPenalty float32 `json:"repeat_penalty,omitempty"`
@@ -94,7 +94,7 @@ func (c *OllamaClient) newRequest(ctx context.Context, method, url string, sette
 	}
 	req, err := c.requestBuilder.Build(ctx, method, url, args.body, args.header)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("OllamaClient.newRequest: %w", err)
 	}
 	return req, nil
 }
