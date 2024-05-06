@@ -349,8 +349,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
-			if api.APIKey != "" {
-				accfg.Version = AnthropicAPIVersion(api.APIKey)
+			if api.Version != "" {
+				accfg.Version = AnthropicAPIVersion(api.Version)
 			}
 		case "azure", "azure-ad":
 			if key == "" {
