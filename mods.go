@@ -341,6 +341,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			httpClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)}}
 			ccfg.HTTPClient = httpClient
+			accfg.HTTPClient = httpClient
+			occfg.HTTPClient = httpClient
 		}
 
 		if mod.API == "anthropic" {
