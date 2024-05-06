@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -109,7 +110,7 @@ func (c *AnthropicClient) newRequest(ctx context.Context, method, url string, se
 	}
 	req, err := c.requestBuilder.Build(ctx, method, url, args.body, args.header)
 	if err != nil {
-		return nil, err
+		return new(http.Request), err
 	}
 	c.setCommonHeaders(req)
 	return req, nil
@@ -217,7 +218,7 @@ func (stream *anthropicStreamReader) processLines() (openai.ChatCompletionStream
 		rawLine, readErr := stream.reader.ReadBytes('\n')
 
 		if readErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), readErr
+			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("anthropicStreamReader.processLines: %w", readErr)
 		}
 
 		noSpaceLine := bytes.TrimSpace(rawLine)
@@ -234,7 +235,7 @@ func (stream *anthropicStreamReader) processLines() (openai.ChatCompletionStream
 			}
 			writeErr := stream.errAccumulator.Write(noSpaceLine)
 			if writeErr != nil {
-				return *new(openai.ChatCompletionStreamResponse), writeErr
+				return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("ollamaStreamReader.processLines: %w", writeErr)
 			}
 			emptyMessagesCount++
 			if emptyMessagesCount > stream.emptyMessagesLimit {
@@ -252,7 +253,7 @@ func (stream *anthropicStreamReader) processLines() (openai.ChatCompletionStream
 		var chunk AnthropicCompletionMessageResponse
 		unmarshalErr := stream.unmarshaler.Unmarshal(noPrefixLine, &chunk)
 		if unmarshalErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), unmarshalErr
+			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("ollamaStreamReader.processLines: %w", unmarshalErr)
 		}
 
 		if chunk.Type != "content_block_delta" {

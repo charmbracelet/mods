@@ -31,7 +31,11 @@ type JSONMarshaller struct{}
 
 // Marshal marshals a value to JSON.
 func (jm *JSONMarshaller) Marshal(value any) ([]byte, error) {
-	return json.Marshal(value)
+	result, err := json.Marshal(value)
+	if err != nil {
+		return result, fmt.Errorf("JSONMarshaller.Marshal: %w", err)
+	}
+	return result, nil
 }
 
 // HTTPRequestBuilder is an implementation of OllamaRequestBuilder that builds HTTP requests.
@@ -139,5 +143,9 @@ type JSONUnmarshaler struct{}
 
 // Unmarshal unmarshals JSON data.
 func (jm *JSONUnmarshaler) Unmarshal(data []byte, v any) error {
-	return json.Unmarshal(data, v)
+	err := json.Unmarshal(data, v)
+	if err != nil {
+		return fmt.Errorf("JSONUnmarshaler.Unmarshal: %w", err)
+	}
+	return nil
 }
