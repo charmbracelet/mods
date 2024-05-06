@@ -590,12 +590,27 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelRequest = cancel
 
-	if cfg.Role != "" {
-		m.system += cfg.Role + "\n"
-	}
-
+	m.messages = []openai.ChatCompletionMessage{}
 	if cfg.Format {
 		m.system += cfg.FormatText[cfg.FormatAs] + "\n"
+	}
+
+	roleSetup, ok := cfg.Roles[cfg.Role]
+	if !ok {
+		return modsError{
+			err:    fmt.Errorf("role %q does not exist", cfg.Role),
+			reason: "Could not use role",
+		}
+	}
+	for _, msg := range roleSetup {
+		content, err := loadMsg(msg)
+		if err != nil {
+			return modsError{
+				err:    err,
+				reason: "Could not use role",
+			}
+		}
+		m.system += content
 	}
 
 	if prefix := cfg.Prefix; prefix != "" {
@@ -618,8 +633,6 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 			}
 		}
 	}
-
-	m.messages = []openai.ChatCompletionMessage{}
 
 	m.messages = append(m.messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
@@ -647,6 +660,13 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	ae := &openai.APIError{}
 	if errors.As(err, &ae) {
 		return m.handleAPIError(ae, cfg, mod, content)
+	}
+
+	if err != nil {
+		return modsError{err, fmt.Sprintf(
+			"There was a problem with the %s API request.",
+			mod.API,
+		)}
 	}
 
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
