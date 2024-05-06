@@ -409,25 +409,27 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			})
 		}
 
-		roleSetup, ok := cfg.Roles[cfg.Role]
-		if !ok {
-			return modsError{
-				err:    fmt.Errorf("role %q does not exist", cfg.Role),
-				reason: "Could not use role",
-			}
-		}
-		for _, msg := range roleSetup {
-			content, err := loadMsg(msg)
-			if err != nil {
+		if cfg.Role != "" {
+			roleSetup, ok := cfg.Roles[cfg.Role]
+			if !ok {
 				return modsError{
-					err:    err,
+					err:    fmt.Errorf("role %q does not exist", cfg.Role),
 					reason: "Could not use role",
 				}
 			}
-			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: content,
-			})
+			for _, msg := range roleSetup {
+				content, err := loadMsg(msg)
+				if err != nil {
+					return modsError{
+						err:    err,
+						reason: "Could not use role",
+					}
+				}
+				m.messages = append(m.messages, openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: content,
+				})
+			}
 		}
 
 		if prefix := cfg.Prefix; prefix != "" {
