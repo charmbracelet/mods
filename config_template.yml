@@ -102,6 +102,9 @@ apis:
     base-url: https://api.groq.com/openai/v1
     api-key-env: GROQ_API_KEY
     models:
+      gemma-7b-it:
+        aliases: ["gemma"]
+        max-input-chars: 24500
       mixtral-8x7b-32768:
         aliases: ["mixtral"]
         max-input-chars: 98000
