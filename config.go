@@ -82,6 +82,7 @@ type API struct {
 	Name      string
 	APIKey    string           `yaml:"api-key"`
 	APIKeyEnv string           `yaml:"api-key-env"`
+	Version   string           `yaml:"version"`
 	BaseURL   string           `yaml:"base-url"`
 	Models    map[string]Model `yaml:"models"`
 }
@@ -147,6 +148,7 @@ type Config struct {
 	StatusText        string     `yaml:"status-text" env:"STATUS_TEXT"`
 	HTTPProxy         string     `yaml:"http-proxy" env:"HTTP_PROXY"`
 	APIs              APIs       `yaml:"apis"`
+	System            string     `yaml:"system"`
 	Role              string     `yaml:"role" env:"ROLE"`
 	AskModel          bool
 	API               string

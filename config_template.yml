@@ -72,6 +72,18 @@ apis:
         aliases: ["35"]
         max-input-chars: 12250
         fallback:
+  anthropic:
+    base-url: https://api.anthropic.com/v1
+    models:
+      claude-3-opus-20240229:
+        aliases: ["claude3-opus", "opus"]
+        max-input-chars: 680000
+  ollama:
+    base-url: http://localhost:11434/api
+    models:
+      "llama3:70b":
+        aliases: ["llama3"]
+        max-input-chars: 650000
   perplexity:
     base-url: https://api.perplexity.ai
     api-key:

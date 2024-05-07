@@ -45,6 +45,7 @@ type Mods struct {
 	Error         *modsError
 	state         state
 	retries       int
+	system        string
 	renderer      *lipgloss.Renderer
 	glam          *glamour.TermRenderer
 	glamViewport  viewport.Model
@@ -248,8 +249,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var ok bool
 		var mod Model
 		var api API
-		var key string
 		var ccfg openai.ClientConfig
+		var accfg AnthropicClientConfig
+		var occfg OllamaClientConfig
 
 		cfg := m.Config
 		mod, ok = cfg.Models[cfg.Model]
@@ -294,55 +296,38 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 		}
 
-		// Uses API key value if found; otherwise searches for env variable.
-		key = api.APIKey
-		if key == "" && api.APIKeyEnv != "" {
-			key = os.Getenv(api.APIKeyEnv)
-		}
-
 		switch mod.API {
-		case "openai":
-			if key == "" {
-				key = os.Getenv("OPENAI_API_KEY")
-			}
-			if key == "" {
-				return modsError{
-					reason: fmt.Sprintf(
-						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
-						m.Styles.InlineCode.Render("OPENAI_API_KEY"),
-					),
-					err: newUserErrorf(
-						"You can grab one at %s",
-						m.Styles.Link.Render("https://platform.openai.com/account/api-keys."),
-					),
-				}
-			}
-			ccfg = openai.DefaultConfig(key)
+		case "ollama":
+			occfg = DefaultOllamaConfig()
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
-		case "azure", "azure-ad":
-			if key == "" {
-				key = os.Getenv("AZURE_OPENAI_KEY")
+		case "anthropic":
+			key, err := m.ensureKey(api, "ANTHROPIC_API_KEY", "https://console.anthropic.com/settings/keys")
+			if err != nil {
+				return err
 			}
-			if key == "" {
-				return modsError{
-					reason: fmt.Sprintf(
-						"%[1]s required; set environment variable %[1]s or update mods.yaml through --settings.",
-						m.Styles.InlineCode.Render("AZURE_OPENAI_KEY"),
-					),
-					err: newUserErrorf(
-						"You can apply for one at %s",
-						m.Styles.Link.Render("https://aka.ms/oai/access"),
-					),
-				}
+			accfg = DefaultAnthropicConfig(key)
+			if api.BaseURL != "" {
+				ccfg.BaseURL = api.BaseURL
+			}
+			if api.Version != "" {
+				accfg.Version = AnthropicAPIVersion(api.Version)
+			}
+		case "azure", "azure-ad":
+			key, err := m.ensureKey(api, "AZURE_OPENAI_KEY", "https://aka.ms/oai/access")
+			if err != nil {
+				return err
 			}
 			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
 			if mod.API == "azure-ad" {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
-
 		default:
+			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
+			if err != nil {
+				return err
+			}
 			ccfg = openai.DefaultConfig(key)
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
@@ -356,101 +341,59 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			httpClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)}}
 			ccfg.HTTPClient = httpClient
+			accfg.HTTPClient = httpClient
+			occfg.HTTPClient = httpClient
 		}
 
-		client := openai.NewClientWithConfig(ccfg)
-		ctx, cancel := context.WithCancel(context.Background())
-		m.cancelRequest = cancel
-
-		m.messages = []openai.ChatCompletionMessage{}
-		if cfg.Format {
-			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: cfg.FormatText[cfg.FormatAs],
-			})
+		switch mod.API {
+		case "anthropic":
+			return m.createAnthropicStream(content, accfg, mod)
+		case "ollama":
+			return m.createOllamaStream(content, occfg, mod)
+		default:
+			return m.createOpenAIStream(content, ccfg, mod)
 		}
-
-		if cfg.Role != "" {
-			roleSetup, ok := cfg.Roles[cfg.Role]
-			if !ok {
-				return modsError{
-					err:    fmt.Errorf("role %q does not exist", cfg.Role),
-					reason: "Could not use role",
-				}
-			}
-			for _, msg := range roleSetup {
-				content, err := loadMsg(msg)
-				if err != nil {
-					return modsError{
-						err:    err,
-						reason: "Could not use role",
-					}
-				}
-				m.messages = append(m.messages, openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: content,
-				})
-			}
-		}
-
-		if prefix := cfg.Prefix; prefix != "" {
-			content = strings.TrimSpace(prefix + "\n\n" + content)
-		}
-
-		if !cfg.NoLimit && len(content) > mod.MaxChars {
-			content = content[:mod.MaxChars]
-		}
-
-		if !cfg.NoCache && cfg.cacheReadFromID != "" {
-			if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
-				return modsError{
-					err: err,
-					reason: fmt.Sprintf(
-						"There was a problem reading the cache. Use %s / %s to disable it.",
-						m.Styles.InlineCode.Render("--no-cache"),
-						m.Styles.InlineCode.Render("NO_CACHE"),
-					),
-				}
-			}
-		}
-
-		m.messages = append(m.messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleUser,
-			Content: content,
-		})
-
-		req := openai.ChatCompletionRequest{
-			Model:    mod.Name,
-			Messages: m.messages,
-			Stream:   true,
-		}
-
-		if !(mod.API == "perplexity" && strings.Contains(mod.Name, "online")) {
-			req.Temperature = noOmitFloat(cfg.Temperature)
-			req.TopP = noOmitFloat(cfg.TopP)
-			req.Stop = cfg.Stop
-			req.MaxTokens = cfg.MaxTokens
-			req.ResponseFormat = responseFormat(cfg)
-		}
-
-		stream, err := client.CreateChatCompletionStream(ctx, req)
-		ae := &openai.APIError{}
-		if errors.As(err, &ae) {
-			return m.handleAPIError(ae, cfg, mod, content)
-		}
-
-		if err != nil {
-			return modsError{err, fmt.Sprintf(
-				"There was a problem with the %s API request.",
-				mod.API,
-			)}
-		}
-
-		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 	}
 }
 
-func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, content string) tea.Msg {
+func (m Mods) ensureKey(api API, defaultEnv, docsURL string) (string, error) {
+	key := api.APIKey
+	if key == "" && api.APIKeyEnv != "" {
+		key = os.Getenv(api.APIKeyEnv)
+	}
+	if key == "" {
+		key = os.Getenv(defaultEnv)
+	}
+	if key != "" {
+		return key, nil
+	}
+	return "", modsError{
+		reason: fmt.Sprintf(
+			"%[1]s required; set the environment variable %[1]s or update %[2]s through %[3]s.",
+			m.Styles.InlineCode.Render(defaultEnv),
+			m.Styles.InlineCode.Render("mods.yaml"),
+			m.Styles.InlineCode.Render("mods --settings"),
+		),
+		err: newUserErrorf(
+			"You can grab one at %s.",
+			m.Styles.Link.Render(docsURL),
+		),
+	}
+}
+
+func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg {
+	ae := &openai.APIError{}
+	if errors.As(err, &ae) {
+		return m.handleAPIError(ae, mod, content)
+	}
+	return modsError{ae, fmt.Sprintf(
+		"There was a problem with the %s API request.",
+		mod.API,
+	)}
+}
+
+func (m *Mods) handleAPIError(err *openai.APIError, mod Model, content string) tea.Msg {
+	cfg := m.Config
 	switch err.HTTPStatusCode {
 	case http.StatusNotFound:
 		if mod.Fallback != "" {
