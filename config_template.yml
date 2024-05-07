@@ -78,6 +78,12 @@ apis:
       claude-3-opus-20240229:
         aliases: ["claude3-opus", "opus"]
         max-input-chars: 680000
+  ollama:
+    base-url: http://localhost:11434/api
+    models:
+      "llama3:70b":
+        aliases: ["llama3"]
+        max-input-chars: 650000
   perplexity:
     base-url: https://api.perplexity.ai
     api-key:
@@ -150,4 +156,3 @@ apis:
       openchat/openchat-3.5-1210:
         aliases: ["openchat"]
         max-input-chars: 8192
-
