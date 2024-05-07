@@ -106,7 +106,11 @@ apis:
         aliases: ["gemma"]
         max-input-chars: 24500
       llama3-70b-8192:
-        aliases: ["llama3"]
+        aliases: ["llama3", "llama3-70b"]
+        max-input-chars: 24500
+        fallback: llama3-8b-8192
+      llama3-8b-8192:
+        aliases: ["llama3-8b"]
         max-input-chars: 24500
       mixtral-8x7b-32768:
         aliases: ["mixtral"]
