@@ -101,7 +101,7 @@ apis:
   groq:
     base-url: https://api.groq.com/openai/v1
     api-key-env: GROQ_API_KEY
-    models:
+    models: # https://console.groq.com/docs/models
       gemma-7b-it:
         aliases: ["gemma"]
         max-input-chars: 24500
