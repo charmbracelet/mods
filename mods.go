@@ -381,7 +381,19 @@ func (m Mods) ensureKey(api API, defaultEnv, docsURL string) (string, error) {
 	}
 }
 
-func (m *Mods) handleAPIError(err *openai.APIError, cfg *Config, mod Model, content string) tea.Msg {
+func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg {
+	ae := &openai.APIError{}
+	if errors.As(err, &ae) {
+		return m.handleAPIError(ae, mod, content)
+	}
+	return modsError{ae, fmt.Sprintf(
+		"There was a problem with the %s API request.",
+		mod.API,
+	)}
+}
+
+func (m *Mods) handleAPIError(err *openai.APIError, mod Model, content string) tea.Msg {
+	cfg := m.Config
 	switch err.HTTPStatusCode {
 	case http.StatusNotFound:
 		if mod.Fallback != "" {

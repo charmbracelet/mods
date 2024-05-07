@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -36,16 +35,8 @@ func (m *Mods) createOpenAIStream(content string, ccfg openai.ClientConfig, mod 
 	}
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
-	ae := &openai.APIError{}
-	if errors.As(err, &ae) {
-		return m.handleAPIError(ae, cfg, mod, content)
-	}
-
 	if err != nil {
-		return modsError{err, fmt.Sprintf(
-			"There was a problem with the %s API request.",
-			mod.API,
-		)}
+		return m.handleRequestError(err, mod, content)
 	}
 
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
@@ -81,16 +72,8 @@ func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod 
 	}
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
-	ae := &openai.APIError{}
-	if errors.As(err, &ae) {
-		return m.handleAPIError(ae, cfg, mod, content)
-	}
-
 	if err != nil {
-		return modsError{err, fmt.Sprintf(
-			"There was a problem with the %s API request.",
-			mod.API,
-		)}
+		return m.handleRequestError(err, mod, content)
 	}
 
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
@@ -124,16 +107,8 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	}
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
-	ae := &openai.APIError{}
-	if errors.As(err, &ae) {
-		return m.handleAPIError(ae, cfg, mod, content)
-	}
-
 	if err != nil {
-		return modsError{err, fmt.Sprintf(
-			"There was a problem with the %s API request.",
-			mod.API,
-		)}
+		return m.handleRequestError(err, mod, content)
 	}
 
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
