@@ -89,27 +89,24 @@ apis:
     api-key:
     api-key-env: PERPLEXITY_API_KEY
     models:
-      codellama-70b-instruct:
-        aliases: ["codellama"]
-        max-input-chars: 16384
-      mistral-7b-instruct:
-        aliases: ["mistral"]
-        max-input-chars: 16384
-      mixtral-8x7b-instruct:
-        aliases: ["mixtral-8x"]
-        max-input-chars: 16384
-      sonar-medium-online:
-        aliases: ["smo", "o"]
-        max-input-chars: 1200
-      sonar-medium-chat:
-        aliases: ["smc"]
-        max-input-chars: 16384
-      sonar-small-chat:
-        aliases: ["ssc"]
-        max-input-chars: 16384
-      sonar-small-online:
-        aliases: ["sso"]
-        max-input-chars: 1200
+      llama-3-sonar-small-32k-chat:
+        aliases: ["llama3-ss"]
+        max-input-chars: 32768
+      llama-3-sonar-small-32k-online:
+        aliases: ["llam3-sso"]
+        max-input-chars: 28000
+      llama-3-sonar-large-32k-chat:
+        aliases: ["llam3-sl"]
+        max-input-chars: 32768
+      llama-3-sonar-large-32k-online:
+        aliases: ["llam3-slo"]
+        max-input-chars: 28000
+      llama-3-8b-instruct:
+        aliases: ["llam3-8bi"]
+        max-input-chars: 8192
+      llama-3-70b-instruct:
+        aliases: ["llam3-70bi"]
+        max-input-chars: 8192
   groq:
     base-url: https://api.groq.com/openai/v1
     api-key-env: GROQ_API_KEY
