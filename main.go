@@ -640,16 +640,6 @@ func isNoArgs() bool {
 		!config.ResetSettings
 }
 
-func newPromptInput() *huh.Text {
-	title := fmt.Sprintf("Enter a prompt for %s:", config.Model)
-	if config.AskModel {
-		title = "Enter a prompt:"
-	}
-	return huh.NewText().
-		Title(title).
-		Value(&config.Prefix)
-}
-
 func newChooseModelForm() *huh.Form {
 	var apis []huh.Option[string]
 	opts := map[string][]huh.Option[string]{}
@@ -676,6 +666,12 @@ func newChooseModelForm() *huh.Form {
 				}, &api).
 				Value(&config.Model),
 		).WithHideFunc(func() bool { return !config.AskModel }),
-		huh.NewGroup(newPromptInput()),
+		huh.NewGroup(
+			huh.NewText().
+				TitleFunc(func() string {
+					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
+				}, &config.Model).
+				Value(&config.Prefix),
+		),
 	)
 }
