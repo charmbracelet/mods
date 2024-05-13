@@ -43,12 +43,6 @@ func buildVersion() {
 	rootCmd.Version = Version
 }
 
-func huhTheme() *huh.Theme {
-	t := huh.ThemeCharm()
-	t.Focused.Base = t.Focused.Base.BorderLeft(false).PaddingLeft(0)
-	return t
-}
-
 func init() {
 	// XXX: unset error styles in Glamour dark and light styles.
 	// On the glamour side, we should probably add constructors for generating
@@ -98,7 +92,7 @@ var (
 			}
 
 			if isNoArgs() && isInputTTY() {
-				err := newModelForm().WithTheme(huhTheme()).Run()
+				err := newChooseModelForm().Run()
 				if err != nil && err == huh.ErrUserAborted {
 					return modsError{
 						err:    err,
@@ -656,7 +650,7 @@ func newPromptInput() *huh.Text {
 		Value(&config.Prefix)
 }
 
-func newModelForm() *huh.Form {
+func newChooseModelForm() *huh.Form {
 	var apis []huh.Option[string]
 	opts := map[string][]huh.Option[string]{}
 	for _, api := range config.APIs {
