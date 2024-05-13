@@ -650,21 +650,25 @@ func newChooseModelForm() *huh.Form {
 		}
 	}
 
-	var api string
 	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("Choose the API:").
 				Options(apis...).
-				Value(&api),
+				Value(&config.API),
 			huh.NewSelect[string]().
 				TitleFunc(func() string {
-					return fmt.Sprintf("Choose the model for '%s':", api)
-				}, &api).
+					return fmt.Sprintf("Choose the model for '%s':", config.API)
+				}, &config.API).
 				OptionsFunc(func() []huh.Option[string] {
-					return opts[api]
-				}, &api).
+					return opts[config.API]
+				}, &config.API).
 				Value(&config.Model),
+			huh.NewText().
+				TitleFunc(func() string {
+					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
+				}, &config.Model).
+				Value(&config.Prefix),
 		).WithHideFunc(func() bool { return !config.AskModel }),
 		huh.NewGroup(
 			huh.NewText().
