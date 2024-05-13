@@ -98,11 +98,7 @@ var (
 			}
 
 			if isNoArgs() && isInputTTY() {
-				err := huh.NewForm(
-					huh.NewGroup(newModelSelect()).
-						WithHideFunc(func() bool { return !config.AskModel }),
-					huh.NewGroup(newPromptInput()),
-				).WithTheme(huhTheme()).Run()
+				err := newModelForm().WithTheme(huhTheme()).Run()
 				if err != nil && err == huh.ErrUserAborted {
 					return modsError{
 						err:    err,
@@ -660,18 +656,32 @@ func newPromptInput() *huh.Text {
 		Value(&config.Prefix)
 }
 
-func newModelSelect() *huh.Select[string] {
-	var opts []huh.Option[string]
+func newModelForm() *huh.Form {
+	var apis []huh.Option[string]
+	opts := map[string][]huh.Option[string]{}
 	for _, api := range config.APIs {
+		apis = append(apis, huh.NewOption(api.Name, api.Name))
 		for model := range api.Models {
-			opts = append(opts, huh.Option[string]{
-				Key:   fmt.Sprintf("%s • %s", api.Name, model),
-				Value: model,
-			})
+			opts[api.Name] = append(opts[api.Name], huh.NewOption(model, model))
 		}
 	}
-	return huh.NewSelect[string]().
-		Title("Choose a model:").
-		Options(opts...).
-		Value(&config.Model)
+
+	var api string
+	return huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Choose the API:").
+				Options(apis...).
+				Value(&api),
+			huh.NewSelect[string]().
+				TitleFunc(func() string {
+					return fmt.Sprintf("Choose the model for '%s':", api)
+				}, &api).
+				OptionsFunc(func() []huh.Option[string] {
+					return opts[api]
+				}, &api).
+				Value(&config.Model),
+		).WithHideFunc(func() bool { return !config.AskModel }),
+		huh.NewGroup(newPromptInput()),
+	)
 }
