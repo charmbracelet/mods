@@ -44,6 +44,10 @@ apis:
     api-key:
     api-key-env: OPENAI_API_KEY
     models:
+      gpt-4o:
+        aliases: ["4o"]
+        max-input-chars: 128000
+        fallback: gpt-4
       gpt-4:
         aliases: ["4"]
         max-input-chars: 24500
