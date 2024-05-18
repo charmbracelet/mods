@@ -130,7 +130,7 @@ Mods lets you tune your query with a variety of settings. You can configure
 Mods with `mods --settings` or pass the settings as environment variables
 and flags.
 
-## Dirs
+#### Dirs
 
 `--dirs`
 
@@ -216,7 +216,7 @@ You can edit the text passed to the LLM with `mods --settings` then changing the
 `format-text` value.
 You'll likely want to use this in with `--format-as`.
 
-### Format As
+#### Format As
 
 `--format-as`, `MODS_FORMAT_AS`
 
@@ -224,7 +224,7 @@ When `--format` is on, instructs the LLM about which format you want the output
 to be.
 This can be customized with `mods --settings`.
 
-### Role
+#### Role
 
 `--role`, `MODS_ROLE`
 
