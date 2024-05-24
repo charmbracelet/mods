@@ -246,7 +246,7 @@ func makeGradientText(baseStyle lipgloss.Style, str string) string {
 	b := strings.Builder{}
 	runes := []rune(str)
 	for i, c := range makeGradientRamp(len(str)) {
-		b.WriteString(baseStyle.Copy().Foreground(c).Render(string(runes[i])))
+		b.WriteString(baseStyle.Foreground(c).Render(string(runes[i])))
 	}
 	return b.String()
 }
