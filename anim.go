@@ -104,7 +104,7 @@ func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles
 	if n >= minRampSize && r.ColorProfile() == termenv.TrueColor {
 		// Note: double capacity for color cycling as we'll need to reverse and
 		// append the ramp for seamless transitions.
-		c.ramp = make([]lipgloss.Style, n, n*2) //nolint:gomnd
+		c.ramp = make([]lipgloss.Style, n, n*2) //nolint:mnd
 		ramp := makeGradientRamp(n)
 		for i, color := range ramp {
 			c.ramp[i] = r.NewStyle().Foreground(color)
@@ -117,7 +117,7 @@ func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles
 	}
 
 	makeInitialDelay := func() time.Duration {
-		return makeDelay(8, 60) //nolint:gomnd
+		return makeDelay(8, 60) //nolint:mnd
 	}
 
 	// Initial characters that cycle forever.
@@ -137,7 +137,7 @@ func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles
 		c.labelChars[i] = cyclingChar{
 			finalValue:   r,
 			initialDelay: makeInitialDelay(),
-			lifetime:     makeDelay(5, 180), //nolint:gomnd
+			lifetime:     makeDelay(5, 180), //nolint:mnd
 		}
 	}
 
@@ -168,7 +168,7 @@ func (a anim) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// If our entire label has reached end of life, start the
 				// ellipsis "spinner" after a short pause.
 				a.ellipsisStarted = true
-				cmd = tea.Tick(time.Millisecond*220, func(time.Time) tea.Msg { //nolint:gomnd
+				cmd = tea.Tick(time.Millisecond*220, func(time.Time) tea.Msg { //nolint:mnd
 					return a.ellipsis.Tick()
 				})
 			}
@@ -246,7 +246,7 @@ func makeGradientText(baseStyle lipgloss.Style, str string) string {
 	b := strings.Builder{}
 	runes := []rune(str)
 	for i, c := range makeGradientRamp(len(str)) {
-		b.WriteString(baseStyle.Copy().Foreground(c).Render(string(runes[i])))
+		b.WriteString(baseStyle.Foreground(c).Render(string(runes[i])))
 	}
 	return b.String()
 }

@@ -16,9 +16,9 @@ func newFlagParseError(err error) flagParseError {
 		reason = "Flag %s needs an argument."
 		ps := strings.Split(s, "-")
 		switch len(ps) {
-		case 2: //nolint:gomnd
+		case 2: //nolint:mnd
 			flag = "-" + ps[len(ps)-1]
-		case 3: //nolint:gomnd
+		case 3: //nolint:mnd
 			flag = "--" + ps[len(ps)-1]
 		}
 	case strings.HasPrefix(s, "unknown flag:"):

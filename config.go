@@ -182,7 +182,7 @@ func ensureConfig() (Config, error) {
 	c.SettingsPath = sp
 
 	dir := filepath.Dir(sp)
-	if dirErr := os.MkdirAll(dir, 0o700); dirErr != nil { //nolint:gomnd
+	if dirErr := os.MkdirAll(dir, 0o700); dirErr != nil { //nolint:mnd
 		return c, modsError{dirErr, "Could not create cache directory."}
 	}
 
@@ -224,7 +224,7 @@ func ensureConfig() (Config, error) {
 		c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
 	}
 
-	if err := os.MkdirAll(c.CachePath, 0o700); err != nil { //nolint:gomnd
+	if err := os.MkdirAll(c.CachePath, 0o700); err != nil { //nolint:mnd
 		return c, modsError{err, "Could not create cache directory."}
 	}
 

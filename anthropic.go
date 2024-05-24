@@ -203,8 +203,8 @@ func (stream *anthropicStreamReader) Recv() (response openai.ChatCompletionStrea
 }
 
 // Close closes the stream.
-func (stream *anthropicStreamReader) Close() {
-	stream.response.Body.Close() //nolint:errcheck
+func (stream *anthropicStreamReader) Close() error {
+	return stream.response.Body.Close() //nolint:wrapcheck
 }
 
 //nolint:gocognit
