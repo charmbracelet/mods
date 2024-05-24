@@ -95,7 +95,7 @@ type completionOutput struct {
 
 type chatCompletionReceiver interface {
 	Recv() (openai.ChatCompletionStreamResponse, error)
-	Close()
+	Close() error
 }
 
 // Init implements tea.Model.

@@ -191,8 +191,8 @@ func (stream *ollamaStreamReader) Recv() (response openai.ChatCompletionStreamRe
 }
 
 // Close closes the stream.
-func (stream *ollamaStreamReader) Close() {
-	stream.response.Body.Close() //nolint:errcheck
+func (stream *ollamaStreamReader) Close() error {
+	return stream.response.Body.Close()
 }
 
 //nolint:gocognit
