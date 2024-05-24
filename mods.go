@@ -445,7 +445,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, io.EOF) {
-			msg.stream.Close()
+			_ = msg.stream.Close()
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleAssistant,
 				Content: m.Output,
@@ -453,7 +453,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 			return completionOutput{}
 		}
 		if err != nil {
-			msg.stream.Close()
+			_ = msg.stream.Close()
 			return modsError{err, "There was an error when streaming the API response."}
 		}
 		if len(resp.Choices) > 0 {
