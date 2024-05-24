@@ -20,7 +20,7 @@ linters:
     - goconst
     - godot
     - godox
-    - gomnd
+    - mnd
     - gomoddirectives
     - goprintffuncname
     # - lll

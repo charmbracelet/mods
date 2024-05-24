@@ -192,7 +192,7 @@ func (stream *ollamaStreamReader) Recv() (response openai.ChatCompletionStreamRe
 
 // Close closes the stream.
 func (stream *ollamaStreamReader) Close() error {
-	return stream.response.Body.Close()
+	return stream.response.Body.Close() //nolint:wrapcheck
 }
 
 //nolint:gocognit

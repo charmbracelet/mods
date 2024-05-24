@@ -127,7 +127,7 @@ var (
 
 			if config.Dirs {
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
-				//nolint: gomnd
+				//nolint:mnd
 				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
 				return nil
 			}
@@ -171,7 +171,6 @@ var (
 			}
 
 			if config.ShowHelp {
-				//nolint: wrapcheck
 				return cmd.Usage()
 			}
 

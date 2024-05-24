@@ -235,7 +235,7 @@ func (m *Mods) retry(content string, err modsError) tea.Msg {
 	if m.retries >= m.Config.MaxRetries {
 		return err
 	}
-	wait := time.Millisecond * 100 * time.Duration(math.Pow(2, float64(m.retries))) //nolint:gomnd
+	wait := time.Millisecond * 100 * time.Duration(math.Pow(2, float64(m.retries))) //nolint:mnd
 	time.Sleep(wait)
 	return completionInput{content}
 }
@@ -634,7 +634,7 @@ var tokenErrRe = regexp.MustCompile(`This model's maximum context length is (\d+
 
 func cutPrompt(msg, prompt string) string {
 	found := tokenErrRe.FindStringSubmatch(msg)
-	if len(found) != 3 {
+	if len(found) != 3 { //nolint:mnd
 		return prompt
 	}
 
@@ -647,7 +647,7 @@ func cutPrompt(msg, prompt string) string {
 
 	// 1 token =~ 4 chars
 	// cut 10 extra chars 'just in case'
-	reduceBy := 10 + (current-max)*4
+	reduceBy := 10 + (current-max)*4 //nolint:mnd
 	if len(prompt) > reduceBy {
 		return prompt[:len(prompt)-reduceBy]
 	}
