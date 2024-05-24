@@ -11,8 +11,9 @@ import (
 func testDB(tb testing.TB) *convoDB {
 	db, err := openDB(":memory:")
 	require.NoError(tb, err)
-	tb.Cleanup(func() {
+	tb.Cleanup(func() error {
 		require.NoError(tb, db.Close())
+		return nil
 	})
 	return db
 }

@@ -75,7 +75,7 @@ type cachedCompletionStream struct {
 	m        sync.Mutex
 }
 
-func (c *cachedCompletionStream) Close() { /* noop */ }
+func (c *cachedCompletionStream) Close() error { return nil /* noop */ }
 func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
