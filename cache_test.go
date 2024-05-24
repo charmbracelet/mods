@@ -100,7 +100,7 @@ func TestCachedCompletionStream(t *testing.T) {
 			},
 		},
 	}
-	t.Cleanup(stream.Close)
+	t.Cleanup(func() { require.NoError(t, stream.Close()) })
 
 	var output []string
 
