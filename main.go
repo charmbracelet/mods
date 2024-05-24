@@ -80,11 +80,8 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.Prefix = removeWhitespace(strings.Join(args, " "))
 
-			stdin := cmd.InOrStdin()
-			stdout := cmd.OutOrStdout()
-			stderr := cmd.ErrOrStderr()
 			opts := []tea.ProgramOption{
-				tea.WithOutput(stderrRenderer().Output()),
+				tea.WithOutput(os.Stderr),
 			}
 
 			if !isInputTTY() {
@@ -143,9 +140,9 @@ var (
 						reason: "Could not edit your settings file.",
 					}
 				}
-				c.Stdin = stdin
-				c.Stdout = stdout
-				c.Stderr = stderr
+				c.Stdin = os.Stdin
+				c.Stdout = os.Stdout
+				c.Stderr = os.Stderr
 				if err := c.Run(); err != nil {
 					return modsError{err, fmt.Sprintf(
 						"Missing %s.",
@@ -154,7 +151,7 @@ var (
 				}
 
 				if !config.Quiet {
-					fmt.Fprintln(stderr, "Wrote config file to:", config.SettingsPath)
+					fmt.Fprintln(os.Stderr, "Wrote config file to:", config.SettingsPath)
 				}
 				return nil
 			}
