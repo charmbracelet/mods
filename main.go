@@ -184,6 +184,9 @@ var (
 				return cmd.Usage()
 			}
 
+			if config.ListRoles {
+				return listRoles()
+			}
 			if config.List {
 				return listConversations()
 			}
@@ -256,6 +259,7 @@ func initFlags() {
 	flags.BoolVar(&config.Settings, "settings", false, stdoutStyles().FlagDesc.Render(help["settings"]))
 	flags.BoolVar(&config.Dirs, "dirs", false, stdoutStyles().FlagDesc.Render(help["dirs"]))
 	flags.StringVar(&config.Role, "role", config.Role, stdoutStyles().FlagDesc.Render(help["role"]))
+	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -547,6 +551,23 @@ func listConversations() error {
 	return nil
 }
 
+func listRoles() error {
+	roles := make([]string, 0, len(config.Roles))
+	for role := range config.Roles {
+		roles = append(roles, role)
+	}
+	slices.Sort(roles)
+
+	for _, role := range roles {
+		s := role
+		if role == config.Role {
+			s = role + stdoutStyles().Timeago.Render(" (default)")
+		}
+		fmt.Println(s)
+	}
+	return nil
+}
+
 func makeOptions(conversations []Conversation) []huh.Option[string] {
 	opts := make([]huh.Option[string], 0, len(conversations))
 	for _, c := range conversations {
@@ -661,6 +682,7 @@ func isNoArgs() bool {
 		config.DeleteOlderThan == 0 &&
 		!config.ShowHelp &&
 		!config.List &&
+		!config.ListRoles &&
 		!config.Dirs &&
 		!config.Settings &&
 		!config.ResetSettings
