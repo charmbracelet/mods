@@ -43,8 +43,7 @@ func buildVersion() {
 	rootCmd.Version = Version
 }
 
-func huhTheme() *huh.Theme {
-	t := huh.ThemeCharm()
+func customizeHuhTheme(t *huh.Theme) *huh.Theme {
 	t.Focused.Base = t.Focused.Base.BorderLeft(false).PaddingLeft(0)
 	return t
 }
@@ -99,7 +98,7 @@ var (
 					huh.NewGroup(newModelSelect()).
 						WithHideFunc(func() bool { return !config.AskModel }),
 					huh.NewGroup(newPromptInput()),
-				).WithTheme(huhTheme()).Run()
+				).WithTheme(customizeHuhTheme(huhTheme(config.Theme))).Run()
 				if err != nil && err == huh.ErrUserAborted {
 					return modsError{
 						err:    err,
@@ -245,6 +244,7 @@ func initFlags() {
 	flags.BoolVar(&config.ResetSettings, "reset-settings", config.ResetSettings, stdoutStyles().FlagDesc.Render(help["reset-settings"]))
 	flags.BoolVar(&config.Settings, "settings", false, stdoutStyles().FlagDesc.Render(help["settings"]))
 	flags.BoolVar(&config.Dirs, "dirs", false, stdoutStyles().FlagDesc.Render(help["dirs"]))
+	flags.StringVar(&config.Theme, "theme", "charm", stdoutStyles().FlagDesc.Render(help["theme"]))
 	flags.StringVar(&config.Role, "role", config.Role, stdoutStyles().FlagDesc.Render(help["role"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
@@ -465,7 +465,8 @@ func deleteConversationOlderThan() error {
 			huh.NewConfirm().
 				Title(fmt.Sprintf("Delete conversations older than %s?", config.DeleteOlderThan)).
 				Description(fmt.Sprintf("This will delete all the %d conversations listed above.", len(conversations))).
-				Value(&confirm),
+				Value(&confirm).
+				WithTheme(huhTheme(config.Theme)),
 		); err != nil {
 			return modsError{err, "Couldn't delete old conversations."}
 		}
@@ -547,7 +548,7 @@ func printList(conversations []Conversation) {
 					Value(&selected).
 					Options(makeOptions(conversations)...),
 			),
-		).Run(); err != nil {
+		).WithTheme(huhTheme(config.Theme)).Run(); err != nil {
 			if !errors.Is(err, huh.ErrUserAborted) {
 				fmt.Fprintln(os.Stderr, err.Error())
 			}
@@ -670,4 +671,17 @@ func newModelSelect() *huh.Select[string] {
 		Title("Choose a model:").
 		Options(opts...).
 		Value(&config.Model)
+}
+
+func huhTheme(theme string) *huh.Theme {
+	switch theme {
+	case "dracula":
+		return huh.ThemeDracula()
+	case "catppuccin":
+		return huh.ThemeCatppuccin()
+	case "base16":
+		return huh.ThemeBase16()
+	default:
+		return huh.ThemeCharm()
+	}
 }

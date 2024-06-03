@@ -65,6 +65,7 @@ var help = map[string]string{
 	"delete":            "Deletes a saved conversation with the given title or ID.",
 	"delete-older-than": "Deletes all saved conversations older than the specified duration. Valid units are: " + strings.EnglishJoin(duration.ValidUnits(), true) + ".",
 	"show":              "Show a saved conversation with the given title or ID.",
+	"theme":             "Theme to use in the forms. Valid units are: 'charm', 'catppuccin', 'dracula', and 'base16'",
 	"show-last":         "Show the last saved conversation.",
 }
 
@@ -160,6 +161,7 @@ type Config struct {
 	Version           bool
 	Settings          bool
 	Dirs              bool
+	Theme             string
 	SettingsPath      string
 	ContinueLast      bool
 	Continue          string
