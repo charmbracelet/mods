@@ -185,20 +185,7 @@ var (
 			}
 
 			if config.ListRoles {
-				roles := make([]string, 0, len(config.Roles))
-				for role := range config.Roles {
-					roles = append(roles, role)
-				}
-				slices.Sort(roles)
-
-				for _, role := range roles {
-					s := "  " + role
-					if role == config.Role {
-						s = "* " + stdoutStyles().SHA1.Render(role)
-					}
-					fmt.Println(s)
-				}
-				return nil
+				return listRoles()
 			}
 			if config.List {
 				return listConversations()
@@ -561,6 +548,23 @@ func listConversations() error {
 		return nil
 	}
 	printList(conversations)
+	return nil
+}
+
+func listRoles() error {
+	roles := make([]string, 0, len(config.Roles))
+	for role := range config.Roles {
+		roles = append(roles, role)
+	}
+	slices.Sort(roles)
+
+	for _, role := range roles {
+		s := role
+		if role == config.Role {
+			s = role + stdoutStyles().Timeago.Render(" (default)")
+		}
+		fmt.Println(s)
+	}
 	return nil
 }
 
