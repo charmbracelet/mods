@@ -334,6 +334,42 @@ Wrap formatted output at specific width (default is 80)
 
 Use the HTTP proxy to the connect the API endpoints.
 
+## Defining custom roles
+
+Roles allow you to set system prompts, for instance, you might want a `shell`
+role that instructs the LLM to output shell commands instead of explanations.
+
+In mods, roles are defined in the settings file[^settings]:
+
+```yaml
+roles:
+  "shell":
+    - you are a shell expert
+    - you do not explain anything
+    - you simply output one liners to solve the problems you're asked
+    - you do not provide any explanation whatsoever, ONLY the command
+```
+
+You can then use said role as:
+
+```sh
+mods --role shell list files in the current directory
+```
+
+You can verify that the system prompts were set by running `mods -S`.
+
+Roles can also be loaded from URIs, e.g.:
+
+```yaml
+roles:
+  "create_summary":
+    - https://raw.githubusercontent.com/danielmiessler/fabric/main/patterns/create_summary/system.md
+  "create_summary_2":
+    - file:///fabric/patterns/create_summary/system.md
+```
+
+[^settings]: You can edit it by running `mods --settings`.
+
 ## Using within Vim/neovim
 
 You can use mods as an assistant inside Vim.
