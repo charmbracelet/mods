@@ -272,6 +272,9 @@ func initFlags() {
 			return results, cobra.ShellCompDirectiveDefault
 		})
 	}
+	_ = rootCmd.RegisterFlagCompletionFunc("role", func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return roleNames(toComplete), cobra.ShellCompDirectiveDefault
+	})
 
 	if config.Format && config.FormatAs == "" {
 		config.FormatAs = "markdown"
@@ -551,14 +554,20 @@ func listConversations() error {
 	return nil
 }
 
-func listRoles() error {
+func roleNames(prefix string) []string {
 	roles := make([]string, 0, len(config.Roles))
 	for role := range config.Roles {
+		if prefix != "" && !strings.HasPrefix(role, prefix) {
+			continue
+		}
 		roles = append(roles, role)
 	}
 	slices.Sort(roles)
+	return roles
+}
 
-	for _, role := range roles {
+func listRoles() error {
+	for _, role := range roleNames("") {
 		s := role
 		if role == config.Role {
 			s = role + stdoutStyles().Timeago.Render(" (default)")
