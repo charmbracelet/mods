@@ -531,9 +531,9 @@ func listConversations() error {
 
 	if isInputTTY() && isOutputTTY() {
 		selectFromList(conversations)
-	} else {
-		printList(conversations)
+		return nil
 	}
+	printList(conversations)
 	return nil
 }
 
