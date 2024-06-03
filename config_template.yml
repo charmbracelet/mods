@@ -46,7 +46,7 @@ apis:
     models:
       gpt-4o:
         aliases: ["4o"]
-        max-input-chars: 128000
+        max-input-chars: 392000
         fallback: gpt-4
       gpt-4:
         aliases: ["4"]
