@@ -90,9 +90,21 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 		return err
 	}
 
+	// Anthropic doesn't support the System role so we need to remove those message
+	// and, instead, store their content on the `System` request value.
+	messages := []openai.ChatCompletionMessage{}
+
+	for _, message := range m.messages {
+		if message.Role == openai.ChatMessageRoleSystem {
+			m.system += message.Content + "\n"
+		} else {
+			messages = append(messages, message)
+		}
+	}
+
 	req := AnthropicMessageCompletionRequest{
 		Model:         mod.Name,
-		Messages:      m.messages,
+		Messages:      messages,
 		System:        m.system,
 		Stream:        true,
 		Temperature:   noOmitFloat(cfg.Temperature),
