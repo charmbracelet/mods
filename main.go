@@ -126,6 +126,16 @@ var (
 			}
 
 			if config.Dirs {
+				if len(args) > 0 {
+					switch args[0] {
+					case "config":
+						fmt.Println(filepath.Dir(config.SettingsPath))
+						return nil
+					case "cache":
+						fmt.Println(filepath.Dir(config.CachePath))
+						return nil
+					}
+				}
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
 				//nolint:mnd
 				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
