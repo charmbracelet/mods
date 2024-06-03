@@ -469,7 +469,14 @@ func deleteConversationOlderThan() error {
 
 	if !config.Quiet {
 		printList(conversations)
-		fmt.Fprintln(os.Stderr)
+
+		if !isOutputTTY() || !isInputTTY() {
+			fmt.Fprintln(os.Stderr)
+			return newUserErrorf(
+				"To delete the conversations above, run: %s",
+				strings.Join(append(os.Args, "--quiet"), " "),
+			)
+		}
 		var confirm bool
 		if err := huh.Run(
 			huh.NewConfirm().
@@ -532,6 +539,10 @@ func listConversations() error {
 		return nil
 	}
 
+	if isInputTTY() && isOutputTTY() {
+		selectFromList(conversations)
+		return nil
+	}
 	printList(conversations)
 	return nil
 }
@@ -547,48 +558,47 @@ func makeOptions(conversations []Conversation) []huh.Option[string] {
 	return opts
 }
 
-func printList(conversations []Conversation) {
-	if isOutputTTY() && isInputTTY() {
-		var selected string
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("Conversations").
-					Value(&selected).
-					Options(makeOptions(conversations)...),
-			),
-		).Run(); err != nil {
-			if !errors.Is(err, huh.ErrUserAborted) {
-				fmt.Fprintln(os.Stderr, err.Error())
-			}
-			return
-		}
-
-		_ = clipboard.WriteAll(selected)
-		termenv.Copy(selected)
-		printConfirmation("COPIED", selected)
-		// suggest actions to use this conversation ID
-		fmt.Println(stdoutStyles().Comment.Render(
-			"You can use this conversation ID with the following commands:",
-		))
-		suggestions := []string{"show", "continue", "delete"}
-		for _, flag := range suggestions {
-			fmt.Printf(
-				"  %-44s %s\n",
-				stdoutStyles().Flag.Render("--"+flag),
-				stdoutStyles().FlagDesc.Render(help[flag]),
-			)
+func selectFromList(conversations []Conversation) {
+	var selected string
+	if err := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Conversations").
+				Value(&selected).
+				Options(makeOptions(conversations)...),
+		),
+	).Run(); err != nil {
+		if !errors.Is(err, huh.ErrUserAborted) {
+			fmt.Fprintln(os.Stderr, err.Error())
 		}
 		return
 	}
 
+	_ = clipboard.WriteAll(selected)
+	termenv.Copy(selected)
+	printConfirmation("COPIED", selected)
+	// suggest actions to use this conversation ID
+	fmt.Println(stdoutStyles().Comment.Render(
+		"You can use this conversation ID with the following commands:",
+	))
+	suggestions := []string{"show", "continue", "delete"}
+	for _, flag := range suggestions {
+		fmt.Printf(
+			"  %-44s %s\n",
+			stdoutStyles().Flag.Render("--"+flag),
+			stdoutStyles().FlagDesc.Render(help[flag]),
+		)
+	}
+}
+
+func printList(conversations []Conversation) {
 	for _, conversation := range conversations {
 		fmt.Fprintf(
 			os.Stdout,
 			"%s\t%s\t%s\n",
-			conversation.ID[:sha1short],
+			stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
 			conversation.Title,
-			timeago.Of(conversation.UpdatedAt),
+			stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt)),
 		)
 	}
 }
