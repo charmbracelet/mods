@@ -132,7 +132,7 @@ var (
 						fmt.Println(filepath.Dir(config.SettingsPath))
 						return nil
 					case "cache":
-						fmt.Println(8, " ", filepath.Dir(config.CachePath))
+						fmt.Println(filepath.Dir(config.CachePath))
 						return nil
 					}
 				}
