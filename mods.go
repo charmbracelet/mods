@@ -126,6 +126,15 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.Input == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
 			return m, m.quit
 		}
+		if m.Config.Dirs ||
+			m.Config.Delete != "" ||
+			m.Config.DeleteOlderThan != 0 ||
+			m.Config.ShowHelp ||
+			m.Config.List ||
+			m.Config.Settings ||
+			m.Config.ResetSettings {
+			return m, m.quit
+		}
 
 		if m.Config.IncludePromptArgs {
 			m.appendToOutput(m.Config.Prefix + "\n\n")
