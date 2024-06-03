@@ -184,6 +184,22 @@ var (
 				return cmd.Usage()
 			}
 
+			if config.ListRoles {
+				roles := make([]string, 0, len(config.Roles))
+				for role := range config.Roles {
+					roles = append(roles, role)
+				}
+				slices.Sort(roles)
+
+				for _, role := range roles {
+					s := "  " + role
+					if role == config.Role {
+						s = "* " + stdoutStyles().SHA1.Render(role)
+					}
+					fmt.Println(s)
+				}
+				return nil
+			}
 			if config.List {
 				return listConversations()
 			}
@@ -256,6 +272,7 @@ func initFlags() {
 	flags.BoolVar(&config.Settings, "settings", false, stdoutStyles().FlagDesc.Render(help["settings"]))
 	flags.BoolVar(&config.Dirs, "dirs", false, stdoutStyles().FlagDesc.Render(help["dirs"]))
 	flags.StringVar(&config.Role, "role", config.Role, stdoutStyles().FlagDesc.Render(help["role"]))
+	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -661,6 +678,7 @@ func isNoArgs() bool {
 		config.DeleteOlderThan == 0 &&
 		!config.ShowHelp &&
 		!config.List &&
+		!config.ListRoles &&
 		!config.Dirs &&
 		!config.Settings &&
 		!config.ResetSettings
