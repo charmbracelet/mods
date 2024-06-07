@@ -74,7 +74,7 @@ Set the `GROQ_API_KEY` environment variable to a valid key, which you can get
 brew install charmbracelet/tap/mods
 
 # Windows (with Winget)
-winget install mods
+winget install charmbracelet.mods
 
 # Windows (with Scoop)
 scoop bucket add charm https://github.com/charmbracelet/scoop-bucket.git
