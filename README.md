@@ -40,17 +40,20 @@ yay -S mods
 ```
 
 <details>
-
-<summary>More Package Managers</summary>
+<summary>Debian/Ubuntu</summary>
 
 ```bash
-# Debian/Ubuntu
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
 echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
 sudo apt update && sudo apt install mods
+```
+</details>
 
-# Fedora/RHEL
+<details>
+<summary>Fedora/RHEL</summary>
+
+```bash
 echo '[charm]
 name=Charm
 baseurl=https://repo.charm.sh/yum/
