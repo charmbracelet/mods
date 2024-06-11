@@ -13,7 +13,7 @@ AI for the command line, built for pipelines.
 
 Large Language Models (LLM) based AI is useful to ingest command output and
 format results in Markdown, JSON, and other text based formats. Mods is a
-tool to add a sprinkle of AI in your command line and makes your pipelines
+tool to add a sprinkle of AI in your command line and make your pipelines
 artificially intelligent.
 
 It works great with LLMs running locally through [LocalAI](LocalAI). You can
