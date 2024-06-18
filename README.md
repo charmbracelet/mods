@@ -37,6 +37,9 @@ winget install charmbracelet.mods
 
 # Arch Linux (btw)
 yay -S mods
+
+# Nix
+nix-shell -p charm-freeze
 ```
 
 <details>
@@ -48,6 +51,7 @@ curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/ke
 echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
 sudo apt update && sudo apt install mods
 ```
+
 </details>
 
 <details>
@@ -62,6 +66,7 @@ gpgcheck=1
 gpgkey=https://repo.charm.sh/yum/gpg.key' | sudo tee /etc/yum.repos.d/charm.repo
 sudo yum install mods
 ```
+
 </details>
 
 Or, download it:
@@ -77,6 +82,26 @@ Or, just install it with `go`:
 go install github.com/charmbracelet/mods@latest
 ```
 
+<details>
+<summary>Completions</summary>
+
+All the packages and archives come with pre-generated completion files for Bash,
+ZSH, Fish, and PowerShell.
+
+If you built it from source, you can generate them with:
+
+```bash
+__MODS_CMP_ENABLED=1 mods completion bash -h
+__MODS_CMP_ENABLED=1 mods completion zsh -h
+__MODS_CMP_ENABLED=1 mods completion fish -h
+__MODS_CMP_ENABLED=1 mods completion powershell -h
+```
+
+If you use a package (like Homebrew, Debs, etc), the completions should be set
+up automatically, given your shell is configured properly.
+
+</details>
+
 ## What Can It Do?
 
 Mods works by reading standard in and prefacing it with a prompt supplied in
@@ -87,7 +112,6 @@ standard in or an argument supplied prompt individually.
 
 Be sure to check out the [examples](examples.md) and a list of all the
 [features](features.md).
-
 
 Mods works with OpenAI compatible endpoints. By default, Mods is configured to
 support OpenAI's official API and a LocalAI installation running on port 8080.
@@ -107,39 +131,39 @@ Check the [`./features.md`](./features.md) for more details.
 
 ## Usage
 
-* `-m`, `--model`: Specify Large Language Model to use.
-* `-f`, `--format`: Ask the LLM to format the response in a given format.
-* `--format-as`: Specify the format for the output (used with `--format`).
-* `-P`, `--prompt`: Prompt should include stdin and args.
-* `-p`, `--prompt-args`: Prompt should only include args.
-* `-q`, `--quiet`: Only output errors to standard err.
-* `-r`, `--raw`: Print raw response without syntax highlighting.
-* `-s`, `--settings`: Open settings.
-* `-x`, `--http-proxy`: Use HTTP proxy to connect to the API endpoints.
-* `--max-retries`: Maximum number of retries.
-* `--max-tokens`: Specify maximum tokens with which to respond.
-* `--no-limit`: Do not limit the response tokens.
-* `--role`: Specify the role to use (See [custom roles](#custom-roles)).
-* `--word-wrap`: Wrap output at width (defaults to 80)
-* `--reset-settings`: Restore settings to default.
+- `-m`, `--model`: Specify Large Language Model to use.
+- `-f`, `--format`: Ask the LLM to format the response in a given format.
+- `--format-as`: Specify the format for the output (used with `--format`).
+- `-P`, `--prompt`: Prompt should include stdin and args.
+- `-p`, `--prompt-args`: Prompt should only include args.
+- `-q`, `--quiet`: Only output errors to standard err.
+- `-r`, `--raw`: Print raw response without syntax highlighting.
+- `-s`, `--settings`: Open settings.
+- `-x`, `--http-proxy`: Use HTTP proxy to connect to the API endpoints.
+- `--max-retries`: Maximum number of retries.
+- `--max-tokens`: Specify maximum tokens with which to respond.
+- `--no-limit`: Do not limit the response tokens.
+- `--role`: Specify the role to use (See [custom roles](#custom-roles)).
+- `--word-wrap`: Wrap output at width (defaults to 80)
+- `--reset-settings`: Restore settings to default.
 
 #### Conversations
 
-* `-t`, `--title`: Set the title for the conversation.
-* `-l`, `--list`: List saved conversations.
-* `-c`, `--continue`: Continue from last response or specific title or SHA-1.
-* `-C`, `--continue-last`: Continue the last conversation.
-* `-s`, `--show`: Show saved conversation for the given title or SHA-1.
-* `-S`, `--show-last`: Show previous conversation.
-* `--delete-older-than=<duration>`: Deletes conversations older than given duration (`10d`, `1mo`).
-* `--delete`: Deletes the saved conversation for the given title or SHA-1.
-* `--no-cache`: Do not save conversations.
+- `-t`, `--title`: Set the title for the conversation.
+- `-l`, `--list`: List saved conversations.
+- `-c`, `--continue`: Continue from last response or specific title or SHA-1.
+- `-C`, `--continue-last`: Continue the last conversation.
+- `-s`, `--show`: Show saved conversation for the given title or SHA-1.
+- `-S`, `--show-last`: Show previous conversation.
+- `--delete-older-than=<duration>`: Deletes conversations older than given duration (`10d`, `1mo`).
+- `--delete`: Deletes the saved conversation for the given title or SHA-1.
+- `--no-cache`: Do not save conversations.
 
 #### Advanced
 
-* `--fanciness`: Level of fanciness.
-* `--temp`: Sampling temperature.
-* `--topp`: Top P value.
+- `--fanciness`: Level of fanciness.
+- `--temp`: Sampling temperature.
+- `--topp`: Top P value.
 
 ## Custom Roles
 
