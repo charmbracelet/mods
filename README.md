@@ -83,7 +83,7 @@ go install github.com/charmbracelet/mods@latest
 ```
 
 <details>
-<summary>Completions</summary>
+<summary>Shell Completions</summary>
 
 All the packages and archives come with pre-generated completion files for Bash,
 ZSH, Fish, and PowerShell.
