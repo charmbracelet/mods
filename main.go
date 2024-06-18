@@ -77,6 +77,7 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:           "mods",
+		Short:         "GPT on the command line. Built for pipelines.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Example:       randomExample(),

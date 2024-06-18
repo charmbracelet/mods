@@ -293,7 +293,6 @@ func useLine() string {
 }
 
 func usageFunc(cmd *cobra.Command) error {
-	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
 	fmt.Printf(
 		"Usage:\n  %s\n\n",
 		useLine(),
