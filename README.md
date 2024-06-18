@@ -83,7 +83,7 @@ go install github.com/charmbracelet/mods@latest
 ```
 
 <details>
-<summary>Completions</summary>
+<summary>Shell Completions</summary>
 
 All the packages and archives come with pre-generated completion files for Bash,
 ZSH, Fish, and PowerShell.
@@ -91,10 +91,10 @@ ZSH, Fish, and PowerShell.
 If you built it from source, you can generate them with:
 
 ```bash
-__MODS_CMP_ENABLED=1 mods completion bash -h
-__MODS_CMP_ENABLED=1 mods completion zsh -h
-__MODS_CMP_ENABLED=1 mods completion fish -h
-__MODS_CMP_ENABLED=1 mods completion powershell -h
+mods completion bash -h
+mods completion zsh -h
+mods completion fish -h
+mods completion powershell -h
 ```
 
 If you use a package (like Homebrew, Debs, etc), the completions should be set

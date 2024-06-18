@@ -322,12 +322,15 @@ func main() {
 	// XXX: this must come after creating the config.
 	initFlags()
 
-	// XXX: since mods doesn't have any subcommands, Cobra won't create the
-	// default `completion` command.
-	// Forcefully create the completion related subcommands by adding a fake
-	// command when completions are being used.
-	if os.Getenv("__MODS_CMP_ENABLED") == "1" || (len(os.Args) > 1 && os.Args[1] == "__complete") {
-		rootCmd.AddCommand(&cobra.Command{Use: "____fake_command_to_enable_completions"})
+	if isCompletionCmd(os.Args) {
+		// XXX: since mods doesn't have any sub-commands, Cobra won't create
+		// the default `completion` command. Forcefully create the completion
+		// related sub-commands by adding a fake command when completions are
+		// being used.
+		rootCmd.AddCommand(&cobra.Command{
+			Use:    "____fake_command_to_enable_completions",
+			Hidden: true,
+		})
 		rootCmd.InitDefaultCompletionCmd()
 	}
 
@@ -721,4 +724,36 @@ func newModelSelect() *huh.Select[string] {
 		Title("Choose a model:").
 		Options(opts...).
 		Value(&config.Model)
+}
+
+func isCompletionCmd(args []string) bool {
+	if len(args) <= 1 {
+		return false
+	}
+	if args[1] == "__complete" {
+		return true
+	}
+	if args[1] != "completion" {
+		return false
+	}
+	if len(args) == 3 {
+		_, ok := map[string]any{
+			"bash":       nil,
+			"fish":       nil,
+			"zsh":        nil,
+			"powershell": nil,
+			"-h":         nil,
+			"--help":     nil,
+			"help":       nil,
+		}[args[2]]
+		return ok
+	}
+	if len(args) == 4 {
+		_, ok := map[string]any{
+			"-h":     nil,
+			"--help": nil,
+		}[args[3]]
+		return ok
+	}
+	return false
 }
