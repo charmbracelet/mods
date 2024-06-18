@@ -319,12 +319,13 @@ func usageFunc(cmd *cobra.Command) error {
 			)
 		}
 	})
-	desc, example := randomExample()
-	fmt.Printf(
-		"\nExample:\n  %s\n  %s\n",
-		stdoutStyles().Comment.Render("# "+desc),
-		cheapHighlighting(stdoutStyles(), example),
-	)
+	if cmd.HasExample() {
+		fmt.Printf(
+			"\nExample:\n  %s\n  %s\n",
+			stdoutStyles().Comment.Render("# "+cmd.Example),
+			cheapHighlighting(stdoutStyles(), examples[cmd.Example]),
+		)
+	}
 
 	return nil
 }
