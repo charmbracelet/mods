@@ -77,6 +77,7 @@ var (
 		Use:           "mods",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Example:       randomExample(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.Prefix = removeWhitespace(strings.Join(args, " "))
 
