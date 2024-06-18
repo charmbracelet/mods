@@ -17,6 +17,8 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/editor"
+	mcobra "github.com/muesli/mango-cobra"
+	"github.com/muesli/roff"
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 )
@@ -333,6 +335,25 @@ func main() {
 			Hidden: true,
 		})
 		rootCmd.InitDefaultCompletionCmd()
+	}
+
+	if isManCmd(os.Args) {
+		rootCmd.AddCommand(&cobra.Command{
+			Use:                   "man",
+			Short:                 "Generates manpages",
+			SilenceUsage:          true,
+			DisableFlagsInUseLine: true,
+			Hidden:                true,
+			Args:                  cobra.NoArgs,
+			RunE: func(*cobra.Command, []string) error {
+				manPage, err := mcobra.NewManPage(1, rootCmd)
+				if err != nil {
+					return err
+				}
+				_, err = fmt.Fprint(os.Stdout, manPage.Build(roff.NewDocument()))
+				return err
+			},
+		})
 	}
 
 	if err := rootCmd.Execute(); err != nil {
@@ -725,6 +746,16 @@ func newModelSelect() *huh.Select[string] {
 		Title("Choose a model:").
 		Options(opts...).
 		Value(&config.Model)
+}
+
+func isManCmd(args []string) bool {
+	if len(args) == 2 {
+		return args[1] == "man"
+	}
+	if len(args) == 3 && args[1] == "man" {
+		return args[2] == "-h" || args[2] == "--help"
+	}
+	return false
 }
 
 func isCompletionCmd(args []string) bool {
