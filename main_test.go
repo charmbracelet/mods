@@ -39,3 +39,24 @@ func TestIsCompletionCmd(t *testing.T) {
 		})
 	}
 }
+
+func TestIsManCmd(t *testing.T) {
+	for args, is := range map[string]bool{
+		"":                    false,
+		"something":           false,
+		"something something": false,
+		"man is no more":      false,
+		"mans":                false,
+		"man foo":             false,
+		"man":                 true,
+		"man -h":              true,
+		"man --help":          true,
+	} {
+		t.Run(args, func(t *testing.T) {
+			vargs := append([]string{"mods"}, strings.Fields(args)...)
+			if b := isManCmd(vargs); b != is {
+				t.Errorf("%v: expected %v, got %v", vargs, is, b)
+			}
+		})
+	}
+}
