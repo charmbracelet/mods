@@ -609,6 +609,9 @@ func makeOptions(conversations []Conversation) []huh.Option[string] {
 		timea := stdoutStyles().Timeago.Render(timeago.Of(c.UpdatedAt))
 		left := stdoutStyles().SHA1.Render(c.ID[:sha1short])
 		right := stdoutStyles().ConversationList.Render(c.Title, timea)
+		if c.Model != nil {
+			right += stdoutStyles().Comment.Render(*c.Model)
+		}
 		opts = append(opts, huh.NewOption(left+" "+right, c.ID))
 	}
 	return opts
@@ -688,7 +691,7 @@ func saveConversation(mods *Mods) error {
 			stderrStyles().InlineCode.Render("NO_CACHE"),
 		)}
 	}
-	if err := db.Save(id, title); err != nil {
+	if err := db.Save(id, title, config.Model); err != nil {
 		_ = cache.delete(id) // remove leftovers
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
