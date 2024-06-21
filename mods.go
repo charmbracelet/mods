@@ -111,6 +111,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Config.cacheWriteToID = msg.WriteID
 		m.Config.cacheWriteToTitle = msg.Title
 		m.Config.cacheReadFromID = msg.ReadID
+		m.Config.Model = msg.Model
 
 		if !m.Config.Quiet {
 			m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
@@ -474,7 +475,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 }
 
 type cacheDetailsMsg struct {
-	WriteID, Title, ReadID string
+	WriteID, Title, ReadID, Model string
 }
 
 func (m *Mods) findCacheOpsDetails() tea.Cmd {
@@ -483,6 +484,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		readID := ordered.First(m.Config.Continue, m.Config.Show)
 		writeID := ordered.First(m.Config.Title, m.Config.Continue)
 		title := writeID
+		model := config.Model
 
 		if readID != "" || continueLast || m.Config.ShowLast {
 			found, err := m.findReadID(readID)
@@ -492,7 +494,12 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 					reason: "Could not find the conversation.",
 				}
 			}
-			readID = found
+			if found != nil {
+				readID = found.ID
+				if found.Model != nil {
+					model = *found.Model
+				}
+			}
 		}
 
 		// if we are continuing last, update the existing conversation
@@ -518,23 +525,24 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 			WriteID: writeID,
 			Title:   title,
 			ReadID:  readID,
+			Model:   model,
 		}
 	}
 }
 
-func (m *Mods) findReadID(in string) (string, error) {
+func (m *Mods) findReadID(in string) (*Conversation, error) {
 	convo, err := m.db.Find(in)
 	if err == nil {
-		return convo.ID, nil
+		return convo, nil
 	}
 	if errors.Is(err, errNoMatches) && m.Config.Show == "" {
 		convo, err := m.db.FindHEAD()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		return convo.ID, nil
+		return convo, nil
 	}
-	return "", err
+	return nil, err
 }
 
 func (m *Mods) readStdinCmd() tea.Msg {

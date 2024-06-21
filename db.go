@@ -62,7 +62,28 @@ func openDB(ds string) (*convoDB, error) {
 	`); err != nil {
 		return nil, fmt.Errorf("could not migrate db: %w", err)
 	}
+
+	if !hasColumn(db, "model") {
+		if _, err := db.Exec(`
+			ALTER TABLE conversations ADD COLUMN model string
+		`); err != nil {
+			return nil, fmt.Errorf("could not migrate db: %w", err)
+		}
+	}
+
 	return &convoDB{db: db}, nil
+}
+
+func hasColumn(db *sqlx.DB, col string) bool {
+	var count int
+	if err := db.Get(&count, `
+		SELECT count(*)
+		FROM pragma_table_info('conversations') c
+		WHERE c.name = $1
+	`, col); err != nil {
+		return false
+	}
+	return count > 0
 }
 
 type convoDB struct {
@@ -74,21 +95,23 @@ type Conversation struct {
 	ID        string    `db:"id"`
 	Title     string    `db:"title"`
 	UpdatedAt time.Time `db:"updated_at"`
+	Model     *string   `db:"model"`
 }
 
 func (c *convoDB) Close() error {
 	return c.db.Close() //nolint: wrapcheck
 }
 
-func (c *convoDB) Save(id, title string) error {
+func (c *convoDB) Save(id, title, model string) error {
 	res, err := c.db.Exec(c.db.Rebind(`
 		UPDATE conversations
 		SET
 		  title = ?,
+		  model = ?,
 		  updated_at = CURRENT_TIMESTAMP
 		WHERE
 		  id = ?
-	`), title, id)
+	`), title, model, id)
 	if err != nil {
 		return fmt.Errorf("Save: %w", err)
 	}
@@ -104,10 +127,10 @@ func (c *convoDB) Save(id, title string) error {
 
 	if _, err := c.db.Exec(c.db.Rebind(`
 		INSERT INTO
-		  conversations (id, title)
+		  conversations (id, title, model)
 		VALUES
-		  (?, ?)
-	`), id, title); err != nil {
+		  (?, ?, ?)
+	`), id, title, model); err != nil {
 		return fmt.Errorf("Save: %w", err)
 	}
 
