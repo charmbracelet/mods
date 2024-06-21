@@ -39,7 +39,7 @@ winget install charmbracelet.mods
 yay -S mods
 
 # Nix
-nix-shell -p charm-freeze
+nix-shell -p mods
 ```
 
 <details>
