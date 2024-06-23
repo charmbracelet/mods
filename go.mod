@@ -16,6 +16,7 @@ require (
 	github.com/charmbracelet/x/editor v0.0.0-20231116172829-450eedbca1ab
 	github.com/charmbracelet/x/exp/ordered v0.0.0-20231010190216-1cb11efc897d
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240524151031-ff83003bf67a
+	github.com/cohere-ai/cohere-go/v2 v2.8.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-isatty v0.0.20

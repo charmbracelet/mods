@@ -262,6 +262,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var api API
 		var ccfg openai.ClientConfig
 		var accfg AnthropicClientConfig
+		var cccfg CohereClientConfig
 		var occfg OllamaClientConfig
 
 		cfg := m.Config
@@ -325,6 +326,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.Version != "" {
 				accfg.Version = AnthropicAPIVersion(api.Version)
 			}
+		case "cohere":
+			key, err := m.ensureKey(api, "COHERE_API_KEY", "https://dashboard.cohere.com/api-keys")
+			if err != nil {
+				return err
+			}
+			cccfg = DefaultCohereConfig(key)
+			if api.BaseURL != "" {
+				ccfg.BaseURL = api.BaseURL
+			}
 		case "azure", "azure-ad":
 			key, err := m.ensureKey(api, "AZURE_OPENAI_KEY", "https://aka.ms/oai/access")
 			if err != nil {
@@ -353,12 +363,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			httpClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)}}
 			ccfg.HTTPClient = httpClient
 			accfg.HTTPClient = httpClient
+			cccfg.HTTPClient = httpClient
 			occfg.HTTPClient = httpClient
 		}
 
 		switch mod.API {
 		case "anthropic":
 			return m.createAnthropicStream(content, accfg, mod)
+		case "cohere":
+			return m.createCohereStream(content, cccfg, mod)
 		case "ollama":
 			return m.createOllamaStream(content, occfg, mod)
 		default:
