@@ -84,6 +84,8 @@ apis:
         fallback:
   anthropic:
     base-url: https://api.anthropic.com/v1
+    api-key:
+    api-key-env: ANTHROPIC_API_KEY
     models:
       claude-3-5-sonnet-20240620:
         aliases: ["claude3.5-sonnet", "claude-3-5-sonnet", "sonnet-3.5"]
@@ -122,6 +124,7 @@ apis:
         max-input-chars: 8192
   groq:
     base-url: https://api.groq.com/openai/v1
+    api-key:
     api-key-env: GROQ_API_KEY
     models: # https://console.groq.com/docs/models
       gemma-7b-it:
