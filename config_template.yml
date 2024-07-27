@@ -1,5 +1,5 @@
 # {{ index .Help "model" }}
-default-model: gpt-4
+default-model: gpt-4o
 # {{ index .Help "format-text" }}
 format-text:
   markdown: '{{ index .Config.FormatText "markdown" }}'
