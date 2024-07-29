@@ -1,5 +1,5 @@
 # {{ index .Help "model" }}
-default-model: gpt-4
+default-model: gpt-4o
 # {{ index .Help "format-text" }}
 format-text:
   markdown: '{{ index .Config.FormatText "markdown" }}'
@@ -49,7 +49,7 @@ apis:
     base-url: https://api.openai.com/v1
     api-key:
     api-key-env: OPENAI_API_KEY
-    models:
+    models: # https://platform.openai.com/docs/models
       gpt-4o:
         aliases: ["4o"]
         max-input-chars: 392000
@@ -86,7 +86,7 @@ apis:
     base-url: https://api.anthropic.com/v1
     api-key:
     api-key-env: ANTHROPIC_API_KEY
-    models:
+    models: # https://docs.anthropic.com/en/docs/about-claude/models
       claude-3-5-sonnet-20240620:
         aliases: ["claude3.5-sonnet", "claude-3-5-sonnet", "sonnet-3.5"]
         max-input-chars: 680000
@@ -95,7 +95,7 @@ apis:
         max-input-chars: 680000
   ollama:
     base-url: http://localhost:11434/api
-    models:
+    models: # https://ollama.com/library
       "llama3:70b":
         aliases: ["llama3"]
         max-input-chars: 650000
@@ -103,7 +103,7 @@ apis:
     base-url: https://api.perplexity.ai
     api-key:
     api-key-env: PERPLEXITY_API_KEY
-    models:
+    models: # https://docs.perplexity.ai/docs/model-cards
       llama-3-sonar-small-32k-chat:
         aliases: ["llama3-ss"]
         max-input-chars: 32768
