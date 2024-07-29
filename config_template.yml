@@ -93,6 +93,13 @@ apis:
       claude-3-opus-20240229:
         aliases: ["claude3-opus", "opus"]
         max-input-chars: 680000
+  cohere:
+    base-url: https://api.cohere.com/v1
+    models:
+      command-r-plus:
+        max-input-chars: 128000
+      command-r:
+        max-input-chars: 128000
   ollama:
     base-url: http://localhost:11434/api
     models: # https://ollama.com/library
