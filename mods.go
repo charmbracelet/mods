@@ -356,6 +356,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			occfg.HTTPClient = httpClient
 		}
 
+		if mod.MaxChars == 0 {
+			mod.MaxChars = cfg.MaxInputChars
+		}
+
 		switch mod.API {
 		case "anthropic":
 			return m.createAnthropicStream(content, accfg, mod)
