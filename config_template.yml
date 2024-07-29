@@ -179,3 +179,14 @@ apis:
       openchat/openchat-3.5-1210:
         aliases: ["openchat"]
         max-input-chars: 8192
+  mistral:
+    base-url: https://api.mistral.ai/v1
+    api-key:
+    api-key-env: MISTRAL_API_KEY
+    models: # https://docs.mistral.ai/getting-started/models/
+      mistral-large-latest:
+        aliases: ["mistral-large"]
+        max-input-chars: 384000
+      open-mistral-nemo:
+        aliases: ["mistral-nemo"]
+        max-input-chars: 384000
