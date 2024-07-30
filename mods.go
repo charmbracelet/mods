@@ -111,6 +111,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Config.cacheWriteToID = msg.WriteID
 		m.Config.cacheWriteToTitle = msg.Title
 		m.Config.cacheReadFromID = msg.ReadID
+		m.Config.Model = msg.Model
 
 		if !m.Config.Quiet {
 			m.anim = newAnim(m.Config.Fanciness, m.Config.StatusText, m.renderer, m.Styles)
@@ -124,6 +125,16 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Input = removeWhitespace(msg.content)
 		}
 		if m.Input == "" && m.Config.Prefix == "" && m.Config.Show == "" && !m.Config.ShowLast {
+			return m, m.quit
+		}
+		if m.Config.Dirs ||
+			m.Config.Delete != "" ||
+			m.Config.DeleteOlderThan != 0 ||
+			m.Config.ShowHelp ||
+			m.Config.List ||
+			m.Config.ListRoles ||
+			m.Config.Settings ||
+			m.Config.ResetSettings {
 			return m, m.quit
 		}
 
@@ -251,6 +262,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var api API
 		var ccfg openai.ClientConfig
 		var accfg AnthropicClientConfig
+		var cccfg CohereClientConfig
 		var occfg OllamaClientConfig
 
 		cfg := m.Config
@@ -314,6 +326,15 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.Version != "" {
 				accfg.Version = AnthropicAPIVersion(api.Version)
 			}
+		case "cohere":
+			key, err := m.ensureKey(api, "COHERE_API_KEY", "https://dashboard.cohere.com/api-keys")
+			if err != nil {
+				return err
+			}
+			cccfg = DefaultCohereConfig(key)
+			if api.BaseURL != "" {
+				ccfg.BaseURL = api.BaseURL
+			}
 		case "azure", "azure-ad":
 			key, err := m.ensureKey(api, "AZURE_OPENAI_KEY", "https://aka.ms/oai/access")
 			if err != nil {
@@ -342,12 +363,19 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			httpClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)}}
 			ccfg.HTTPClient = httpClient
 			accfg.HTTPClient = httpClient
+			cccfg.HTTPClient = httpClient
 			occfg.HTTPClient = httpClient
+		}
+
+		if mod.MaxChars == 0 {
+			mod.MaxChars = cfg.MaxInputChars
 		}
 
 		switch mod.API {
 		case "anthropic":
 			return m.createAnthropicStream(content, accfg, mod)
+		case "cohere":
+			return m.createCohereStream(content, cccfg, mod)
 		case "ollama":
 			return m.createOllamaStream(content, occfg, mod)
 		default:
@@ -464,7 +492,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 }
 
 type cacheDetailsMsg struct {
-	WriteID, Title, ReadID string
+	WriteID, Title, ReadID, Model string
 }
 
 func (m *Mods) findCacheOpsDetails() tea.Cmd {
@@ -473,6 +501,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		readID := ordered.First(m.Config.Continue, m.Config.Show)
 		writeID := ordered.First(m.Config.Title, m.Config.Continue)
 		title := writeID
+		model := config.Model
 
 		if readID != "" || continueLast || m.Config.ShowLast {
 			found, err := m.findReadID(readID)
@@ -482,7 +511,12 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 					reason: "Could not find the conversation.",
 				}
 			}
-			readID = found
+			if found != nil {
+				readID = found.ID
+				if found.Model != nil {
+					model = *found.Model
+				}
+			}
 		}
 
 		// if we are continuing last, update the existing conversation
@@ -508,23 +542,24 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 			WriteID: writeID,
 			Title:   title,
 			ReadID:  readID,
+			Model:   model,
 		}
 	}
 }
 
-func (m *Mods) findReadID(in string) (string, error) {
+func (m *Mods) findReadID(in string) (*Conversation, error) {
 	convo, err := m.db.Find(in)
 	if err == nil {
-		return convo.ID, nil
+		return convo, nil
 	}
 	if errors.Is(err, errNoMatches) && m.Config.Show == "" {
 		convo, err := m.db.FindHEAD()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		return convo.ID, nil
+		return convo, nil
 	}
-	return "", err
+	return nil, err
 }
 
 func (m *Mods) readStdinCmd() tea.Msg {

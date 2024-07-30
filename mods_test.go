@@ -28,7 +28,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("show id", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message"))
+		require.NoError(t, mods.db.Save(id, "message", "gpt-4"))
 		mods.Config.Show = id[:8]
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
@@ -38,7 +38,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("show title", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1"))
+		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
 		mods.Config.Show = "message 1"
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
@@ -48,7 +48,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue id", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message"))
+		require.NoError(t, mods.db.Save(id, "message", "gpt-4"))
 		mods.Config.Continue = id[:5]
 		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
@@ -60,7 +60,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue with no prompt", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1"))
+		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
 		mods.Config.ContinueLast = true
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
@@ -72,7 +72,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue title", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1"))
+		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
 		mods.Config.Continue = "message 1"
 		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
@@ -84,7 +84,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue last", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1"))
+		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
 		mods.Config.ContinueLast = true
 		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
@@ -97,7 +97,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue last with name", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1"))
+		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
 		mods.Config.Continue = "message 2"
 		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
@@ -122,7 +122,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue id and write with title", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1"))
+		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
 		mods.Config.Title = "some title"
 		mods.Config.Continue = id[:10]
 		msg := mods.findCacheOpsDetails()()
@@ -137,7 +137,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue title and write with title", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1"))
+		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
 		mods.Config.Title = "some title"
 		mods.Config.Continue = "message 1"
 		msg := mods.findCacheOpsDetails()()

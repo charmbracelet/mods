@@ -30,7 +30,7 @@ func TestConvoDB(t *testing.T) {
 	t.Run("save", func(t *testing.T) {
 		db := testDB(t)
 
-		require.NoError(t, db.Save(testid, "message 1"))
+		require.NoError(t, db.Save(testid, "message 1", "gpt-4o"))
 
 		convo, err := db.Find("df31")
 		require.NoError(t, err)
@@ -44,20 +44,20 @@ func TestConvoDB(t *testing.T) {
 
 	t.Run("save no id", func(t *testing.T) {
 		db := testDB(t)
-		require.Error(t, db.Save("", "message 1"))
+		require.Error(t, db.Save("", "message 1", "gpt-4o"))
 	})
 
 	t.Run("save no message", func(t *testing.T) {
 		db := testDB(t)
-		require.Error(t, db.Save(newConversationID(), ""))
+		require.Error(t, db.Save(newConversationID(), "", "gpt-4o"))
 	})
 
 	t.Run("update", func(t *testing.T) {
 		db := testDB(t)
 
-		require.NoError(t, db.Save(testid, "message 1"))
+		require.NoError(t, db.Save(testid, "message 1", "gpt-4o"))
 		time.Sleep(100 * time.Millisecond)
-		require.NoError(t, db.Save(testid, "message 2"))
+		require.NoError(t, db.Save(testid, "message 2", "gpt-4o"))
 
 		convo, err := db.Find("df31")
 		require.NoError(t, err)
@@ -72,7 +72,7 @@ func TestConvoDB(t *testing.T) {
 	t.Run("find head single", func(t *testing.T) {
 		db := testDB(t)
 
-		require.NoError(t, db.Save(testid, "message 2"))
+		require.NoError(t, db.Save(testid, "message 2", "gpt-4o"))
 
 		head, err := db.FindHEAD()
 		require.NoError(t, err)
@@ -83,10 +83,10 @@ func TestConvoDB(t *testing.T) {
 	t.Run("find head multiple", func(t *testing.T) {
 		db := testDB(t)
 
-		require.NoError(t, db.Save(testid, "message 2"))
+		require.NoError(t, db.Save(testid, "message 2", "gpt-4o"))
 		time.Sleep(time.Millisecond * 100)
 		nextConvo := newConversationID()
-		require.NoError(t, db.Save(nextConvo, "another message"))
+		require.NoError(t, db.Save(nextConvo, "another message", "gpt-4o"))
 
 		head, err := db.FindHEAD()
 		require.NoError(t, err)
@@ -101,8 +101,8 @@ func TestConvoDB(t *testing.T) {
 	t.Run("find by title", func(t *testing.T) {
 		db := testDB(t)
 
-		require.NoError(t, db.Save(newConversationID(), "message 1"))
-		require.NoError(t, db.Save(testid, "message 2"))
+		require.NoError(t, db.Save(newConversationID(), "message 1", "gpt-4o"))
+		require.NoError(t, db.Save(testid, "message 2", "gpt-4o"))
 
 		convo, err := db.Find("message 2")
 		require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestConvoDB(t *testing.T) {
 
 	t.Run("find match nothing", func(t *testing.T) {
 		db := testDB(t)
-		require.NoError(t, db.Save(testid, "message 1"))
+		require.NoError(t, db.Save(testid, "message 1", "gpt-4o"))
 		_, err := db.Find("message")
 		require.ErrorIs(t, err, errNoMatches)
 	})
@@ -120,8 +120,8 @@ func TestConvoDB(t *testing.T) {
 	t.Run("find match many", func(t *testing.T) {
 		db := testDB(t)
 		const testid2 = "df31ae23ab9b75b5641c2f846c571000edc71315"
-		require.NoError(t, db.Save(testid, "message 1"))
-		require.NoError(t, db.Save(testid2, "message 2"))
+		require.NoError(t, db.Save(testid, "message 1", "gpt-4o"))
+		require.NoError(t, db.Save(testid2, "message 2", "gpt-4o"))
 		_, err := db.Find("df31ae")
 		require.ErrorIs(t, err, errManyMatches)
 	})
@@ -129,7 +129,7 @@ func TestConvoDB(t *testing.T) {
 	t.Run("delete", func(t *testing.T) {
 		db := testDB(t)
 
-		require.NoError(t, db.Save(testid, "message 1"))
+		require.NoError(t, db.Save(testid, "message 1", "gpt-4o"))
 		require.NoError(t, db.Delete(newConversationID()))
 
 		list, err := db.List()
@@ -152,8 +152,8 @@ func TestConvoDB(t *testing.T) {
 		const title1 = "some title"
 		const testid2 = "6c33f71694bf41a18c844a96d1f62f153e5f6f44"
 		const title2 = "football teams"
-		require.NoError(t, db.Save(testid1, title1))
-		require.NoError(t, db.Save(testid2, title2))
+		require.NoError(t, db.Save(testid1, title1, "gpt-4o"))
+		require.NoError(t, db.Save(testid2, title2, "gpt-4o"))
 
 		results, err := db.Completions("f")
 		require.NoError(t, err)

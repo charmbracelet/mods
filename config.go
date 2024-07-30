@@ -39,6 +39,7 @@ var help = map[string]string{
 	"format-text":       "Text to append when using the -f flag.",
 	"role":              "System role to use.",
 	"roles":             "List of predefined system messages that can be used as roles.",
+	"list-roles":        "List the roles defined in your configuration file",
 	"prompt":            "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
 	"prompt-args":       "Include the prompt from the arguments in the response.",
 	"raw":               "Render output as raw text when connected to a TTY.",
@@ -55,7 +56,7 @@ var help = map[string]string{
 	"fanciness":         "Your desired level of fanciness.",
 	"status-text":       "Text to show while generating.",
 	"settings":          "Open settings in your $EDITOR.",
-	"dirs":              "Print the directories in which mods store its data",
+	"dirs":              "Print the directories in which mods store its data.",
 	"reset-settings":    "Backup your old settings file and reset everything to the defaults.",
 	"continue":          "Continue from the last response or a given save title.",
 	"continue-last":     "Continue from the last response.",
@@ -169,6 +170,7 @@ type Config struct {
 	ShowLast          bool
 	Show              string
 	List              bool
+	ListRoles         bool
 	Delete            string
 	DeleteOlderThan   time.Duration
 
@@ -293,7 +295,6 @@ func useLine() string {
 }
 
 func usageFunc(cmd *cobra.Command) error {
-	fmt.Printf("GPT on the command line. Built for pipelines.\n\n")
 	fmt.Printf(
 		"Usage:\n  %s\n\n",
 		useLine(),
@@ -319,12 +320,13 @@ func usageFunc(cmd *cobra.Command) error {
 			)
 		}
 	})
-	desc, example := randomExample()
-	fmt.Printf(
-		"\nExample:\n  %s\n  %s\n",
-		stdoutStyles().Comment.Render("# "+desc),
-		cheapHighlighting(stdoutStyles(), example),
-	)
+	if cmd.HasExample() {
+		fmt.Printf(
+			"\nExample:\n  %s\n  %s\n",
+			stdoutStyles().Comment.Render("# "+cmd.Example),
+			cheapHighlighting(stdoutStyles(), examples[cmd.Example]),
+		)
+	}
 
 	return nil
 }

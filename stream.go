@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	cohere "github.com/cohere-ai/cohere-go/v2"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -121,6 +122,68 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		return m.handleRequestError(err, mod, content)
+	}
+
+	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
+}
+
+func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod Model) tea.Msg {
+	cfg := m.Config
+
+	client := NewCohereClientWithConfig(cccfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelRequest = cancel
+
+	if err := m.setupStreamContext(content, mod); err != nil {
+		return err
+	}
+
+	var messages []*cohere.Message
+	for _, message := range m.messages {
+		switch message.Role {
+		case openai.ChatMessageRoleSystem:
+			// For system, it is recommended to use the `preamble` field
+			// rather than a "SYSTEM" role message
+			m.system += message.Content + "\n"
+		case openai.ChatMessageRoleAssistant:
+			messages = append(messages, &cohere.Message{
+				Role: "CHATBOT",
+				Chatbot: &cohere.ChatMessage{
+					Message: message.Content,
+				},
+			})
+		case openai.ChatMessageRoleUser:
+			messages = append(messages, &cohere.Message{
+				Role: "USER",
+				User: &cohere.ChatMessage{
+					Message: message.Content,
+				},
+			})
+		}
+	}
+
+	var history []*cohere.Message
+	if len(messages) > 1 {
+		history = messages[:len(messages)-1]
+	}
+
+	req := &cohere.ChatStreamRequest{
+		Model:         cohere.String(mod.Name),
+		ChatHistory:   history,
+		Message:       messages[len(messages)-1].User.Message,
+		Preamble:      cohere.String(m.system),
+		Temperature:   cohere.Float64(float64(cfg.Temperature)),
+		P:             cohere.Float64(float64(cfg.TopP)),
+		StopSequences: cfg.Stop,
+	}
+
+	if cfg.MaxTokens > 0 {
+		req.MaxTokens = cohere.Int(cfg.MaxTokens)
+	}
+
+	stream, err := client.CreateChatCompletionStream(ctx, req)
+	if err != nil {
+		return m.handleRequestError(CohereToOpenAIAPIError(err), mod, content)
 	}
 
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
