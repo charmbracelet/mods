@@ -753,7 +753,7 @@ func askInfo() error {
 			return config.Prefix != ""
 		}),
 	).
-		WithTheme(customizeHuhTheme(themeFrom(config.Theme))).
+		WithTheme(themeFrom(config.Theme)).
 		Run()
 }
 
@@ -797,11 +797,6 @@ func isCompletionCmd(args []string) bool {
 		return ok
 	}
 	return false
-}
-
-func customizeHuhTheme(t *huh.Theme) *huh.Theme {
-	t.Focused.Base = t.Focused.Base.BorderLeft(false).PaddingLeft(0)
-	return t
 }
 
 func themeFrom(theme string) *huh.Theme {
