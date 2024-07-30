@@ -93,8 +93,7 @@ var (
 			}
 
 			if isNoArgs() && isInputTTY() {
-				err := newChooseModelForm().Run()
-				if err != nil && err == huh.ErrUserAborted {
+				if err := askInfo(); err != nil && err == huh.ErrUserAborted {
 					return modsError{
 						err:    err,
 						reason: "User canceled.",
@@ -716,7 +715,7 @@ func isNoArgs() bool {
 		!config.ResetSettings
 }
 
-func newChooseModelForm() *huh.Form {
+func askInfo() error {
 	var apis []huh.Option[string]
 	opts := map[string][]huh.Option[string]{}
 	for _, api := range config.APIs {
@@ -752,8 +751,8 @@ func newChooseModelForm() *huh.Form {
 					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
 				}, &config.Model).
 				Value(&config.Prefix),
-		),
-	)
+		).WithHideFunc(func() bool { return config.AskModel }),
+	).Run()
 }
 
 func isManCmd(args []string) bool {
