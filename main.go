@@ -45,12 +45,6 @@ func buildVersion() {
 	rootCmd.Version = Version
 }
 
-func huhTheme() *huh.Theme {
-	t := huh.ThemeCharm()
-	t.Focused.Base = t.Focused.Base.BorderLeft(false).PaddingLeft(0)
-	return t
-}
-
 func init() {
 	// XXX: unset error styles in Glamour dark and light styles.
 	// On the glamour side, we should probably add constructors for generating
@@ -98,13 +92,8 @@ var (
 				config.Quiet = true
 			}
 
-			if isNoArgs() && isInputTTY() {
-				err := huh.NewForm(
-					huh.NewGroup(newModelSelect()).
-						WithHideFunc(func() bool { return !config.AskModel }),
-					huh.NewGroup(newPromptInput()),
-				).WithTheme(huhTheme()).Run()
-				if err != nil && err == huh.ErrUserAborted {
+			if (isNoArgs() || config.AskModel) && isInputTTY() {
+				if err := askInfo(); err != nil && err == huh.ErrUserAborted {
 					return modsError{
 						err:    err,
 						reason: "User canceled.",
@@ -726,30 +715,43 @@ func isNoArgs() bool {
 		!config.ResetSettings
 }
 
-func newPromptInput() *huh.Text {
-	title := fmt.Sprintf("Enter a prompt for %s:", config.Model)
-	if config.AskModel {
-		title = "Enter a prompt:"
-	}
-	return huh.NewText().
-		Title(title).
-		Value(&config.Prefix)
-}
-
-func newModelSelect() *huh.Select[string] {
-	var opts []huh.Option[string]
+func askInfo() error {
+	var apis []huh.Option[string]
+	opts := map[string][]huh.Option[string]{}
 	for _, api := range config.APIs {
+		apis = append(apis, huh.NewOption(api.Name, api.Name))
 		for model := range api.Models {
-			opts = append(opts, huh.Option[string]{
-				Key:   fmt.Sprintf("%s • %s", api.Name, model),
-				Value: model,
-			})
+			opts[api.Name] = append(opts[api.Name], huh.NewOption(model, model))
 		}
 	}
-	return huh.NewSelect[string]().
-		Title("Choose a model:").
-		Options(opts...).
-		Value(&config.Model)
+
+	return huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Choose the API:").
+				Options(apis...).
+				Value(&config.API),
+			huh.NewSelect[string]().
+				TitleFunc(func() string {
+					return fmt.Sprintf("Choose the model for '%s':", config.API)
+				}, &config.API).
+				OptionsFunc(func() []huh.Option[string] {
+					return opts[config.API]
+				}, &config.API).
+				Value(&config.Model),
+		).WithHideFunc(func() bool {
+			return !config.AskModel
+		}),
+		huh.NewGroup(
+			huh.NewText().
+				TitleFunc(func() string {
+					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
+				}, &config.Model).
+				Value(&config.Prefix),
+		).WithHideFunc(func() bool {
+			return config.Prefix != ""
+		}),
+	).Run()
 }
 
 func isManCmd(args []string) bool {
