@@ -92,7 +92,7 @@ var (
 				config.Quiet = true
 			}
 
-			if isNoArgs() && isInputTTY() {
+			if (isNoArgs() || config.AskModel) && isInputTTY() {
 				if err := askInfo(); err != nil && err == huh.ErrUserAborted {
 					return modsError{
 						err:    err,
@@ -739,19 +739,18 @@ func askInfo() error {
 					return opts[config.API]
 				}, &config.API).
 				Value(&config.Model),
-			huh.NewText().
-				TitleFunc(func() string {
-					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
-				}, &config.Model).
-				Value(&config.Prefix),
-		).WithHideFunc(func() bool { return !config.AskModel }),
+		).WithHideFunc(func() bool {
+			return !config.AskModel
+		}),
 		huh.NewGroup(
 			huh.NewText().
 				TitleFunc(func() string {
 					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
 				}, &config.Model).
 				Value(&config.Prefix),
-		).WithHideFunc(func() bool { return config.AskModel }),
+		).WithHideFunc(func() bool {
+			return config.Prefix != ""
+		}),
 	).Run()
 }
 
