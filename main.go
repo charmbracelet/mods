@@ -253,6 +253,7 @@ func initFlags() {
 	flags.BoolVar(&config.Dirs, "dirs", false, stdoutStyles().FlagDesc.Render(help["dirs"]))
 	flags.StringVar(&config.Role, "role", config.Role, stdoutStyles().FlagDesc.Render(help["role"]))
 	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
+	flags.StringVar(&config.Theme, "theme", "charm", stdoutStyles().FlagDesc.Render(help["theme"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -751,7 +752,9 @@ func askInfo() error {
 		).WithHideFunc(func() bool {
 			return config.Prefix != ""
 		}),
-	).Run()
+	).
+		WithTheme(themeFrom(config.Theme)).
+		Run()
 }
 
 func isManCmd(args []string) bool {
@@ -794,4 +797,17 @@ func isCompletionCmd(args []string) bool {
 		return ok
 	}
 	return false
+}
+
+func themeFrom(theme string) *huh.Theme {
+	switch theme {
+	case "dracula":
+		return huh.ThemeDracula()
+	case "catppuccin":
+		return huh.ThemeCatppuccin()
+	case "base16":
+		return huh.ThemeBase16()
+	default:
+		return huh.ThemeCharm()
+	}
 }

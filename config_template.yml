@@ -39,6 +39,8 @@ max-retries: 5
 fanciness: 10
 # {{ index .Help "status-text" }}
 status-text: Generating
+# {{ index .Help "theme" }}
+theme: charm
 # {{ index .Help "max-input-chars" }}
 max-input-chars: 12250
 # {{ index .Help "max-tokens" }}
