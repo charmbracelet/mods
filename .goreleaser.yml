@@ -2,7 +2,7 @@
 # Feel free to remove those if you don't want/use them.
 # yaml-language-server: $schema=https://goreleaser.com/static/schema-pro.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
-
+version: 2
 includes:
   - from_url:
       url: charmbracelet/meta/main/goreleaser-mods.yaml

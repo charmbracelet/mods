@@ -17,6 +17,8 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/editor"
+	mcobra "github.com/muesli/mango-cobra"
+	"github.com/muesli/roff"
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 )
@@ -69,8 +71,10 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:           "mods",
+		Short:         "GPT on the command line. Built for pipelines.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Example:       randomExample(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.Prefix = removeWhitespace(strings.Join(args, " "))
 
@@ -116,6 +120,16 @@ var (
 			}
 
 			if config.Dirs {
+				if len(args) > 0 {
+					switch args[0] {
+					case "config":
+						fmt.Println(filepath.Dir(config.SettingsPath))
+						return nil
+					case "cache":
+						fmt.Println(filepath.Dir(config.CachePath))
+						return nil
+					}
+				}
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
 				//nolint:mnd
 				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
@@ -164,6 +178,9 @@ var (
 				return cmd.Usage()
 			}
 
+			if config.ListRoles {
+				return listRoles()
+			}
 			if config.List {
 				return listConversations()
 			}
@@ -236,6 +253,7 @@ func initFlags() {
 	flags.BoolVar(&config.Settings, "settings", false, stdoutStyles().FlagDesc.Render(help["settings"]))
 	flags.BoolVar(&config.Dirs, "dirs", false, stdoutStyles().FlagDesc.Render(help["dirs"]))
 	flags.StringVar(&config.Role, "role", config.Role, stdoutStyles().FlagDesc.Render(help["role"]))
+	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -248,6 +266,9 @@ func initFlags() {
 			return results, cobra.ShellCompDirectiveDefault
 		})
 	}
+	_ = rootCmd.RegisterFlagCompletionFunc("role", func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return roleNames(toComplete), cobra.ShellCompDirectiveDefault
+	})
 
 	if config.Format && config.FormatAs == "" {
 		config.FormatAs = "markdown"
@@ -295,13 +316,35 @@ func main() {
 	// XXX: this must come after creating the config.
 	initFlags()
 
-	// XXX: since mods doesn't have any subcommands, Cobra won't create the
-	// default `completion` command.
-	// Forcefully create the completion related subcommands by adding a fake
-	// command when completions are being used.
-	if os.Getenv("__MODS_CMP_ENABLED") == "1" || (len(os.Args) > 1 && os.Args[1] == "__complete") {
-		rootCmd.AddCommand(&cobra.Command{Use: "____fake_command_to_enable_completions"})
+	if isCompletionCmd(os.Args) {
+		// XXX: since mods doesn't have any sub-commands, Cobra won't create
+		// the default `completion` command. Forcefully create the completion
+		// related sub-commands by adding a fake command when completions are
+		// being used.
+		rootCmd.AddCommand(&cobra.Command{
+			Use:    "____fake_command_to_enable_completions",
+			Hidden: true,
+		})
 		rootCmd.InitDefaultCompletionCmd()
+	}
+
+	if isManCmd(os.Args) {
+		rootCmd.AddCommand(&cobra.Command{
+			Use:                   "man",
+			Short:                 "Generates manpages",
+			SilenceUsage:          true,
+			DisableFlagsInUseLine: true,
+			Hidden:                true,
+			Args:                  cobra.NoArgs,
+			RunE: func(*cobra.Command, []string) error {
+				manPage, err := mcobra.NewManPage(1, rootCmd)
+				if err != nil {
+					return err
+				}
+				_, err = fmt.Fprint(os.Stdout, manPage.Build(roff.NewDocument()))
+				return err
+			},
+		})
 	}
 
 	if err := rootCmd.Execute(); err != nil {
@@ -449,7 +492,14 @@ func deleteConversationOlderThan() error {
 
 	if !config.Quiet {
 		printList(conversations)
-		fmt.Fprintln(os.Stderr)
+
+		if !isOutputTTY() || !isInputTTY() {
+			fmt.Fprintln(os.Stderr)
+			return newUserErrorf(
+				"To delete the conversations above, run: %s",
+				strings.Join(append(os.Args, "--quiet"), " "),
+			)
+		}
 		var confirm bool
 		if err := huh.Run(
 			huh.NewConfirm().
@@ -512,7 +562,34 @@ func listConversations() error {
 		return nil
 	}
 
+	if isInputTTY() && isOutputTTY() {
+		selectFromList(conversations)
+		return nil
+	}
 	printList(conversations)
+	return nil
+}
+
+func roleNames(prefix string) []string {
+	roles := make([]string, 0, len(config.Roles))
+	for role := range config.Roles {
+		if prefix != "" && !strings.HasPrefix(role, prefix) {
+			continue
+		}
+		roles = append(roles, role)
+	}
+	slices.Sort(roles)
+	return roles
+}
+
+func listRoles() error {
+	for _, role := range roleNames("") {
+		s := role
+		if role == config.Role {
+			s = role + stdoutStyles().Timeago.Render(" (default)")
+		}
+		fmt.Println(s)
+	}
 	return nil
 }
 
@@ -522,53 +599,55 @@ func makeOptions(conversations []Conversation) []huh.Option[string] {
 		timea := stdoutStyles().Timeago.Render(timeago.Of(c.UpdatedAt))
 		left := stdoutStyles().SHA1.Render(c.ID[:sha1short])
 		right := stdoutStyles().ConversationList.Render(c.Title, timea)
+		if c.Model != nil {
+			right += stdoutStyles().Comment.Render(*c.Model)
+		}
 		opts = append(opts, huh.NewOption(left+" "+right, c.ID))
 	}
 	return opts
 }
 
-func printList(conversations []Conversation) {
-	if isOutputTTY() && isInputTTY() {
-		var selected string
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("Conversations").
-					Value(&selected).
-					Options(makeOptions(conversations)...),
-			),
-		).Run(); err != nil {
-			if !errors.Is(err, huh.ErrUserAborted) {
-				fmt.Fprintln(os.Stderr, err.Error())
-			}
-			return
-		}
-
-		_ = clipboard.WriteAll(selected)
-		termenv.Copy(selected)
-		printConfirmation("COPIED", selected)
-		// suggest actions to use this conversation ID
-		fmt.Println(stdoutStyles().Comment.Render(
-			"You can use this conversation ID with the following commands:",
-		))
-		suggestions := []string{"show", "continue", "delete"}
-		for _, flag := range suggestions {
-			fmt.Printf(
-				"  %-44s %s\n",
-				stdoutStyles().Flag.Render("--"+flag),
-				stdoutStyles().FlagDesc.Render(help[flag]),
-			)
+func selectFromList(conversations []Conversation) {
+	var selected string
+	if err := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Conversations").
+				Value(&selected).
+				Options(makeOptions(conversations)...),
+		),
+	).Run(); err != nil {
+		if !errors.Is(err, huh.ErrUserAborted) {
+			fmt.Fprintln(os.Stderr, err.Error())
 		}
 		return
 	}
 
+	_ = clipboard.WriteAll(selected)
+	termenv.Copy(selected)
+	printConfirmation("COPIED", selected)
+	// suggest actions to use this conversation ID
+	fmt.Println(stdoutStyles().Comment.Render(
+		"You can use this conversation ID with the following commands:",
+	))
+	suggestions := []string{"show", "continue", "delete"}
+	for _, flag := range suggestions {
+		fmt.Printf(
+			"  %-44s %s\n",
+			stdoutStyles().Flag.Render("--"+flag),
+			stdoutStyles().FlagDesc.Render(help[flag]),
+		)
+	}
+}
+
+func printList(conversations []Conversation) {
 	for _, conversation := range conversations {
 		fmt.Fprintf(
 			os.Stdout,
 			"%s\t%s\t%s\n",
-			conversation.ID[:sha1short],
+			stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
 			conversation.Title,
-			timeago.Of(conversation.UpdatedAt),
+			stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt)),
 		)
 	}
 }
@@ -602,7 +681,7 @@ func saveConversation(mods *Mods) error {
 			stderrStyles().InlineCode.Render("NO_CACHE"),
 		)}
 	}
-	if err := db.Save(id, title); err != nil {
+	if err := db.Save(id, title, config.Model); err != nil {
 		_ = cache.delete(id) // remove leftovers
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
@@ -631,6 +710,7 @@ func isNoArgs() bool {
 		config.DeleteOlderThan == 0 &&
 		!config.ShowHelp &&
 		!config.List &&
+		!config.ListRoles &&
 		!config.Dirs &&
 		!config.Settings &&
 		!config.ResetSettings
@@ -674,4 +754,46 @@ func newChooseModelForm() *huh.Form {
 				Value(&config.Prefix),
 		),
 	)
+}
+
+func isManCmd(args []string) bool {
+	if len(args) == 2 {
+		return args[1] == "man"
+	}
+	if len(args) == 3 && args[1] == "man" {
+		return args[2] == "-h" || args[2] == "--help"
+	}
+	return false
+}
+
+func isCompletionCmd(args []string) bool {
+	if len(args) <= 1 {
+		return false
+	}
+	if args[1] == "__complete" {
+		return true
+	}
+	if args[1] != "completion" {
+		return false
+	}
+	if len(args) == 3 {
+		_, ok := map[string]any{
+			"bash":       nil,
+			"fish":       nil,
+			"zsh":        nil,
+			"powershell": nil,
+			"-h":         nil,
+			"--help":     nil,
+			"help":       nil,
+		}[args[2]]
+		return ok
+	}
+	if len(args) == 4 {
+		_, ok := map[string]any{
+			"-h":     nil,
+			"--help": nil,
+		}[args[3]]
+		return ok
+	}
+	return false
 }
