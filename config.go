@@ -40,7 +40,7 @@ var help = map[string]string{
 	"role":              "System role to use.",
 	"roles":             "List of predefined system messages that can be used as roles.",
 	"list-roles":        "List the roles defined in your configuration file",
-	"prompt":            "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
+	"prompt":            "Include the top n lines of prompt from the stdin in the response, where n is the specified number.",
 	"prompt-args":       "Include the prompt from the arguments in the response.",
 	"raw":               "Render output as raw text when connected to a TTY.",
 	"quiet":             "Quiet mode (hide the spinner while loading and stderr messages for success).",

@@ -16,6 +16,12 @@ The most basic usage is:
 mods 'first 2 primes'
 ```
 
+```bash
+mods --prompt 'first 2 primes'
+```
+
+In this case, the prompt will be printed in the output.
+
 ### Pipe from
 
 You can also pipe to it, in which case `STDIN` will not be a TTY:
@@ -25,6 +31,19 @@ echo 'as json' | mods 'first 2 primes'
 ```
 
 In this case, `mods` should read `STDIN` and append it to the prompt.
+
+```bash
+echo 'as json' | mods -P=1 'first 2 primes'
+```
+
+In this case, the first line of the prompt will be included in the output.
+
+```bash
+mods -f --format-as json 'first 2 primes'
+```
+
+In this case, the prompt will include instructions to ask the model to return
+json format results.
 
 ### Pipe to
 
