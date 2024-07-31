@@ -321,7 +321,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			accfg = DefaultAnthropicConfig(key)
 			if api.BaseURL != "" {
-				ccfg.BaseURL = api.BaseURL
+				accfg.BaseURL = api.BaseURL
 			}
 			if api.Version != "" {
 				accfg.Version = AnthropicAPIVersion(api.Version)
