@@ -203,3 +203,14 @@ apis:
       open-mistral-nemo:
         aliases: ["mistral-nemo"]
         max-input-chars: 384000
+  deepseek:
+    base-url: https://api.deepseek.com/
+    api-key:
+    api-key-env: DEEPSEEK_API_KEY
+    models: # https://platform.deepseek.com/api-docs/api/list-models/
+      deepseek-chat:
+        aliases: ["ds-chat"]
+        max-input-chars: 384000
+      deepseek-code:
+        aliases: ["ds-code"]
+        max-input-chars: 384000
