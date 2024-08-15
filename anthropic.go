@@ -253,7 +253,7 @@ func (stream *anthropicStreamReader) processLines() (openai.ChatCompletionStream
 		var chunk AnthropicCompletionMessageResponse
 		unmarshalErr := stream.unmarshaler.Unmarshal(noPrefixLine, &chunk)
 		if unmarshalErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("ollamaStreamReader.processLines: %w", unmarshalErr)
+			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("anthropicStreamReader.processLines: %w", unmarshalErr)
 		}
 
 		if chunk.Type != "content_block_delta" {

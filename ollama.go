@@ -41,7 +41,6 @@ type OllamaMessageCompletionRequestOptions struct {
 	Stop          string  `json:"stop,omitempty"`
 	TfsZ          float32 `json:"tfs_z,omitempty"`
 	NumPredict    int     `json:"num_predict,omitempty"`
-	TopK          int     `json:"top_k,omitempty"`
 	TopP          float32 `json:"top_p,omitempty"`
 }
 
