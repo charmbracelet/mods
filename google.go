@@ -12,10 +12,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-var (
-	googleHeaderData  = []byte("data: ")
-	googleErrorPrefix = []byte(`event: error`)
-)
+var googleHeaderData = []byte("data: ")
 
 // GoogleClientConfig represents the configuration for the Google API client.
 type GoogleClientConfig struct {
