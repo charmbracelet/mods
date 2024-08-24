@@ -61,6 +61,7 @@ type AnthropicMessageCompletionRequest struct {
 	MaxTokens     int                            `json:"max_tokens"`
 	Temperature   float32                        `json:"temperature,omitempty"`
 	TopP          float32                        `json:"top_p,omitempty"`
+	TopK          int                            `json:"top_k,omitempty"`
 	Stream        bool                           `json:"stream,omitempty"`
 	StopSequences []string                       `json:"stop_sequences,omitempty"`
 }

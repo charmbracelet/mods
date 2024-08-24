@@ -126,6 +126,7 @@ func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod 
 		StopSequences:  cfg.Stop,
 		Temperature:    cfg.Temperature,
 		TopP:           cfg.TopP,
+		TopK:           cfg.TopK,
 		CandidateCount: 1,
 	}
 
@@ -178,6 +179,7 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 		Stream:        true,
 		Temperature:   noOmitFloat(cfg.Temperature),
 		TopP:          noOmitFloat(cfg.TopP),
+		TopK:          cfg.TopK,
 		StopSequences: cfg.Stop,
 	}
 

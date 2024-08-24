@@ -53,6 +53,7 @@ var help = map[string]string{
 	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0.",
 	"stop":              "Up to 4 sequences where the API will stop generating further tokens.",
 	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
+	"topk":              "TopK, only sample from the top K options for each subsequent token.",
 	"fanciness":         "Your desired level of fanciness.",
 	"status-text":       "Text to show while generating.",
 	"settings":          "Open settings in your $EDITOR.",
@@ -139,6 +140,7 @@ type Config struct {
 	Temperature       float32    `yaml:"temp" env:"TEMP"`
 	Stop              []string   `yaml:"stop" env:"STOP"`
 	TopP              float32    `yaml:"topp" env:"TOPP"`
+	TopK              int        `yaml:"topk" env:"TOPK"`
 	NoLimit           bool       `yaml:"no-limit" env:"NO_LIMIT"`
 	CachePath         string     `yaml:"cache-path" env:"CACHE_PATH"`
 	NoCache           bool       `yaml:"no-cache" env:"NO_CACHE"`

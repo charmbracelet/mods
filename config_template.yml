@@ -25,6 +25,8 @@ quiet: false
 temp: 1.0
 # {{ index .Help "topp" }}
 topp: 1.0
+# {{ index .Help "topk" }}
+topk: 50
 # {{ index .Help "no-limit" }}
 no-limit: false
 # {{ index .Help "word-wrap" }}

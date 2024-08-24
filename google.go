@@ -49,6 +49,7 @@ type GoogleGenerationConfig struct {
 	MaxOutputTokens  uint     `json:"maxOutputTokens,omitempty"`
 	Temperature      float32  `json:"temperature,omitempty"`
 	TopP             float32  `json:"topP,omitempty"`
+	TopK             int      `json:"topK,omitempty"`
 }
 
 // GoogleMessageCompletionRequestOptions represents the valid parameters and value options for the request.
