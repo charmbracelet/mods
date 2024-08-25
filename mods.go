@@ -312,7 +312,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		case "ollama":
 			occfg = DefaultOllamaConfig()
 			if api.BaseURL != "" {
-				ccfg.BaseURL = api.BaseURL
+				occfg.BaseURL = api.BaseURL
 			}
 		case "anthropic":
 			key, err := m.ensureKey(api, "ANTHROPIC_API_KEY", "https://console.anthropic.com/settings/keys")
