@@ -273,7 +273,6 @@ func initFlags() {
 
 	if config.Format && config.FormatAs == "" {
 		config.FormatAs = "markdown"
-		config.FormatText = defaultConfig().FormatText
 	}
 
 	if config.Format && config.FormatAs != "" && config.FormatText[config.FormatAs] == "" {
