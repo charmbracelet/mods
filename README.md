@@ -16,14 +16,14 @@ format results in Markdown, JSON, and other text based formats. Mods is a
 tool to add a sprinkle of AI in your command line and make your pipelines
 artificially intelligent.
 
-It works great with LLMs running locally through [LocalAI](LocalAI). You can
-also use [OpenAI](OpenAI), [Cohere](Cohere), [Groq](Groq), or [Azure OpenAI](AzureOpenAI).
+It works great with LLMs running locally through [LocalAI]. You can also use
+[OpenAI], [Cohere], [Groq], or [Azure OpenAI].
 
 [LocalAI]: https://github.com/go-skynet/LocalAI
 [OpenAI]: https://platform.openai.com/account/api-keys
 [Cohere]: https://dashboard.cohere.com/api-keys
 [Groq]: https://console.groq.com/keys
-[AzureOpenAI]: https://azure.microsoft.com/en-us/products/cognitive-services/openai-service
+[Azure OpenAI]: https://azure.microsoft.com/en-us/products/cognitive-services/openai-service
 
 ### Installation
 
