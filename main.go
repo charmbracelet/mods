@@ -271,6 +271,10 @@ func initFlags() {
 		return roleNames(toComplete), cobra.ShellCompDirectiveDefault
 	})
 
+	if config.FormatText == nil {
+		config.FormatText = defaultConfig().FormatText
+	}
+
 	if config.Format && config.FormatAs == "" {
 		config.FormatAs = "markdown"
 	}
