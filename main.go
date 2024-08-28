@@ -726,6 +726,13 @@ func askInfo() error {
 		}
 	}
 
+	if config.ContinueLast {
+		found, err := db.FindHEAD()
+		if err == nil && found != nil && found.Model != nil {
+			config.Model = *found.Model
+		}
+	}
+
 	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
