@@ -165,6 +165,7 @@ Check the [`./features.md`](./features.md) for more details.
 - `--fanciness`: Level of fanciness.
 - `--temp`: Sampling temperature.
 - `--topp`: Top P value.
+- `--topk`: Top K value.
 
 ## Custom Roles
 

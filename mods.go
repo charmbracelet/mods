@@ -264,6 +264,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var accfg AnthropicClientConfig
 		var cccfg CohereClientConfig
 		var occfg OllamaClientConfig
+		var gccfg GoogleClientConfig
 
 		cfg := m.Config
 		mod, ok = cfg.Models[cfg.Model]
@@ -326,6 +327,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.Version != "" {
 				accfg.Version = AnthropicAPIVersion(api.Version)
 			}
+		case "google":
+			key, err := m.ensureKey(api, "GOOGLE_API_KEY", "https://aistudio.google.com/app/apikey")
+			if err != nil {
+				return err
+			}
+			gccfg = DefaultGoogleConfig(mod.Name, key)
 		case "cohere":
 			key, err := m.ensureKey(api, "COHERE_API_KEY", "https://dashboard.cohere.com/api-keys")
 			if err != nil {
@@ -374,6 +381,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		switch mod.API {
 		case "anthropic":
 			return m.createAnthropicStream(content, accfg, mod)
+		case "google":
+			return m.createGoogleStream(content, gccfg, mod)
 		case "cohere":
 			return m.createCohereStream(content, cccfg, mod)
 		case "ollama":

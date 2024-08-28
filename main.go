@@ -245,6 +245,7 @@ func initFlags() {
 	flags.Float32Var(&config.Temperature, "temp", config.Temperature, stdoutStyles().FlagDesc.Render(help["temp"]))
 	flags.StringArrayVar(&config.Stop, "stop", config.Stop, stdoutStyles().FlagDesc.Render(help["stop"]))
 	flags.Float32Var(&config.TopP, "topp", config.TopP, stdoutStyles().FlagDesc.Render(help["topp"]))
+	flags.IntVar(&config.TopK, "topk", config.TopK, stdoutStyles().FlagDesc.Render(help["topk"]))
 	flags.UintVar(&config.Fanciness, "fanciness", config.Fanciness, stdoutStyles().FlagDesc.Render(help["fanciness"]))
 	flags.StringVar(&config.StatusText, "status-text", config.StatusText, stdoutStyles().FlagDesc.Render(help["status-text"]))
 	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles().FlagDesc.Render(help["no-cache"]))
@@ -270,9 +271,12 @@ func initFlags() {
 		return roleNames(toComplete), cobra.ShellCompDirectiveDefault
 	})
 
+	if config.FormatText == nil {
+		config.FormatText = defaultConfig().FormatText
+	}
+
 	if config.Format && config.FormatAs == "" {
 		config.FormatAs = "markdown"
-		config.FormatText = defaultConfig().FormatText
 	}
 
 	if config.Format && config.FormatAs != "" && config.FormatText[config.FormatAs] == "" {

@@ -25,6 +25,8 @@ quiet: false
 temp: 1.0
 # {{ index .Help "topp" }}
 topp: 1.0
+# {{ index .Help "topk" }}
+topk: 50
 # {{ index .Help "no-limit" }}
 no-limit: false
 # {{ index .Help "word-wrap" }}
@@ -106,6 +108,14 @@ apis:
         max-input-chars: 128000
       command-r:
         max-input-chars: 128000
+  google:
+    models:
+      gemini-1.5-pro-latest:
+        aliases: ["gemini"]
+        max-input-chars: 392000
+      gemini-1.5-flash-latest:
+        aliases: ["flash"]
+        max-input-chars: 392000
   ollama:
     base-url: http://localhost:11434/api
     models: # https://ollama.com/library
