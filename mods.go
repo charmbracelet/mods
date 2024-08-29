@@ -682,16 +682,16 @@ func cutPrompt(msg, prompt string) string {
 		return prompt
 	}
 
-	max, _ := strconv.Atoi(found[1])
+	maxt, _ := strconv.Atoi(found[1])
 	current, _ := strconv.Atoi(found[2])
 
-	if max > current {
+	if maxt > current {
 		return prompt
 	}
 
 	// 1 token =~ 4 chars
 	// cut 10 extra chars 'just in case'
-	reduceBy := 10 + (current-max)*4 //nolint:mnd
+	reduceBy := 10 + (current-maxt)*4 //nolint:mnd
 	if len(prompt) > reduceBy {
 		return prompt[:len(prompt)-reduceBy]
 	}

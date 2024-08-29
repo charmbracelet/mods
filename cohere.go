@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
 	cohere "github.com/cohere-ai/cohere-go/v2"
 	"github.com/cohere-ai/cohere-go/v2/client"
 	"github.com/cohere-ai/cohere-go/v2/core"
-	coherecore "github.com/cohere-ai/cohere-go/v2/core"
 	"github.com/cohere-ai/cohere-go/v2/option"
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -69,7 +69,10 @@ func (stream *cohereStreamReader) Recv() (response openai.ChatCompletionStreamRe
 
 // Close closes the stream.
 func (stream *cohereStreamReader) Close() error {
-	return stream.Stream.Close()
+	if err := stream.Stream.Close(); err != nil {
+		return fmt.Errorf("cohere: %w", err)
+	}
+	return nil
 }
 
 func (stream *cohereStreamReader) processMessages() (openai.ChatCompletionStreamResponse, error) {
@@ -79,7 +82,7 @@ func (stream *cohereStreamReader) processMessages() (openai.ChatCompletionStream
 			if errors.Is(err, io.EOF) {
 				return *new(openai.ChatCompletionStreamResponse), io.EOF
 			}
-			return *new(openai.ChatCompletionStreamResponse), err
+			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("cohere: %w", err)
 		}
 
 		if message.EventType != "text-generation" {
@@ -126,7 +129,7 @@ func (c *CohereClient) CreateChatCompletionStream(
 // CohereToOpenAIAPIError attempts to convert a Cohere API error into
 // an OpenAI API error to later reuse the existing error handling logic.
 func CohereToOpenAIAPIError(err error) error {
-	ce := &coherecore.APIError{}
+	ce := &core.APIError{}
 	if !errors.As(err, &ce) {
 		return err
 	}
