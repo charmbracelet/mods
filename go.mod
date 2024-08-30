@@ -16,7 +16,7 @@ require (
 	github.com/charmbracelet/x/editor v0.1.0
 	github.com/charmbracelet/x/exp/ordered v0.0.0-20231010190216-1cb11efc897d
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0
-	github.com/cohere-ai/cohere-go/v2 v2.8.2
+	github.com/cohere-ai/cohere-go/v2 v2.10.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/mattn/go-isatty v0.0.20
@@ -33,6 +33,8 @@ require (
 
 require (
 	github.com/alecthomas/chroma v0.10.0 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.30.3 // indirect
+	github.com/aws/smithy-go v1.20.3 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/catppuccin/go v0.2.0 // indirect
