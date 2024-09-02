@@ -14,7 +14,7 @@ require (
 	github.com/charmbracelet/huh v0.5.2
 	github.com/charmbracelet/lipgloss v0.12.1
 	github.com/charmbracelet/x/editor v0.1.0
-	github.com/charmbracelet/x/exp/ordered v0.0.0-20231010190216-1cb11efc897d
+	github.com/charmbracelet/x/exp/ordered v0.1.0
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0
 	github.com/cohere-ai/cohere-go/v2 v2.8.2
 	github.com/jmoiron/sqlx v1.4.0
