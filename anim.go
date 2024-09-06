@@ -81,6 +81,7 @@ type anim struct {
 }
 
 func newAnim(cyclingCharsSize uint, label string, r *lipgloss.Renderer, s styles) anim {
+	// #nosec G115
 	n := int(cyclingCharsSize)
 	if n > maxCyclingChars {
 		n = maxCyclingChars

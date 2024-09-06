@@ -167,8 +167,8 @@ var (
 				return modsError{
 					reason: "You haven't provided any prompt input.",
 					err: newUserErrorf(
-						"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: " +
-							stdoutStyles().InlineCode.Render("mods [prompt]"),
+						"You can give your prompt as arguments and/or pipe it from STDIN.\nExample: %s",
+						stdoutStyles().InlineCode.Render("mods [prompt]"),
 					),
 				}
 			}
@@ -343,9 +343,11 @@ func main() {
 			RunE: func(*cobra.Command, []string) error {
 				manPage, err := mcobra.NewManPage(1, rootCmd)
 				if err != nil {
+					//nolint:wrapcheck
 					return err
 				}
 				_, err = fmt.Fprint(os.Stdout, manPage.Build(roff.NewDocument()))
+				//nolint:wrapcheck
 				return err
 			},
 		})
@@ -646,7 +648,7 @@ func selectFromList(conversations []Conversation) {
 
 func printList(conversations []Conversation) {
 	for _, conversation := range conversations {
-		fmt.Fprintf(
+		_, _ = fmt.Fprintf(
 			os.Stdout,
 			"%s\t%s\t%s\n",
 			stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
@@ -721,7 +723,7 @@ func isNoArgs() bool {
 }
 
 func askInfo() error {
-	var apis []huh.Option[string]
+	apis := make([]huh.Option[string], 0, len(config.APIs))
 	opts := map[string][]huh.Option[string]{}
 	for _, api := range config.APIs {
 		apis = append(apis, huh.NewOption(api.Name, api.Name))
@@ -737,6 +739,8 @@ func askInfo() error {
 		}
 	}
 
+	// wrapping is done by the caller
+	//nolint:wrapcheck
 	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
@@ -768,6 +772,7 @@ func askInfo() error {
 		Run()
 }
 
+//nolint:mnd
 func isManCmd(args []string) bool {
 	if len(args) == 2 {
 		return args[1] == "man"
@@ -778,6 +783,7 @@ func isManCmd(args []string) bool {
 	return false
 }
 
+//nolint:mnd
 func isCompletionCmd(args []string) bool {
 	if len(args) <= 1 {
 		return false
