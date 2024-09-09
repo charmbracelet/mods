@@ -14,7 +14,7 @@ import (
 	"github.com/atotto/clipboard"
 	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/glamour"
+	glamour "github.com/charmbracelet/glamour/styles"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/x/editor"
 	mcobra "github.com/muesli/mango-cobra"
