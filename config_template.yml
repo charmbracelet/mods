@@ -165,6 +165,9 @@ apis:
       llama-3.1-70b-versatile:
         aliases: ["llama3.1", "llama3.1-70b", "llama3.1-versatile"]
         max-input-chars: 392000
+      llama-3.1-8b-instant:
+        aliases: ["llama3.1-8b", "llama3.1-instant"]
+        max-input-chars: 392000
       llama3-70b-8192:
         aliases: ["llama3", "llama3-70b"]
         max-input-chars: 24500
