@@ -162,6 +162,9 @@ apis:
       llama3-groq-8b-8192-tool-use-preview:
         aliases: ["llama3-8b-tool"]
         max-input-chars: 24500
+      llama-3.1-70b-versatile:
+        aliases: ["llama3.1", "llama3.1-70b", "llama3.1-versatile"]
+        max-input-chars: 392000
       llama3-70b-8192:
         aliases: ["llama3", "llama3-70b"]
         max-input-chars: 24500
