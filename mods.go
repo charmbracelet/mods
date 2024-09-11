@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -351,34 +352,25 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if mod.API == "azure-ad" {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
+		case "copilot":
+			filePath := os.Getenv("HOME") + "/.config/github-copilot/hosts.json"
+			bts, err := os.ReadFile(filePath)
+			if err != nil {
+				return err
+			}
+			hosts := map[string]map[string]string{}
+			if err := json.Unmarshal(bts, &hosts); err != nil {
+				return err
+			}
+			authToken := hosts["github.com"]["oauth_token"]
+			ccfg = openai.DefaultConfig(authToken)
+			ccfg.BaseURL = api.BaseURL
 		default:
 			var key string
-			if cfg.API == "copilot" {
-				filePath := os.Getenv("HOME") + "/.config/github-copilot/hosts.json"
-				data, err := os.ReadFile(filePath)
-				if err != nil {
-					return err
-				}
-				fileContent := string(data)
-				re := regexp.MustCompile(`.*oauth_token...|\".*`)
-				key = re.ReplaceAllString(fileContent, "")
-				if key == "" {
-					return fmt.Errorf("No Copilot OAuth token found in %s", filePath)
-				}
-				key = strings.TrimSpace(key)
-				ccfg = openai.DefaultConfig(key)
-				for _, a := range cfg.APIs {
-					if "copilot" == a.Name {
-						api = a
-						break
-					}
-				}
-			} else {
-				var err error
-				key, err = m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
-				if err != nil {
-					return err
-				}
+			var err error
+			key, err = m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
+			if err != nil {
+				return err
 			}
 			ccfg = openai.DefaultConfig(key)
 			if api.BaseURL != "" {
@@ -447,7 +439,7 @@ func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg 
 	if errors.As(err, &ae) {
 		return m.handleAPIError(ae, mod, content)
 	}
-	return modsError{ae, fmt.Sprintf(
+	return modsError{err, fmt.Sprintf(
 		"There was a problem with the %s API request.",
 		mod.API,
 	)}
