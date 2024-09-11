@@ -318,7 +318,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		case "anthropic":
 			key, err := m.ensureKey(api, "ANTHROPIC_API_KEY", "https://console.anthropic.com/settings/keys")
 			if err != nil {
-				return err
+				return modsError{err, "Anthropic authentication failed"}
 			}
 			accfg = DefaultAnthropicConfig(key)
 			if api.BaseURL != "" {
@@ -330,13 +330,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		case "google":
 			key, err := m.ensureKey(api, "GOOGLE_API_KEY", "https://aistudio.google.com/app/apikey")
 			if err != nil {
-				return err
+				return modsError{err, "Google authentication failed"}
 			}
 			gccfg = DefaultGoogleConfig(mod.Name, key)
 		case "cohere":
 			key, err := m.ensureKey(api, "COHERE_API_KEY", "https://dashboard.cohere.com/api-keys")
 			if err != nil {
-				return err
+				return modsError{err, "Cohere authentication failed"}
 			}
 			cccfg = DefaultCohereConfig(key)
 			if api.BaseURL != "" {
@@ -345,7 +345,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		case "azure", "azure-ad":
 			key, err := m.ensureKey(api, "AZURE_OPENAI_KEY", "https://aka.ms/oai/access")
 			if err != nil {
-				return err
+				return modsError{err, "Azure authentication failed"}
 			}
 			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
 			if mod.API == "azure-ad" {
@@ -354,7 +354,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		default:
 			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
 			if err != nil {
-				return err
+				return modsError{err, "OpenAI authentication failed"}
 			}
 			ccfg = openai.DefaultConfig(key)
 			if api.BaseURL != "" {
