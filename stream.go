@@ -131,7 +131,7 @@ func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod 
 	}
 
 	if cfg.MaxTokens > 0 {
-		generationConfig.MaxOutputTokens = uint(cfg.MaxTokens)
+		generationConfig.MaxOutputTokens = uint(cfg.MaxTokens) //nolint: gosec
 	} else {
 		generationConfig.MaxOutputTokens = 4096
 	}
