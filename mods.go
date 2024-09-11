@@ -215,7 +215,7 @@ func (m *Mods) View() string {
 			return m.glamOutput
 		}
 
-		if isOutputTTY() {
+		if isOutputTTY() && !m.Config.Raw {
 			return m.Output
 		}
 

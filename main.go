@@ -78,14 +78,14 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.Prefix = removeWhitespace(strings.Join(args, " "))
 
-			opts := []tea.ProgramOption{
-				tea.WithOutput(os.Stderr),
-			}
+			opts := []tea.ProgramOption{}
 
-			if !isInputTTY() {
+			if !isInputTTY() || config.Raw {
 				opts = append(opts, tea.WithInput(nil))
 			}
-			if !isOutputTTY() {
+			if isOutputTTY() && !config.Raw {
+				opts = append(opts, tea.WithOutput(os.Stderr))
+			} else {
 				opts = append(opts, tea.WithoutRenderer())
 			}
 			if os.Getenv("VIMRUNTIME") != "" {
