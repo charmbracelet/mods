@@ -423,7 +423,7 @@ func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg 
 	if errors.As(err, &ae) {
 		return m.handleAPIError(ae, mod, content)
 	}
-	return modsError{ae, fmt.Sprintf(
+	return modsError{err, fmt.Sprintf(
 		"There was a problem with the %s API request.",
 		mod.API,
 	)}
