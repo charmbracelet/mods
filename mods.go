@@ -359,9 +359,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			ccfg = openai.DefaultConfig(token)
 			ccfg.BaseURL = api.BaseURL
 		default:
-			var key string
-			var err error
-			key, err = m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
+			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
 			if err != nil {
 				return err
 			}
