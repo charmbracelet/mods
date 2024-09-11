@@ -90,6 +90,8 @@ apis:
         aliases: ["35"]
         max-input-chars: 12250
         fallback:
+  copilot:
+    base-url: https://api.githubcopilot.com
   anthropic:
     base-url: https://api.anthropic.com/v1
     api-key:

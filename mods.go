@@ -352,9 +352,33 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
 		default:
-			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
-			if err != nil {
-				return err
+			var key string
+			if cfg.API == "copilot" {
+				filePath := os.Getenv("HOME") + "/.config/github-copilot/hosts.json"
+				data, err := os.ReadFile(filePath)
+				if err != nil {
+					return err
+				}
+				fileContent := string(data)
+				re := regexp.MustCompile(`.*oauth_token...|\".*`)
+				key = re.ReplaceAllString(fileContent, "")
+				if key == "" {
+					return fmt.Errorf("No Copilot OAuth token found in %s", filePath)
+				}
+				key = strings.TrimSpace(key)
+				ccfg = openai.DefaultConfig(key)
+				for _, a := range cfg.APIs {
+					if "copilot" == a.Name {
+						api = a
+						break
+					}
+				}
+			} else {
+				var err error
+				key, err = m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
+				if err != nil {
+					return err
+				}
 			}
 			ccfg = openai.DefaultConfig(key)
 			if api.BaseURL != "" {
