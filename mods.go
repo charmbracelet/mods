@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -353,17 +352,11 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
 		case "copilot":
-			filePath := os.Getenv("HOME") + "/.config/github-copilot/hosts.json"
-			bts, err := os.ReadFile(filePath)
+			token, err := getCopilotAuthToken()
 			if err != nil {
-				return err
+				return fmt.Errorf("could not get copilot authentication token: %w", err)
 			}
-			hosts := map[string]map[string]string{}
-			if err := json.Unmarshal(bts, &hosts); err != nil {
-				return err
-			}
-			authToken := hosts["github.com"]["oauth_token"]
-			ccfg = openai.DefaultConfig(authToken)
+			ccfg = openai.DefaultConfig(token)
 			ccfg.BaseURL = api.BaseURL
 		default:
 			var key string
