@@ -9,7 +9,7 @@ require (
 	github.com/caarlos0/env/v9 v9.0.0
 	github.com/caarlos0/timea.go v1.2.0
 	github.com/charmbracelet/bubbles v0.20.0
-	github.com/charmbracelet/bubbletea v1.1.0
+	github.com/charmbracelet/bubbletea v1.1.1
 	github.com/charmbracelet/glamour v0.8.0
 	github.com/charmbracelet/huh v0.6.0
 	github.com/charmbracelet/lipgloss v0.13.0
@@ -23,12 +23,12 @@ require (
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a
-	github.com/sashabaranov/go-openai v1.29.1
+	github.com/sashabaranov/go-openai v1.29.2
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
-	modernc.org/sqlite v1.33.0
+	modernc.org/sqlite v1.33.1
 )
 
 require (
@@ -69,6 +69,7 @@ require (
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
+	modernc.org/libc v1.55.3 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/strutil v1.2.0 // indirect
