@@ -206,6 +206,15 @@ apis:
       Meta-Llama-3.1-405B-Instruct:
         aliases: ["llama3.1-405b-sambanova", "llama3.1-instruct-405b-sambanova", "llama3.1-405b-sambanova-4k", "llama3.1-instruct-405b-sambanova-4k"]
         max-input-chars: 12250
+      Meta-Llama-3.1-8B-Instruct-8k:
+        aliases: ["llama3.1-8b-sambanova-8k", "llama3.1-instruct-8b-sambanova-8k"]
+        max-input-chars: 24500
+      Meta-Llama-3.1-70B-Instruct-8k:
+        aliases: ["llama3.1-70b-sambanova-8k", "llama3.1-instruct-70b-sambanova-8k"]
+        max-input-chars: 24500
+      Meta-Llama-3.1-405B-Instruct-8k:
+        aliases: ["llama3.1-405b-sambanova-8k", "llama3.1-instruct-405b-sambanova-8k"]
+        max-input-chars: 24500
   localai:
     # LocalAI setup instructions: https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model
     base-url: http://localhost:8080
