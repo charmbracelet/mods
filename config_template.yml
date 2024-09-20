@@ -192,6 +192,20 @@ apis:
       llama3.1-70b:
         aliases: ["llama3.1-cerebras", "llama3.1-70b-cerebras"]
         max-input-chars: 24500
+  sambanova:
+    base-url: https://api.sambanova.ai/v1
+    api-key:
+    api-key-env: SAMBANOVA_API_KEY
+    models: # https://community.sambanova.ai/t/supported-models/193
+      Meta-Llama-3.1-8B-Instruct:
+        aliases: ["llama3.1-8b-sambanova", "llama3.1-instruct-8b-sambanova", "llama3.1-8b-sambanova-4k", "llama3.1-instruct-8b-sambanova-4k"]
+        max-input-chars: 12250
+      Meta-Llama-3.1-70B-Instruct:
+        aliases: ["llama3.1-70b-sambanova", "llama3.1-instruct-70b-sambanova", "llama3.1-70b-sambanova-4k", "llama3.1-instruct-70b-sambanova-4k"]
+        max-input-chars: 12250
+      Meta-Llama-3.1-405B-Instruct:
+        aliases: ["llama3.1-405b-sambanova", "llama3.1-instruct-405b-sambanova", "llama3.1-405b-sambanova-4k", "llama3.1-instruct-405b-sambanova-4k"]
+        max-input-chars: 12250
   localai:
     # LocalAI setup instructions: https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model
     base-url: http://localhost:8080
