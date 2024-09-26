@@ -25,6 +25,7 @@ func (m *Mods) createOpenAIStream(content string, ccfg openai.ClientConfig, mod 
 		Model:    mod.Name,
 		Messages: m.messages,
 		Stream:   true,
+		User:     cfg.User,
 	}
 
 	if mod.API != "perplexity" || !strings.Contains(mod.Name, "online") {

@@ -351,6 +351,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if mod.API == "azure-ad" {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
+			if api.User != "" {
+				cfg.User = api.User
+			}
 		default:
 			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
 			if err != nil {
