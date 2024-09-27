@@ -351,6 +351,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if mod.API == "azure-ad" {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
+		case "copilot":
+			token, err := getCopilotAuthToken()
+			if err != nil {
+				return modsError{err, "Copilot authentication failed"}
+			}
+			ccfg = openai.DefaultConfig(token)
+			ccfg.BaseURL = api.BaseURL
 		default:
 			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
 			if err != nil {
