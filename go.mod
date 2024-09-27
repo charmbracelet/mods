@@ -23,7 +23,7 @@ require (
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a
-	github.com/sashabaranov/go-openai v1.30.3
+	github.com/sashabaranov/go-openai v1.31.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
