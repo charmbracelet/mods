@@ -47,6 +47,8 @@ theme: charm
 max-input-chars: 12250
 # {{ index .Help "max-tokens" }}
 # max-tokens: 100
+# {{ index .Help "max-completion-tokens" }}
+max-completion-tokens: 100
 # {{ index .Help "apis" }}
 apis:
   openai:
@@ -90,6 +92,12 @@ apis:
         aliases: ["35"]
         max-input-chars: 12250
         fallback:
+      o1-preview:
+        aliases: ["o1-preview"]
+        max-input-chars: 128000
+      o1-mini:
+        aliases: ["o1-mini"]
+        max-input-chars: 128000
   anthropic:
     base-url: https://api.anthropic.com/v1
     api-key:
@@ -242,6 +250,12 @@ apis:
         aliases: ["az35"]
         max-input-chars: 12250
         fallback:
+      o1-preview:
+        aliases: ["o1-preview"]
+        max-input-chars: 128000
+      o1-mini:
+        aliases: ["o1-mini"]
+        max-input-chars: 128000
   runpod:
     # https://docs.runpod.io/serverless/workers/vllm/openai-compatibility
     base-url: https://api.runpod.ai/v2/${YOUR_ENDPOINT}/openai/v1
