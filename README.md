@@ -134,9 +134,9 @@ Check the [`./features.md`](./features.md) for more details.
 
 - `-m`, `--model`: Specify Large Language Model to use.
 - `-f`, `--format`: Ask the LLM to format the response in a given format.
-- `--format-as`: Specify the format for the output (used with `--format`).
-- `-P`, `--prompt`: Prompt should include stdin and args.
-- `-p`, `--prompt-args`: Prompt should only include args.
+- `--format-as`: Specify the format for the output (used with `--format`, e.g. `mods -f --format-as json 'your prompt here'`).
+- `-P=n`, `--prompt=n`: show the output with prompts from stdin, and only include the first `n` lines of prompt.
+- `-p`, `--prompt-args`: show the prompt from args in the output.
 - `-q`, `--quiet`: Only output errors to standard err.
 - `-r`, `--raw`: Print raw response without syntax highlighting.
 - `--settings`: Open settings.
