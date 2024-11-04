@@ -88,6 +88,7 @@ type API struct {
 	Version   string           `yaml:"version"`
 	BaseURL   string           `yaml:"base-url"`
 	Models    map[string]Model `yaml:"models"`
+	User      string           `yaml:"user"`
 }
 
 // APIs is a type alias to allow custom YAML decoding.
@@ -175,6 +176,7 @@ type Config struct {
 	ListRoles         bool
 	Delete            string
 	DeleteOlderThan   time.Duration
+	User              string
 
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
 }

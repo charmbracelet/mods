@@ -139,7 +139,7 @@ Check the [`./features.md`](./features.md) for more details.
 - `-p`, `--prompt-args`: Prompt should only include args.
 - `-q`, `--quiet`: Only output errors to standard err.
 - `-r`, `--raw`: Print raw response without syntax highlighting.
-- `-s`, `--settings`: Open settings.
+- `--settings`: Open settings.
 - `-x`, `--http-proxy`: Use HTTP proxy to connect to the API endpoints.
 - `--max-retries`: Maximum number of retries.
 - `--max-tokens`: Specify maximum tokens with which to respond.
