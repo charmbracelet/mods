@@ -351,7 +351,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if mod.API == "azure-ad" {
 				ccfg.APIType = openai.APITypeAzureAD
 			}
-      if api.User != "" {
+			if api.User != "" {
 				cfg.User = api.User
 			}
 		case "copilot":
