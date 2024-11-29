@@ -53,6 +53,7 @@ apis:
     base-url: https://api.openai.com/v1
     api-key:
     api-key-env: OPENAI_API_KEY
+    # api-key-cmd: rbw get -f OPENAI_API_KEY chat.openai.com
     models: # https://platform.openai.com/docs/models
       gpt-4o-mini:
         aliases: ["4o-mini"]
