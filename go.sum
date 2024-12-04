@@ -26,6 +26,8 @@ github.com/caarlos0/duration v0.0.0-20240108180406-5d492514f3c7 h1:kJP/C2eL9DCKr
 github.com/caarlos0/duration v0.0.0-20240108180406-5d492514f3c7/go.mod h1:mSkwb/eZEwOJJJ4tqAKiuhLIPe0e9+FKhlU0oMCpbf8=
 github.com/caarlos0/env/v9 v9.0.0 h1:SI6JNsOA+y5gj9njpgybykATIylrRMklbs5ch6wO6pc=
 github.com/caarlos0/env/v9 v9.0.0/go.mod h1:ye5mlCVMYh6tZ+vCgrs/B95sj88cg5Tlnc0XIzgZ020=
+github.com/caarlos0/go-shellwords v1.0.12 h1:HWrUnu6lGbWfrDcFiHcZiwOLzHWjjrPVehULaTFgPp8=
+github.com/caarlos0/go-shellwords v1.0.12/go.mod h1:bYeeX1GrTLPl5cAMYEzdm272qdsQAZiaHgeF0KTk1Gw=
 github.com/caarlos0/timea.go v1.2.0 h1:JkjyWSUheN4nGO/OmYVGKbEv4ozHP/zuTZWD5Ih3Gog=
 github.com/caarlos0/timea.go v1.2.0/go.mod h1:p4uopjR7K+y0Oxh7j0vLh3vSo58jjzOgXHKcyKwQjuY=
 github.com/catppuccin/go v0.2.0 h1:ktBeIrIP42b/8FGiScP9sgrWOss3lw0Z5SktRoithGA=
