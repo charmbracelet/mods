@@ -207,7 +207,7 @@ func (c *ExpiringCache[T]) Read(id string, readFn func(io.Reader) error) error {
 
 	if expiresAt < time.Now().Unix() {
 		os.Remove(matches[0])
-		return fmt.Errorf("cache expired")
+		return os.ErrNotExist
 	}
 
 	file, err := os.Open(matches[0])
