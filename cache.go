@@ -6,7 +6,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -19,15 +22,14 @@ type CacheType string
 
 const (
 	ConversationCache CacheType = "conversations"
+	TemporaryCache    CacheType = "cache"
 )
 
-// Cache represents a generic cache that can store any type
 type Cache[T any] struct {
 	baseDir string
 	cType   CacheType
 }
 
-// NewCache creates a new cache instance
 func NewCache[T any](baseDir string, cacheType CacheType) (*Cache[T], error) {
 	cacheDir := filepath.Join(baseDir, string(cacheType))
 	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
@@ -87,7 +89,6 @@ func (c *Cache[T]) Delete(id string) error {
 	return nil
 }
 
-// convoCache wraps Cache for backward compatibility
 type convoCache struct {
 	cache *Cache[[]openai.ChatCompletionMessage]
 }
@@ -95,7 +96,6 @@ type convoCache struct {
 func newCache(dir string) *convoCache {
 	cache, err := NewCache[[]openai.ChatCompletionMessage](dir, ConversationCache)
 	if err != nil {
-		// maintain backward compatibility by handling error silently
 		return nil
 	}
 	return &convoCache{
@@ -165,4 +165,89 @@ func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, er
 			},
 		},
 	}, nil
+}
+
+type ExpiringCache[T any] struct {
+	cache *Cache[T]
+}
+
+func NewExpiringCache[T any]() (*ExpiringCache[T], error) {
+	cache, err := NewCache[T](config.CachePath, TemporaryCache)
+	if err != nil {
+		return nil, fmt.Errorf("create expiring cache: %w", err)
+	}
+	return &ExpiringCache[T]{cache: cache}, nil
+}
+
+func (c *ExpiringCache[T]) getCacheFilename(id string, expiresAt int64) string {
+	return fmt.Sprintf("%s.%d", id, expiresAt)
+}
+
+func (c *ExpiringCache[T]) Read(id string, readFn func(io.Reader) error) error {
+	pattern := fmt.Sprintf("%s.*", id)
+	matches, err := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
+	if err != nil {
+		return err
+	}
+
+	if len(matches) == 0 {
+		return fmt.Errorf("item not found")
+	}
+
+	filename := filepath.Base(matches[0])
+	parts := strings.Split(filename, ".")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid cache filename")
+	}
+
+	expiresAt, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid expiration timestamp")
+	}
+
+	if expiresAt < time.Now().Unix() {
+		os.Remove(matches[0])
+		return fmt.Errorf("cache expired")
+	}
+
+	file, err := os.Open(matches[0])
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return readFn(file)
+}
+
+func (c *ExpiringCache[T]) Write(id string, expiresAt int64, writeFn func(io.Writer) error) error {
+	pattern := fmt.Sprintf("%s.*", id)
+	oldFiles, _ := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
+	for _, file := range oldFiles {
+		os.Remove(file)
+	}
+
+	filename := c.getCacheFilename(id, expiresAt)
+	file, err := os.Create(filepath.Join(c.cache.cacheDir(), filename))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return writeFn(file)
+}
+
+func (c *ExpiringCache[T]) Delete(id string) error {
+	pattern := fmt.Sprintf("%s.*", id)
+	matches, err := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
+	if err != nil {
+		return err
+	}
+
+	for _, match := range matches {
+		if err := os.Remove(match); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
