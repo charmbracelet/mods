@@ -12,11 +12,12 @@ import (
 )
 
 const (
-	CopilotChatAuthURL   = "https://api.github.com/copilot_internal/v2/token"
-	CopilotEditorVersion = "vscode/1.95.3"
-	CopilotUserAgent     = "curl/7.81.0" // Necessay to bypass the user-agent check
+	copilotChatAuthURL   = "https://api.github.com/copilot_internal/v2/token"
+	copilotEditorVersion = "vscode/1.95.3"
+	copilotUserAgent     = "curl/7.81.0" // Necessay to bypass the user-agent check
 )
 
+// Authentication response from GitHub Copilot's token endpoint
 type CopilotAccessToken struct {
 	Token     string `json:"token"`
 	ExpiresAt int64  `json:"expires_at"`
@@ -34,23 +35,23 @@ type CopilotAccessToken struct {
 	} `json:"error_details,omitempty"`
 }
 
-type CopilotHTTPClient struct {
+type copilotHTTPClient struct {
 	client      *http.Client
 	AccessToken *CopilotAccessToken
 }
 
-func NewCopilotHTTPClient() *CopilotHTTPClient {
-	return &CopilotHTTPClient{
+func newCopilotHTTPClient() *copilotHTTPClient {
+	return &copilotHTTPClient{
 		client: &http.Client{},
 	}
 }
 
-func (c *CopilotHTTPClient) Do(req *http.Request) (*http.Response, error) {
+func (c *copilotHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Editor-Version", CopilotEditorVersion)
-	req.Header.Set("User-Agent", CopilotUserAgent)
+	req.Header.Set("Editor-Version", copilotEditorVersion)
+	req.Header.Set("User-Agent", copilotUserAgent)
 
-	var isTokenExpired bool = c.AccessToken != nil && c.AccessToken.ExpiresAt < time.Now().Unix()
+	var isTokenExpired = c.AccessToken != nil && c.AccessToken.ExpiresAt < time.Now().Unix()
 
 	if c.AccessToken == nil || isTokenExpired {
 		// Use the base http.Client for token requests to avoid recursion
@@ -120,21 +121,25 @@ func getCopilotAccessToken(client *http.Client) (CopilotAccessToken, error) {
 		return CopilotAccessToken{}, fmt.Errorf("failed to get refresh token: %w", err)
 	}
 
-	tokenReq, err := http.NewRequest(http.MethodGet, CopilotChatAuthURL, nil)
+	tokenReq, err := http.NewRequest(http.MethodGet, copilotChatAuthURL, nil)
 	if err != nil {
 		return CopilotAccessToken{}, fmt.Errorf("failed to create token request: %w", err)
 	}
 
 	tokenReq.Header.Set("Authorization", "token "+refreshToken)
 	tokenReq.Header.Set("Accept", "application/json")
-	tokenReq.Header.Set("Editor-Version", CopilotEditorVersion)
-	tokenReq.Header.Set("User-Agent", CopilotUserAgent)
+	tokenReq.Header.Set("Editor-Version", copilotEditorVersion)
+	tokenReq.Header.Set("User-Agent", copilotUserAgent)
 
 	tokenResp, err := client.Do(tokenReq)
 	if err != nil {
 		return CopilotAccessToken{}, fmt.Errorf("failed to get access token: %w", err)
 	}
-	defer tokenResp.Body.Close()
+	defer func() {
+		if closeErr := tokenResp.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("error closing response body: %w", closeErr)
+		}
+	}()
 
 	var tokenResponse CopilotAccessToken
 	if err := json.NewDecoder(tokenResp.Body).Decode(&tokenResponse); err != nil {
@@ -145,5 +150,5 @@ func getCopilotAccessToken(client *http.Client) (CopilotAccessToken, error) {
 		return CopilotAccessToken{}, fmt.Errorf("token error: %s", tokenResponse.ErrorDetails.Message)
 	}
 
-	return tokenResponse, nil
+	return tokenResponse, err
 }
