@@ -7,6 +7,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/caarlos0/duration v0.0.0-20240108180406-5d492514f3c7
 	github.com/caarlos0/env/v9 v9.0.0
+	github.com/caarlos0/go-shellwords v1.0.12
 	github.com/caarlos0/timea.go v1.2.0
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.4
@@ -28,7 +29,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
-	modernc.org/sqlite v1.34.2
+	modernc.org/sqlite v1.34.3
 )
 
 require (
@@ -37,7 +38,6 @@ require (
 	github.com/aws/smithy-go v1.20.3 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
-	github.com/caarlos0/go-shellwords v1.0.12 // indirect
 	github.com/catppuccin/go v0.2.0 // indirect
 	github.com/charmbracelet/x/ansi v0.4.5 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
