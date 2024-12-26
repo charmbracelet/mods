@@ -142,25 +142,16 @@ apis:
     base-url: https://api.perplexity.ai
     api-key:
     api-key-env: PERPLEXITY_API_KEY
-    models: # https://docs.perplexity.ai/docs/model-cards
-      llama-3-sonar-small-32k-chat:
-        aliases: ["llama3-ss"]
-        max-input-chars: 32768
-      llama-3-sonar-small-32k-online:
-        aliases: ["llam3-sso"]
-        max-input-chars: 28000
-      llama-3-sonar-large-32k-chat:
-        aliases: ["llam3-sl"]
-        max-input-chars: 32768
-      llama-3-sonar-large-32k-online:
-        aliases: ["llam3-slo"]
-        max-input-chars: 28000
-      llama-3-8b-instruct:
-        aliases: ["llam3-8bi"]
-        max-input-chars: 8192
-      llama-3-70b-instruct:
-        aliases: ["llam3-70bi"]
-        max-input-chars: 8192
+    models: # https://docs.perplexity.ai/guides/model-cards                         
+      llama-3.1-sonar-small-128k-online:
+        aliases: ["llam31-small"]
+        max-input-chars: 127072
+      llama-3.1-sonar-large-128k-online:
+        aliases: ["llam31-large"]
+        max-input-chars: 127072
+      llama-3.1-sonar-huge-128k-online:
+        aliases: ["llam31-huge"]
+        max-input-chars: 127072
   groq:
     base-url: https://api.groq.com/openai/v1
     api-key:
