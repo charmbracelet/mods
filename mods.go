@@ -357,12 +357,17 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				cfg.User = api.User
 			}
 		case "copilot":
-			token, err := getCopilotAuthToken()
+			ghCopilotHTTPClient := newCopilotHTTPClient()
+			accessToken, err := getCopilotAccessToken(ghCopilotHTTPClient.client)
 			if err != nil {
 				return modsError{err, "Copilot authentication failed"}
 			}
-			ccfg = openai.DefaultConfig(token)
-			ccfg.BaseURL = api.BaseURL
+
+			ccfg = openai.DefaultConfig(accessToken.Token)
+			ccfg.HTTPClient = ghCopilotHTTPClient
+			ccfg.HTTPClient.(*copilotHTTPClient).AccessToken = &accessToken
+			ccfg.BaseURL = ordered.First(api.BaseURL, accessToken.Endpoints.API)
+
 		default:
 			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
 			if err != nil {
