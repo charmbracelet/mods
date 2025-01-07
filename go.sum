@@ -54,8 +54,8 @@ github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0 h1:qko
 github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0/go.mod h1:pBhA0ybfXv6hDjQUZ7hk1lVxBiUbupdw5R31yPUViVQ=
 github.com/charmbracelet/x/term v0.2.1 h1:AQeHeLZ1OqSXhrAWpYUtZyX1T3zVxfpZuEQMIQaGIAQ=
 github.com/charmbracelet/x/term v0.2.1/go.mod h1:oQ4enTYFV7QN4m0i9mzHrViD7TQKvNEEkHUMCmsxdUg=
-github.com/cohere-ai/cohere-go/v2 v2.12.3 h1:qF2/AIYl2FpizkZaQtFRFwhdxD5oZhsN2+wAF+ZoY7s=
-github.com/cohere-ai/cohere-go/v2 v2.12.3/go.mod h1:MuiJkCxlR18BDV2qQPbz2Yb/OCVphT1y6nD2zYaKeR0=
+github.com/cohere-ai/cohere-go/v2 v2.12.4 h1:hWiOc7LkwJ21S3hh3Ogh9Fe5s9ZDsVu11qoaMGfYZRQ=
+github.com/cohere-ai/cohere-go/v2 v2.12.4/go.mod h1:MuiJkCxlR18BDV2qQPbz2Yb/OCVphT1y6nD2zYaKeR0=
 github.com/cpuguy83/go-md2man/v2 v2.0.4/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
