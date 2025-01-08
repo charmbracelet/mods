@@ -206,7 +206,9 @@ func (c *ExpiringCache[T]) Read(id string, readFn func(io.Reader) error) error {
 	}
 
 	if expiresAt < time.Now().Unix() {
-		os.Remove(matches[0])
+		if err := os.Remove(matches[0]); err != nil {
+			return fmt.Errorf("failed to remove expired cache file: %w", err)
+		}
 		return os.ErrNotExist
 	}
 
@@ -214,7 +216,12 @@ func (c *ExpiringCache[T]) Read(id string, readFn func(io.Reader) error) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			err = cerr
+		}
+	}()
 
 	return readFn(file)
 }
@@ -223,7 +230,9 @@ func (c *ExpiringCache[T]) Write(id string, expiresAt int64, writeFn func(io.Wri
 	pattern := fmt.Sprintf("%s.*", id)
 	oldFiles, _ := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
 	for _, file := range oldFiles {
-		os.Remove(file)
+		if err := os.Remove(file); err != nil {
+			return fmt.Errorf("failed to remove old cache file: %w", err)
+		}
 	}
 
 	filename := c.getCacheFilename(id, expiresAt)
@@ -231,7 +240,11 @@ func (c *ExpiringCache[T]) Write(id string, expiresAt int64, writeFn func(io.Wri
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			err = cerr
+		}
+	}()
 
 	return writeFn(file)
 }
