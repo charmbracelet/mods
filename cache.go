@@ -14,22 +14,26 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-const cacheExt = ".gob"
-
-var errInvalidID = errors.New("invalid id")
-
+// CacheType represents the type of cache being used
 type CacheType string
 
+// Cache types for different purposes
 const (
 	ConversationCache CacheType = "conversations"
 	TemporaryCache    CacheType = "cache"
 )
 
+const cacheExt = ".gob"
+
+var errInvalidID = errors.New("invalid id")
+
+// Cache is a generic cache implementation that stores data in files
 type Cache[T any] struct {
 	baseDir string
 	cType   CacheType
 }
 
+// NewCache creates a new cache instance with the specified base directory and cache type
 func NewCache[T any](baseDir string, cacheType CacheType) (*Cache[T], error) {
 	cacheDir := filepath.Join(baseDir, string(cacheType))
 	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
@@ -79,6 +83,7 @@ func (c *Cache[T]) Write(id string, writeFn func(io.Writer) error) error {
 	return nil
 }
 
+// Delete removes a cached item by its ID
 func (c *Cache[T]) Delete(id string) error {
 	if id == "" {
 		return fmt.Errorf("delete: %w", errInvalidID)
@@ -167,10 +172,12 @@ func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, er
 	}, nil
 }
 
+// ExpiringCache is a cache implementation that supports expiration of cached items
 type ExpiringCache[T any] struct {
 	cache *Cache[T]
 }
 
+// NewExpiringCache creates a new cache instance that supports item expiration
 func NewExpiringCache[T any]() (*ExpiringCache[T], error) {
 	cache, err := NewCache[T](config.CachePath, TemporaryCache)
 	if err != nil {
@@ -249,6 +256,7 @@ func (c *ExpiringCache[T]) Write(id string, expiresAt int64, writeFn func(io.Wri
 	return writeFn(file)
 }
 
+// Delete removes an expired cached item by its ID
 func (c *ExpiringCache[T]) Delete(id string) error {
 	pattern := fmt.Sprintf("%s.*", id)
 	matches, err := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
