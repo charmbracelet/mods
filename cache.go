@@ -20,7 +20,7 @@ type CacheType string
 // Cache types for different purposes
 const (
 	ConversationCache CacheType = "conversations"
-	TemporaryCache    CacheType = "cache"
+	TemporaryCache    CacheType = "temp"
 )
 
 const cacheExt = ".gob"
