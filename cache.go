@@ -194,7 +194,7 @@ func (c *ExpiringCache[T]) Read(id string, readFn func(io.Reader) error) error {
 	pattern := fmt.Sprintf("%s.*", id)
 	matches, err := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read read expiring cache: %w", err)
 	}
 
 	if len(matches) == 0 {
@@ -223,7 +223,7 @@ func (c *ExpiringCache[T]) Read(id string, readFn func(io.Reader) error) error {
 
 	file, err := os.Open(matches[0])
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open expiring cache file: %w", err)
 	}
 	defer func() {
 		if cerr := file.Close(); cerr != nil {
@@ -246,7 +246,7 @@ func (c *ExpiringCache[T]) Write(id string, expiresAt int64, writeFn func(io.Wri
 	filename := c.getCacheFilename(id, expiresAt)
 	file, err := os.Create(filepath.Join(c.cache.cacheDir(), filename))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create expiring cache file: %w", err)
 	}
 	defer func() {
 		if cerr := file.Close(); cerr != nil {
@@ -262,12 +262,12 @@ func (c *ExpiringCache[T]) Delete(id string) error {
 	pattern := fmt.Sprintf("%s.*", id)
 	matches, err := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete expiring cache: %w", err)
 	}
 
 	for _, match := range matches {
 		if err := os.Remove(match); err != nil {
-			return err
+			return fmt.Errorf("failed to delete expiring cache file: %w", err)
 		}
 	}
 
