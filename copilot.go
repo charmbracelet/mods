@@ -68,8 +68,11 @@ func (c *copilotHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	httpResp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
 
-	return httpResp, fmt.Errorf("failed to make request: %w", err)
+	return httpResp, nil
 }
 
 func getCopilotRefreshToken() (string, error) {
