@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/caarlos0/go-shellwords"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
@@ -354,6 +356,18 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.User != "" {
 				cfg.User = api.User
 			}
+		case "copilot":
+			ghCopilotHTTPClient := newCopilotHTTPClient()
+			accessToken, err := getCopilotAccessToken(ghCopilotHTTPClient.client)
+			if err != nil {
+				return modsError{err, "Copilot authentication failed"}
+			}
+
+			ccfg = openai.DefaultConfig(accessToken.Token)
+			ccfg.HTTPClient = ghCopilotHTTPClient
+			ccfg.HTTPClient.(*copilotHTTPClient).AccessToken = &accessToken
+			ccfg.BaseURL = ordered.First(api.BaseURL, accessToken.Endpoints.API)
+
 		default:
 			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
 			if err != nil {
@@ -403,8 +417,19 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 func (m Mods) ensureKey(api API, defaultEnv, docsURL string) (string, error) {
 	key := api.APIKey
-	if key == "" && api.APIKeyEnv != "" {
+	if key == "" && api.APIKeyEnv != "" && api.APIKeyCmd == "" {
 		key = os.Getenv(api.APIKeyEnv)
+	}
+	if key == "" && api.APIKeyCmd != "" {
+		args, err := shellwords.Parse(api.APIKeyCmd)
+		if err != nil {
+			return "", modsError{err, "Failed to parse api-key-cmd"}
+		}
+		out, err := exec.Command(args[0], args[1:]...).CombinedOutput() //nolint:gosec
+		if err != nil {
+			return "", modsError{err, "Cannot exec api-key-cmd"}
+		}
+		key = strings.TrimSpace(string(out))
 	}
 	if key == "" {
 		key = os.Getenv(defaultEnv)

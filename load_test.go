@@ -18,7 +18,7 @@ func TestLoad(t *testing.T) {
 
 	t.Run("file", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "foo.txt")
-		require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 
 		msg, err := loadMsg("file://" + path)
 		require.NoError(t, err)

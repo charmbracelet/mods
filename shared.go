@@ -16,10 +16,8 @@ const (
 	defaultEmptyMessagesLimit uint = 300
 )
 
-var (
-	// ErrTooManyEmptyStreamMessages represents an error when a stream has sent too many empty messages.
-	ErrTooManyEmptyStreamMessages = errors.New("stream has sent too many empty messages")
-)
+// ErrTooManyEmptyStreamMessages represents an error when a stream has sent too many empty messages.
+var ErrTooManyEmptyStreamMessages = errors.New("stream has sent too many empty messages")
 
 // Marshaller is an interface for marshalling values to bytes.
 type Marshaller interface {

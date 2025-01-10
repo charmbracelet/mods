@@ -55,6 +55,7 @@ apis:
     base-url: https://api.openai.com/v1
     api-key:
     api-key-env: OPENAI_API_KEY
+    # api-key-cmd: rbw get -f OPENAI_API_KEY chat.openai.com
     models: # https://platform.openai.com/docs/models
       gpt-4o-mini:
         aliases: ["4o-mini"]
@@ -98,13 +99,38 @@ apis:
       o1-mini:
         aliases: ["o1-mini"]
         max-input-chars: 128000
+  copilot:
+    base-url: https://api.githubcopilot.com
+    models:
+      gpt-4o-2024-05-13:
+        aliases: ["4o-2024", "4o", "gpt-4o"]
+        max-input-chars: 392000
+      gpt-4:
+        aliases: ["4"]
+        max-input-chars: 24500
+      gpt-3.5-turbo:
+        aliases: ["35t"]
+        max-input-chars: 12250
+      o1-preview-2024-09-12:
+        aliases: ["o1-preview", "o1p"]
+        max-input-chars: 128000
+      o1-mini-2024-09-12:
+        aliases: ["o1-mini", "o1m"]
+        max-input-chars: 128000
+      claude-3.5-sonnet:
+        aliases: ["claude3.5-sonnet", "sonnet-3.5", "claude-3-5-sonnet"]
+        max-input-chars: 680000
   anthropic:
     base-url: https://api.anthropic.com/v1
     api-key:
     api-key-env: ANTHROPIC_API_KEY
     models: # https://docs.anthropic.com/en/docs/about-claude/models
-      claude-3-5-sonnet-20240620:
+      claude-3-5-sonnet-latest:
         aliases: ["claude3.5-sonnet", "claude-3-5-sonnet", "sonnet-3.5"]
+        max-input-chars: 680000
+      claude-3-5-sonnet-20241022:
+        max-input-chars: 680000
+      claude-3-5-sonnet-20240620:
         max-input-chars: 680000
       claude-3-opus-20240229:
         aliases: ["claude3-opus", "opus"]
@@ -127,6 +153,12 @@ apis:
   ollama:
     base-url: http://localhost:11434/api
     models: # https://ollama.com/library
+      "llama3.2:3b":
+        aliases: ["llama3.2"]
+        max-input-chars: 650000
+      "llama3.2:1b":
+        aliases: ["llama3.2_1b"]
+        max-input-chars: 650000
       "llama3:70b":
         aliases: ["llama3"]
         max-input-chars: 650000
@@ -134,25 +166,16 @@ apis:
     base-url: https://api.perplexity.ai
     api-key:
     api-key-env: PERPLEXITY_API_KEY
-    models: # https://docs.perplexity.ai/docs/model-cards
-      llama-3-sonar-small-32k-chat:
-        aliases: ["llama3-ss"]
-        max-input-chars: 32768
-      llama-3-sonar-small-32k-online:
-        aliases: ["llam3-sso"]
-        max-input-chars: 28000
-      llama-3-sonar-large-32k-chat:
-        aliases: ["llam3-sl"]
-        max-input-chars: 32768
-      llama-3-sonar-large-32k-online:
-        aliases: ["llam3-slo"]
-        max-input-chars: 28000
-      llama-3-8b-instruct:
-        aliases: ["llam3-8bi"]
-        max-input-chars: 8192
-      llama-3-70b-instruct:
-        aliases: ["llam3-70bi"]
-        max-input-chars: 8192
+    models: # https://docs.perplexity.ai/guides/model-cards                         
+      llama-3.1-sonar-small-128k-online:
+        aliases: ["llam31-small"]
+        max-input-chars: 127072
+      llama-3.1-sonar-large-128k-online:
+        aliases: ["llam31-large"]
+        max-input-chars: 127072
+      llama-3.1-sonar-huge-128k-online:
+        aliases: ["llam31-huge"]
+        max-input-chars: 127072
   groq:
     base-url: https://api.groq.com/openai/v1
     api-key:

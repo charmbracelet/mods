@@ -85,6 +85,7 @@ type API struct {
 	Name      string
 	APIKey    string           `yaml:"api-key"`
 	APIKeyEnv string           `yaml:"api-key-env"`
+	APIKeyCmd string           `yaml:"api-key-cmd"`
 	Version   string           `yaml:"version"`
 	BaseURL   string           `yaml:"base-url"`
 	Models    map[string]Model `yaml:"models"`
