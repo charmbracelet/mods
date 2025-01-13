@@ -35,8 +35,8 @@ type Cache[T any] struct {
 
 // NewCache creates a new cache instance with the specified base directory and cache type.
 func NewCache[T any](baseDir string, cacheType CacheType) (*Cache[T], error) {
-	cacheDir := filepath.Join(baseDir, string(cacheType))
-	if err := os.MkdirAll(cacheDir, os.ModePerm); err != nil {
+	dir := filepath.Join(baseDir, string(cacheType))
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("create cache directory: %w", err)
 	}
 	return &Cache[T]{
@@ -45,7 +45,7 @@ func NewCache[T any](baseDir string, cacheType CacheType) (*Cache[T], error) {
 	}, nil
 }
 
-func (c *Cache[T]) cacheDir() string {
+func (c *Cache[T]) dir() string {
 	return filepath.Join(c.baseDir, string(c.cType))
 }
 
@@ -53,7 +53,7 @@ func (c *Cache[T]) Read(id string, readFn func(io.Reader) error) error {
 	if id == "" {
 		return fmt.Errorf("read: %w", errInvalidID)
 	}
-	file, err := os.Open(filepath.Join(c.cacheDir(), id+cacheExt))
+	file, err := os.Open(filepath.Join(c.dir(), id+cacheExt))
 	if err != nil {
 		return fmt.Errorf("read: %w", err)
 	}
@@ -70,7 +70,7 @@ func (c *Cache[T]) Write(id string, writeFn func(io.Writer) error) error {
 		return fmt.Errorf("write: %w", errInvalidID)
 	}
 
-	file, err := os.Create(filepath.Join(c.cacheDir(), id+cacheExt))
+	file, err := os.Create(filepath.Join(c.dir(), id+cacheExt))
 	if err != nil {
 		return fmt.Errorf("write: %w", err)
 	}
@@ -88,7 +88,7 @@ func (c *Cache[T]) Delete(id string) error {
 	if id == "" {
 		return fmt.Errorf("delete: %w", errInvalidID)
 	}
-	if err := os.Remove(filepath.Join(c.cacheDir(), id+cacheExt)); err != nil {
+	if err := os.Remove(filepath.Join(c.dir(), id+cacheExt)); err != nil {
 		return fmt.Errorf("delete: %w", err)
 	}
 	return nil
@@ -192,7 +192,7 @@ func (c *ExpiringCache[T]) getCacheFilename(id string, expiresAt int64) string {
 
 func (c *ExpiringCache[T]) Read(id string, readFn func(io.Reader) error) error {
 	pattern := fmt.Sprintf("%s.*", id)
-	matches, err := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
+	matches, err := filepath.Glob(filepath.Join(c.cache.dir(), pattern))
 	if err != nil {
 		return fmt.Errorf("failed to read read expiring cache: %w", err)
 	}
@@ -236,7 +236,7 @@ func (c *ExpiringCache[T]) Read(id string, readFn func(io.Reader) error) error {
 
 func (c *ExpiringCache[T]) Write(id string, expiresAt int64, writeFn func(io.Writer) error) error {
 	pattern := fmt.Sprintf("%s.*", id)
-	oldFiles, _ := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
+	oldFiles, _ := filepath.Glob(filepath.Join(c.cache.dir(), pattern))
 	for _, file := range oldFiles {
 		if err := os.Remove(file); err != nil {
 			return fmt.Errorf("failed to remove old cache file: %w", err)
@@ -244,7 +244,7 @@ func (c *ExpiringCache[T]) Write(id string, expiresAt int64, writeFn func(io.Wri
 	}
 
 	filename := c.getCacheFilename(id, expiresAt)
-	file, err := os.Create(filepath.Join(c.cache.cacheDir(), filename))
+	file, err := os.Create(filepath.Join(c.cache.dir(), filename))
 	if err != nil {
 		return fmt.Errorf("failed to create expiring cache file: %w", err)
 	}
@@ -260,7 +260,7 @@ func (c *ExpiringCache[T]) Write(id string, expiresAt int64, writeFn func(io.Wri
 // Delete removes an expired cached item by its ID.
 func (c *ExpiringCache[T]) Delete(id string) error {
 	pattern := fmt.Sprintf("%s.*", id)
-	matches, err := filepath.Glob(filepath.Join(c.cache.cacheDir(), pattern))
+	matches, err := filepath.Glob(filepath.Join(c.cache.dir(), pattern))
 	if err != nil {
 		return fmt.Errorf("failed to delete expiring cache: %w", err)
 	}
