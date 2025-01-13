@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,7 +19,7 @@ const (
 	copilotUserAgent     = "curl/7.81.0" // Necessay to bypass the user-agent check
 )
 
-// Authentication response from GitHub Copilot's token endpoint
+// Authentication response from GitHub Copilot's token endpoint.
 type CopilotAccessToken struct {
 	Token     string `json:"token"`
 	ExpiresAt int64  `json:"expires_at"`
@@ -54,16 +56,23 @@ func (c *copilotHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	var isTokenExpired = c.AccessToken != nil && c.AccessToken.ExpiresAt < time.Now().Unix()
 
 	if c.AccessToken == nil || isTokenExpired {
-		// Use the base http.Client for token requests to avoid recursion
 		accessToken, err := getCopilotAccessToken(c.client)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get access token: %w", err)
 		}
-
 		c.AccessToken = &accessToken
 	}
 
-	return c.client.Do(req)
+	if c.AccessToken != nil {
+		req.Header.Set("Authorization", "Bearer "+c.AccessToken.Token)
+	}
+
+	httpResp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+
+	return httpResp, nil
 }
 
 func getCopilotRefreshToken() (string, error) {
@@ -92,12 +101,12 @@ func getCopilotRefreshToken() (string, error) {
 func extractCopilotTokenFromFile(path string) (string, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read Copilot configuration file at %s: %w", path, err)
 	}
 
 	var config map[string]json.RawMessage
 	if err := json.Unmarshal(bytes, &config); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse Copilot configuration file at %s: %w", path, err)
 	}
 
 	for key, value := range config {
@@ -116,12 +125,23 @@ func extractCopilotTokenFromFile(path string) (string, error) {
 }
 
 func getCopilotAccessToken(client *http.Client) (CopilotAccessToken, error) {
+	cache, err := NewExpiringCache[CopilotAccessToken]()
+	if err == nil {
+		var token CopilotAccessToken
+		err = cache.Read("copilot", func(r io.Reader) error {
+			return json.NewDecoder(r).Decode(&token)
+		})
+		if err == nil && token.ExpiresAt > time.Now().Unix() {
+			return token, nil
+		}
+	}
+
 	refreshToken, err := getCopilotRefreshToken()
 	if err != nil {
 		return CopilotAccessToken{}, fmt.Errorf("failed to get refresh token: %w", err)
 	}
 
-	tokenReq, err := http.NewRequest(http.MethodGet, copilotChatAuthURL, nil)
+	tokenReq, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, copilotChatAuthURL, nil)
 	if err != nil {
 		return CopilotAccessToken{}, fmt.Errorf("failed to create token request: %w", err)
 	}
@@ -150,5 +170,13 @@ func getCopilotAccessToken(client *http.Client) (CopilotAccessToken, error) {
 		return CopilotAccessToken{}, fmt.Errorf("token error: %s", tokenResponse.ErrorDetails.Message)
 	}
 
-	return tokenResponse, err
+	if cache != nil {
+		if err := cache.Write("copilot", tokenResponse.ExpiresAt, func(w io.Writer) error {
+			return json.NewEncoder(w).Encode(tokenResponse)
+		}); err != nil {
+			return CopilotAccessToken{}, fmt.Errorf("failed to cache token: %w", err)
+		}
+	}
+
+	return tokenResponse, nil
 }

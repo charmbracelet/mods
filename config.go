@@ -230,7 +230,7 @@ func ensureConfig() (Config, error) {
 	}
 
 	if c.CachePath == "" {
-		c.CachePath = filepath.Join(xdg.DataHome, "mods", "conversations")
+		c.CachePath = filepath.Join(xdg.DataHome, "mods")
 	}
 
 	if err := os.MkdirAll(c.CachePath, 0o700); err != nil { //nolint:mnd

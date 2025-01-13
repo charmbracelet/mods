@@ -310,7 +310,7 @@ func main() {
 	}
 
 	cache = newCache(config.CachePath)
-	db, err = openDB(filepath.Join(config.CachePath, "mods.db"))
+	db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
 	if err != nil {
 		handleError(modsError{err, "Could not open database."})
 		os.Exit(1)
