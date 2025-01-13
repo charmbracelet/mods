@@ -396,7 +396,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		// Check if the model is an o1 model and set the max_completion_tokens parameter accordingly
-		if strings.HasPrefix(mod.Name, "o1-") {
+		// Release won't have a prefix with a dash, so just putting o1 for match.
+		if strings.HasPrefix(mod.Name, "o1") {
 			cfg.MaxTokens = cfg.MaxCompletionTokens
 		}
 
