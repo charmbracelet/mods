@@ -53,7 +53,7 @@ func (c *copilotHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Editor-Version", copilotEditorVersion)
 	req.Header.Set("User-Agent", copilotUserAgent)
 
-	var isTokenExpired = c.AccessToken != nil && c.AccessToken.ExpiresAt < time.Now().Unix()
+	isTokenExpired := c.AccessToken != nil && c.AccessToken.ExpiresAt < time.Now().Unix()
 
 	if c.AccessToken == nil || isTokenExpired {
 		accessToken, err := getCopilotAccessToken(c.client)

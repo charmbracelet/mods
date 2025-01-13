@@ -280,7 +280,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 					err: newUserErrorf(
 						"Please specify an API endpoint with %s or configure the model in the settings: %s",
 						m.Styles.InlineCode.Render("--api"),
-						m.Styles.InlineCode.Render("mods -s"),
+						m.Styles.InlineCode.Render("mods --settings"),
 					),
 				}
 			}
