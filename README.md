@@ -157,7 +157,7 @@ Check the [`./features.md`](./features.md) for more details.
 - `-s`, `--show`: Show saved conversation for the given title or SHA-1.
 - `-S`, `--show-last`: Show previous conversation.
 - `--delete-older-than=<duration>`: Deletes conversations older than given duration (`10d`, `1mo`).
-- `--delete`: Deletes the saved conversation for the given title or SHA-1.
+- `--delete`: Deletes the saved conversations for the given titles or SHA-1s.
 - `--no-cache`: Do not save conversations.
 
 #### Advanced

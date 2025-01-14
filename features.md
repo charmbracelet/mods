@@ -113,8 +113,8 @@ You can also delete conversations by title or ID, same as `--show`, different
 flag:
 
 ```bash
-mods --delete='naturals'
-mods --delete='a2e2'
+mods --delete='naturals' --delete='a2e2'
 ```
 
 Keep in mind that these operations are not reversible.
+You can repeat the delete flag to delete multiple conversations at once.

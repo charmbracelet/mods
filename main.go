@@ -184,8 +184,8 @@ var (
 				return listConversations(config.Raw)
 			}
 
-			if config.Delete != "" {
-				return deleteConversation()
+			if len(config.Delete) > 0 {
+				return deleteConversations()
 			}
 
 			if config.DeleteOlderThan > 0 {
@@ -232,7 +232,7 @@ func initFlags() {
 	flags.BoolVarP(&config.ContinueLast, "continue-last", "C", false, stdoutStyles().FlagDesc.Render(help["continue-last"]))
 	flags.BoolVarP(&config.List, "list", "l", config.List, stdoutStyles().FlagDesc.Render(help["list"]))
 	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles().FlagDesc.Render(help["title"]))
-	flags.StringVarP(&config.Delete, "delete", "d", config.Delete, stdoutStyles().FlagDesc.Render(help["delete"]))
+	flags.StringArrayVarP(&config.Delete, "delete", "d", config.Delete, stdoutStyles().FlagDesc.Render(help["delete"]))
 	flags.Var(newDurationFlag(config.DeleteOlderThan, &config.DeleteOlderThan), "delete-older-than", stdoutStyles().FlagDesc.Render(help["delete-older-than"]))
 	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles().FlagDesc.Render(help["show"]))
 	flags.BoolVarP(&config.ShowLast, "show-last", "S", false, stdoutStyles().FlagDesc.Render(help["show-last"]))
@@ -538,12 +538,20 @@ func deleteConversationOlderThan() error {
 	return nil
 }
 
-func deleteConversation() error {
-	convo, err := db.Find(config.Delete)
-	if err != nil {
-		return modsError{err, "Couldn't find conversation to delete."}
+func deleteConversations() error {
+	for _, del := range config.Delete {
+		convo, err := db.Find(del)
+		if err != nil {
+			return modsError{err, "Couldn't find conversation to delete."}
+		}
+		if err := deleteConversation(convo); err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
+func deleteConversation(convo *Conversation) error {
 	if err := db.Delete(convo.ID); err != nil {
 		return modsError{err, "Couldn't delete conversation."}
 	}
@@ -713,7 +721,7 @@ func isNoArgs() bool {
 	return config.Prefix == "" &&
 		config.Show == "" &&
 		!config.ShowLast &&
-		config.Delete == "" &&
+		len(config.Delete) == 0 &&
 		config.DeleteOlderThan == 0 &&
 		!config.ShowHelp &&
 		!config.List &&

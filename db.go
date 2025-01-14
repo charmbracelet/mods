@@ -249,16 +249,16 @@ func (c *convoDB) Find(in string) (*Conversation, error) {
 		err = c.findByIDOrTitle(&conversations, in)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Find: %w", err)
+		return nil, fmt.Errorf("Find %q: %w", in, err)
 	}
 
 	if len(conversations) > 1 {
-		return nil, errManyMatches
+		return nil, fmt.Errorf("%w: %s", errManyMatches, in)
 	}
 	if len(conversations) == 1 {
 		return &conversations[0], nil
 	}
-	return nil, errNoMatches
+	return nil, fmt.Errorf("%w: %s", errNoMatches, in)
 }
 
 func (c *convoDB) List() ([]Conversation, error) {
