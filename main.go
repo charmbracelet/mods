@@ -181,7 +181,7 @@ var (
 				return listRoles()
 			}
 			if config.List {
-				return listConversations()
+				return listConversations(config.Raw)
 			}
 
 			if config.Delete != "" {
@@ -558,7 +558,7 @@ func deleteConversation() error {
 	return nil
 }
 
-func listConversations() error {
+func listConversations(raw bool) error {
 	conversations, err := db.List()
 	if err != nil {
 		return modsError{err, "Couldn't list saves."}
@@ -569,7 +569,7 @@ func listConversations() error {
 		return nil
 	}
 
-	if isInputTTY() && isOutputTTY() {
+	if isInputTTY() && isOutputTTY() && !raw {
 		selectFromList(conversations)
 		return nil
 	}
