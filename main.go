@@ -192,7 +192,8 @@ var (
 				return deleteConversationOlderThan()
 			}
 
-			if isOutputTTY() {
+			// raw mode already prints the output, no need to print it again
+			if isOutputTTY() && !config.Raw {
 				switch {
 				case mods.glamOutput != "":
 					fmt.Print(mods.glamOutput)
