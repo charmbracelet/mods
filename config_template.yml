@@ -47,6 +47,8 @@ theme: charm
 max-input-chars: 12250
 # {{ index .Help "max-tokens" }}
 # max-tokens: 100
+# {{ index .Help "max-completion-tokens" }}
+max-completion-tokens: 100
 # {{ index .Help "apis" }}
 apis:
   openai:
@@ -91,6 +93,12 @@ apis:
         aliases: ["35"]
         max-input-chars: 12250
         fallback:
+      o1-preview:
+        aliases: ["o1-preview"]
+        max-input-chars: 128000
+      o1-mini:
+        aliases: ["o1-mini"]
+        max-input-chars: 128000
   copilot:
     base-url: https://api.githubcopilot.com
     models:
@@ -112,6 +120,12 @@ apis:
       claude-3.5-sonnet:
         aliases: ["claude3.5-sonnet", "sonnet-3.5", "claude-3-5-sonnet"]
         max-input-chars: 680000
+      o1-preview:
+        aliases: ["o1-preview"]
+        max-input-chars: 128000
+      o1-mini:
+        aliases: ["o1-mini"]
+        max-input-chars: 128000
   anthropic:
     base-url: https://api.anthropic.com/v1
     api-key:
@@ -158,7 +172,7 @@ apis:
     base-url: https://api.perplexity.ai
     api-key:
     api-key-env: PERPLEXITY_API_KEY
-    models: # https://docs.perplexity.ai/guides/model-cards                         
+    models: # https://docs.perplexity.ai/guides/model-cards
       llama-3.1-sonar-small-128k-online:
         aliases: ["llam31-small"]
         max-input-chars: 127072
@@ -265,6 +279,12 @@ apis:
         aliases: ["az35"]
         max-input-chars: 12250
         fallback:
+      o1-preview:
+        aliases: ["o1-preview"]
+        max-input-chars: 128000
+      o1-mini:
+        aliases: ["o1-mini"]
+        max-input-chars: 128000
   runpod:
     # https://docs.runpod.io/serverless/workers/vllm/openai-compatibility
     base-url: https://api.runpod.ai/v2/${YOUR_ENDPOINT}/openai/v1

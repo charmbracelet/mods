@@ -131,53 +131,54 @@ func (ft *FormatText) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 // Config holds the main configuration and is mapped to the YAML settings file.
 type Config struct {
-	Model             string     `yaml:"default-model" env:"MODEL"`
-	Format            bool       `yaml:"format" env:"FORMAT"`
-	FormatText        FormatText `yaml:"format-text"`
-	FormatAs          string     `yaml:"format-as" env:"FORMAT_AS"`
-	Raw               bool       `yaml:"raw" env:"RAW"`
-	Quiet             bool       `yaml:"quiet" env:"QUIET"`
-	MaxTokens         int        `yaml:"max-tokens" env:"MAX_TOKENS"`
-	MaxInputChars     int        `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
-	Temperature       float32    `yaml:"temp" env:"TEMP"`
-	Stop              []string   `yaml:"stop" env:"STOP"`
-	TopP              float32    `yaml:"topp" env:"TOPP"`
-	TopK              int        `yaml:"topk" env:"TOPK"`
-	NoLimit           bool       `yaml:"no-limit" env:"NO_LIMIT"`
-	CachePath         string     `yaml:"cache-path" env:"CACHE_PATH"`
-	NoCache           bool       `yaml:"no-cache" env:"NO_CACHE"`
-	IncludePromptArgs bool       `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
-	IncludePrompt     int        `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
-	MaxRetries        int        `yaml:"max-retries" env:"MAX_RETRIES"`
-	WordWrap          int        `yaml:"word-wrap" env:"WORD_WRAP"`
-	Fanciness         uint       `yaml:"fanciness" env:"FANCINESS"`
-	StatusText        string     `yaml:"status-text" env:"STATUS_TEXT"`
-	HTTPProxy         string     `yaml:"http-proxy" env:"HTTP_PROXY"`
-	APIs              APIs       `yaml:"apis"`
-	System            string     `yaml:"system"`
-	Role              string     `yaml:"role" env:"ROLE"`
-	AskModel          bool
-	API               string
-	Models            map[string]Model
-	Roles             map[string][]string
-	ShowHelp          bool
-	ResetSettings     bool
-	Prefix            string
-	Version           bool
-	Settings          bool
-	Dirs              bool
-	Theme             string
-	SettingsPath      string
-	ContinueLast      bool
-	Continue          string
-	Title             string
-	ShowLast          bool
-	Show              string
-	List              bool
-	ListRoles         bool
-	Delete            string
-	DeleteOlderThan   time.Duration
-	User              string
+	Model               string     `yaml:"default-model" env:"MODEL"`
+	Format              bool       `yaml:"format" env:"FORMAT"`
+	FormatText          FormatText `yaml:"format-text"`
+	FormatAs            string     `yaml:"format-as" env:"FORMAT_AS"`
+	Raw                 bool       `yaml:"raw" env:"RAW"`
+	Quiet               bool       `yaml:"quiet" env:"QUIET"`
+	MaxTokens           int        `yaml:"max-tokens" env:"MAX_TOKENS"`
+	MaxCompletionTokens int        `yaml:"max-completion-tokens" env:"MAX_COMPLETION_TOKENS"`
+	MaxInputChars       int        `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
+	Temperature         float32    `yaml:"temp" env:"TEMP"`
+	Stop                []string   `yaml:"stop" env:"STOP"`
+	TopP                float32    `yaml:"topp" env:"TOPP"`
+	TopK                int        `yaml:"topk" env:"TOPK"`
+	NoLimit             bool       `yaml:"no-limit" env:"NO_LIMIT"`
+	CachePath           string     `yaml:"cache-path" env:"CACHE_PATH"`
+	NoCache             bool       `yaml:"no-cache" env:"NO_CACHE"`
+	IncludePromptArgs   bool       `yaml:"include-prompt-args" env:"INCLUDE_PROMPT_ARGS"`
+	IncludePrompt       int        `yaml:"include-prompt" env:"INCLUDE_PROMPT"`
+	MaxRetries          int        `yaml:"max-retries" env:"MAX_RETRIES"`
+	WordWrap            int        `yaml:"word-wrap" env:"WORD_WRAP"`
+	Fanciness           uint       `yaml:"fanciness" env:"FANCINESS"`
+	StatusText          string     `yaml:"status-text" env:"STATUS_TEXT"`
+	HTTPProxy           string     `yaml:"http-proxy" env:"HTTP_PROXY"`
+	APIs                APIs       `yaml:"apis"`
+	System              string     `yaml:"system"`
+	Role                string     `yaml:"role" env:"ROLE"`
+	AskModel            bool
+	API                 string
+	Models              map[string]Model
+	Roles               map[string][]string
+	ShowHelp            bool
+	ResetSettings       bool
+	Prefix              string
+	Version             bool
+	Settings            bool
+	Dirs                bool
+	Theme               string
+	SettingsPath        string
+	ContinueLast        bool
+	Continue            string
+	Title               string
+	ShowLast            bool
+	Show                string
+	List                bool
+	ListRoles           bool
+	Delete              string
+	DeleteOlderThan     time.Duration
+	User                string
 
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
 }

@@ -395,6 +395,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			mod.MaxChars = cfg.MaxInputChars
 		}
 
+		// Check if the model is an o1 model and unset the max_tokens parameter
+		// accordingly, as it's unsupported by o1.
+		// We do set max_completion_tokens instead, which is supported.
+		// Release won't have a prefix with a dash, so just putting o1 for match.
+		if strings.HasPrefix(mod.Name, "o1") {
+			cfg.MaxTokens = 0
+		}
+
 		switch mod.API {
 		case "anthropic":
 			return m.createAnthropicStream(content, accfg, mod)
