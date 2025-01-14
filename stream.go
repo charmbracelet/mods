@@ -276,10 +276,10 @@ func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod 
 func (m *Mods) setupStreamContext(content string, mod Model) error {
 	cfg := m.Config
 	m.messages = []openai.ChatCompletionMessage{}
-	if cfg.Format {
+	if txt := cfg.FormatText[cfg.FormatAs]; cfg.Format && txt != "" {
 		m.messages = append(m.messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleSystem,
-			Content: cfg.FormatText[cfg.FormatAs],
+			Content: txt,
 		})
 	}
 
