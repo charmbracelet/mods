@@ -69,6 +69,7 @@ var help = map[string]string{
 	"show":              "Show a saved conversation with the given title or ID.",
 	"theme":             "Theme to use in the forms. Valid units are: 'charm', 'catppuccin', 'dracula', and 'base16'",
 	"show-last":         "Show the last saved conversation.",
+	"editor":            "Edit the prompt in your $EDITOR. Only taken into account if no other args and if STDIN is a TTY.",
 }
 
 // Model represents the LLM model used in the API call.
@@ -180,6 +181,7 @@ type Config struct {
 	DeleteOlderThan     time.Duration
 	User                string
 
+	openEditor                                         bool
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
 }
 
