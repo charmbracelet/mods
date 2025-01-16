@@ -24,6 +24,13 @@ func newFlagParseError(err error) flagParseError {
 	case strings.HasPrefix(s, "unknown flag:"):
 		reason = "Flag %s is missing."
 		flag = strings.TrimPrefix(s, "unknown flag: ")
+	case strings.HasPrefix(s, "unknown shorthand flag:"):
+		reason = "Short flag %s is missing."
+		re := regexp.MustCompile(`unknown shorthand flag: '.*' in (-\w)`)
+		parts := re.FindStringSubmatch(s)
+		if len(parts) > 1 {
+			flag = parts[1]
+		}
 	case strings.HasPrefix(s, "invalid argument"):
 		reason = "Flag %s have an invalid argument."
 		re := regexp.MustCompile(`invalid argument ".*" for "(.*)" flag: .*`)
