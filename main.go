@@ -97,7 +97,7 @@ var (
 				if err != nil {
 					return err
 				}
-				config.Prefix = string(prompt)
+				config.Prefix = prompt
 			}
 
 			if (isNoArgs() || config.AskModel) && isInputTTY() {
