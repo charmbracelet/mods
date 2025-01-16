@@ -155,7 +155,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		msg := mods.findCacheOpsDetails()()
 		err := msg.(modsError)
 		require.Equal(t, "Could not find the conversation.", err.reason)
-		require.EqualError(t, err, errNoMatches.Error())
+		require.EqualError(t, err, "no conversations found: aaa")
 	})
 }
 
