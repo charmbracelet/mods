@@ -92,6 +92,14 @@ var (
 				config.Quiet = true
 			}
 
+			if isNoArgs() && isInputTTY() && config.openEditor {
+				prompt, err := prefixFromEditor()
+				if err != nil {
+					return err
+				}
+				config.Prefix = prompt
+			}
+
 			if (isNoArgs() || config.AskModel) && isInputTTY() {
 				if err := askInfo(); err != nil && err == huh.ErrUserAborted {
 					return modsError{
@@ -256,6 +264,7 @@ func initFlags() {
 	flags.StringVarP(&config.Role, "role", "R", config.Role, stdoutStyles().FlagDesc.Render(help["role"]))
 	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
 	flags.StringVar(&config.Theme, "theme", "charm", stdoutStyles().FlagDesc.Render(help["theme"]))
+	flags.BoolVarP(&config.openEditor, "editor", "e", false, stdoutStyles().FlagDesc.Render(help["editor"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -836,4 +845,32 @@ func themeFrom(theme string) *huh.Theme {
 	default:
 		return huh.ThemeCharm()
 	}
+}
+
+// creates a temp file, opens it in user's editor, and then returns its contents.
+func prefixFromEditor() (string, error) {
+	f, err := os.CreateTemp("", "prompt")
+	if err != nil {
+		return "", fmt.Errorf("could not create temporary file: %w", err)
+	}
+	_ = f.Close()
+	defer func() { _ = os.Remove(f.Name()) }()
+	cmd, err := editor.Cmd(
+		"mods",
+		f.Name(),
+	)
+	if err != nil {
+		return "", fmt.Errorf("could not open editor: %w", err)
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("could not open editor: %w", err)
+	}
+	prompt, err := os.ReadFile(f.Name())
+	if err != nil {
+		return "", fmt.Errorf("could not read file: %w", err)
+	}
+	return string(prompt), nil
 }
