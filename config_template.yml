@@ -313,6 +313,6 @@ apis:
       deepseek-chat:
         aliases: ["ds-chat"]
         max-input-chars: 384000
-      deepseek-code:
-        aliases: ["ds-code"]
+      deepseek-reasoner:
+        aliases: ["ds-reasoner"]
         max-input-chars: 384000

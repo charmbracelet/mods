@@ -273,6 +273,37 @@ func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod 
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 }
 
+func (m *Mods) createDeepSeekStream(content string, ccfg openai.ClientConfig, mod Model) tea.Msg {
+	cfg := m.Config
+
+	client := openai.NewClientWithConfig(ccfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	m.cancelRequest = cancel
+
+	if err := m.setupStreamContext(content, mod); err != nil {
+		return err
+	}
+
+	messages := m.messages
+
+	req := openai.ChatCompletionRequest{
+		Model:          mod.Name,
+		Messages:       messages,
+		Stream:         true,
+		Temperature:    noOmitFloat(cfg.Temperature),
+		TopP:           noOmitFloat(cfg.TopP),
+		MaxTokens:      cfg.MaxTokens,
+		Stop:           cfg.Stop,
+		ResponseFormat: responseFormat(cfg),
+	}
+
+	stream, err := client.CreateChatCompletionStream(ctx, req)
+	if err != nil {
+		return m.handleRequestError(err, mod, content)
+	}
+	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
+}
+
 func (m *Mods) setupStreamContext(content string, mod Model) error {
 	cfg := m.Config
 	m.messages = []openai.ChatCompletionMessage{}

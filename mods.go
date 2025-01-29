@@ -367,6 +367,17 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			ccfg.HTTPClient = ghCopilotHTTPClient
 			ccfg.HTTPClient.(*copilotHTTPClient).AccessToken = &accessToken
 			ccfg.BaseURL = ordered.First(api.BaseURL, accessToken.Endpoints.API)
+		case "deepseek":
+			key, err := m.ensureKey(api, "DEEPSEEK_API_KEY", "https://platform.deepseek.com/api_keys")
+			if err != nil {
+				return modsError{err, "DeepSeek authentication failed"}
+			}
+			ccfg = openai.DefaultConfig(key)
+			if api.BaseURL != "" {
+				ccfg.BaseURL = api.BaseURL
+			} else {
+				ccfg.BaseURL = "https://api.deepseek.com/v1"
+			}
 
 		default:
 			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
@@ -412,6 +423,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			return m.createCohereStream(content, cccfg, mod)
 		case "ollama":
 			return m.createOllamaStream(content, occfg, mod)
+		case "deepseek":
+			return m.createDeepSeekStream(content, ccfg, mod)
 		default:
 			return m.createOpenAIStream(content, ccfg, mod)
 		}
