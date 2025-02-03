@@ -99,6 +99,9 @@ apis:
       o1-mini:
         aliases: ["o1-mini"]
         max-input-chars: 128000
+      o3-mini:
+        aliases: ["o3m", "o3-mini"]
+        max-input-chars: 128000
   copilot:
     base-url: https://api.githubcopilot.com
     models:
@@ -114,9 +117,6 @@ apis:
       o1-preview-2024-09-12:
         aliases: ["o1-preview", "o1p"]
         max-input-chars: 128000
-      o1-mini-2024-09-12:
-        aliases: ["o1-mini", "o1m"]
-        max-input-chars: 128000
       claude-3.5-sonnet:
         aliases: ["claude3.5-sonnet", "sonnet-3.5", "claude-3-5-sonnet"]
         max-input-chars: 680000
@@ -124,7 +124,10 @@ apis:
         aliases: ["o1-preview"]
         max-input-chars: 128000
       o1-mini:
-        aliases: ["o1-mini"]
+        aliases: ["o1-mini", "o1m", "o1-mini-2024-09-12"]
+        max-input-chars: 128000
+      o3-mini:
+        aliases: ["o3m", "o3-mini"]
         max-input-chars: 128000
   anthropic:
     base-url: https://api.anthropic.com/v1
