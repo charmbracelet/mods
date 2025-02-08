@@ -129,6 +129,9 @@ apis:
       o3-mini:
         aliases: ["o3m", "o3-mini"]
         max-input-chars: 128000
+      gemini-2.0-flash-001:
+        aliases: ["gm2f", "flash-2", "gemini-2-flash"]
+        max-input-chars: 4194304
   anthropic:
     base-url: https://api.anthropic.com/v1
     api-key:
