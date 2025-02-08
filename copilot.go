@@ -6,17 +6,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	copilotChatAuthURL   = "https://api.github.com/copilot_internal/v2/token"
-	copilotEditorVersion = "vscode/1.95.3"
-	copilotUserAgent     = "curl/7.81.0" // Necessay to bypass the user-agent check
+	copilotAuthDeviceCodeURL = "https://github.com/login/device/code"
+	copilotAuthTokenURL      = "https://api.github.com/login/oauth/access_token"
+	copilotChatAuthURL       = "https://api.github.com/copilot_internal/v2/token"
+	copilotEditorVersion     = "vscode/1.95.3"
+	copilotUserAgent         = "curl/7.81.0"          // Necessay to bypass the user-agent check
+	copilotClientID          = "Iv1.b507a08c87ecfe98" // Copilot Editor
 )
 
 // Authentication response from GitHub Copilot's token endpoint.
@@ -35,6 +40,21 @@ type CopilotAccessToken struct {
 		Title          string `json:"title,omitempty"`
 		NotificationID string `json:"notification_id,omitempty"`
 	} `json:"error_details,omitempty"`
+}
+
+type CopilotDeviceCodeResponse struct {
+	DeviceCode      string `json:"device_code"`
+	UserCode        string `json:"user_code"`
+	VerificationUri string `json:"verification_uri"`
+	ExpiresIn       int    `json:"expires_in"`
+	Interval        int    `json:"interval"`
+}
+
+type CopilotDeviceTokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	Scope       string `json:"scope"`
+	Error       string `json:"error,omitempty"`
 }
 
 type copilotHTTPClient struct {
@@ -75,16 +95,100 @@ func (c *copilotHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return httpResp, nil
 }
 
-func getCopilotRefreshToken() (string, error) {
+func copilotLogin(client *http.Client, configPath string) (string, error) {
+	resp, err := client.Post(
+		copilotAuthDeviceCodeURL,
+		"application/x-www-form-urlencoded",
+		strings.NewReader(fmt.Sprintf("client_id=%s&scope=copilot", copilotClientID)),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to get device code: %w", err)
+	}
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode device code response: %w", err)
+	}
+
+	var deviceCodeResp CopilotDeviceCodeResponse = CopilotDeviceCodeResponse{}
+	if err != nil {
+		return "", fmt.Errorf("failed to parse device code response: %w", err)
+	}
+
+	data, err := url.ParseQuery((string(responseBody)))
+
+	deviceCodeResp.UserCode = data.Get("user_code")
+	deviceCodeResp.ExpiresIn, _ = strconv.Atoi(data.Get("expires_in"))
+	deviceCodeResp.DeviceCode = data.Get("device_code")
+	deviceCodeResp.VerificationUri = data.Get("")
+
+	fmt.Printf("Please go to %s and enter the code %s\n", deviceCodeResp.VerificationUri, deviceCodeResp.UserCode)
+	saveCopilotRefreshToken(client, deviceCodeResp.DeviceCode, deviceCodeResp.Interval, deviceCodeResp.ExpiresIn)
+
+	return "", fmt.Errorf("not implemented")
+}
+
+func saveCopilotRefreshToken(client *http.Client, deviceCode string, interval int, expiresIn int) (CopilotDeviceTokenResponse, error) {
+	var accessTokenResp CopilotDeviceTokenResponse
+	endTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		if time.Now().After(endTime) {
+			return CopilotDeviceTokenResponse{}, fmt.Errorf("authorization polling timeout")
+		}
+
+		data := strings.NewReader(
+			fmt.Sprintf(
+				"client_id=%s&device_code=%s&grant_type=urn:ietf:params:oauth:grant-type:device_code",
+				copilotClientID,
+				deviceCode,
+			),
+		)
+		req, err := http.NewRequest("POST", copilotAuthTokenURL, data)
+		if err != nil {
+			return CopilotDeviceTokenResponse{}, err
+		}
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return CopilotDeviceTokenResponse{}, err
+		}
+		defer resp.Body.Close()
+
+		if err := json.NewDecoder(resp.Body).Decode(&accessTokenResp); err != nil {
+			return CopilotDeviceTokenResponse{}, err
+		}
+		if accessTokenResp.AccessToken != "" {
+			return accessTokenResp, nil // Successfully authenticated
+		}
+		if accessTokenResp.Error != "" {
+			// Handle errors like "authorization_pending" or "expired_token" appropriately
+			if accessTokenResp.Error != "authorization_pending" {
+				return CopilotDeviceTokenResponse{}, fmt.Errorf("token error: %s", accessTokenResp.Error)
+			}
+		}
+	}
+
+	return CopilotDeviceTokenResponse{}, fmt.Errorf("authorization polling failed or timed out")
+}
+
+func getCopilotRefreshToken(client *http.Client) (string, error) {
 	configPath := filepath.Join(os.Getenv("HOME"), ".config/github-copilot")
 	if runtime.GOOS == "windows" {
 		configPath = filepath.Join(os.Getenv("LOCALAPPDATA"), "github-copilot")
 	}
 
+	// Support both legacy and current config file locations
+	legacyConfigPath := filepath.Join(configPath, "hosts.json")
+	currentConfigPath := filepath.Join(configPath, "apps.json")
+
 	// Check both possible config file locations
 	configFiles := []string{
-		filepath.Join(configPath, "hosts.json"),
-		filepath.Join(configPath, "apps.json"),
+		legacyConfigPath,
+		currentConfigPath,
 	}
 
 	// Try to get token from config files
@@ -94,6 +198,18 @@ func getCopilotRefreshToken() (string, error) {
 			return token, nil
 		}
 	}
+
+	// Try to login in into Copilot
+	token, err := copilotLogin(client, currentConfigPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to login into Copilot: %w", err)
+	}
+
+	if token != "" {
+		return token, nil
+	}
+
+	return "", fmt.Errorf(token)
 
 	return "", fmt.Errorf("no token found in %s", strings.Join(configFiles, ", "))
 }
@@ -136,7 +252,7 @@ func getCopilotAccessToken(client *http.Client) (CopilotAccessToken, error) {
 		}
 	}
 
-	refreshToken, err := getCopilotRefreshToken()
+	refreshToken, err := getCopilotRefreshToken(client)
 	if err != nil {
 		return CopilotAccessToken{}, fmt.Errorf("failed to get refresh token: %w", err)
 	}
