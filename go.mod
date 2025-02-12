@@ -10,7 +10,7 @@ require (
 	github.com/caarlos0/go-shellwords v1.0.12
 	github.com/caarlos0/timea.go v1.2.0
 	github.com/charmbracelet/bubbles v0.20.0
-	github.com/charmbracelet/bubbletea v1.3.2
+	github.com/charmbracelet/bubbletea v1.3.3
 	github.com/charmbracelet/glamour v0.8.0
 	github.com/charmbracelet/huh v0.6.0
 	github.com/charmbracelet/lipgloss v1.0.0
