@@ -135,6 +135,9 @@ apis:
       o3-mini:
         aliases: ["o3m", "o3-mini"]
         max-input-chars: 128000
+      gemini-2.0-flash-001:
+        aliases: ["gm2f", "flash-2", "gemini-2-flash"]
+        max-input-chars: 4194304
   anthropic:
     base-url: https://api.anthropic.com/v1
     api-key:
@@ -158,13 +161,20 @@ apis:
       command-r:
         max-input-chars: 128000
   google:
-    models:
+    models: # https://ai.google.dev/gemini-api/docs/models/gemini
       gemini-1.5-pro-latest:
-        aliases: ["gemini"]
+        aliases: ["gmp", "gemini", "gemini-1.5-pro"]
         max-input-chars: 392000
       gemini-1.5-flash-latest:
-        aliases: ["flash"]
+        aliases: ["gmf", "flash", "gemini-1.5-flash"]
         max-input-chars: 392000
+      gemini-2.0-flash-001:
+        aliases: ["gm2f", "flash-2", "gemini-2-flash"]
+        max-input-chars: 4194304
+      gemini-2.0-flash-lite:
+        aliases: ["gm2fl", "flash-2-lite", "gemini-2-flash-lite"]
+        max-input-chars: 4194304
+
   ollama:
     base-url: http://localhost:11434/api
     models: # https://ollama.com/library
