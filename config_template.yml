@@ -94,10 +94,7 @@ apis:
         max-input-chars: 12250
         fallback:
       o1:
-        aliases: ["o1-preview"]
-        max-input-chars: 200000
-      o3-mini:
-        aliases: ["o1-preview"]
+        aliases: ["o1"]
         max-input-chars: 200000
       o1-preview:
         aliases: ["o1-preview"]
@@ -107,7 +104,7 @@ apis:
         max-input-chars: 128000
       o3-mini:
         aliases: ["o3m", "o3-mini"]
-        max-input-chars: 128000
+        max-input-chars: 200000
   copilot:
     base-url: https://api.githubcopilot.com
     models:
