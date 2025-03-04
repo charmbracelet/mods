@@ -21,16 +21,19 @@ func (m *Mods) createOpenAIStream(content string, ccfg openai.ClientConfig, mod 
 		return err
 	}
 
-	// Remap system messages to user messages due to beta limitations
-	messages := []openai.ChatCompletionMessage{}
-	for _, message := range m.messages {
-		if message.Role == openai.ChatMessageRoleSystem {
-			messages = append(messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleUser,
-				Content: message.Content,
-			})
-		} else {
-			messages = append(messages, message)
+	// o1-preview and o1-mini don't support system messages
+	messages := m.messages
+	if mod.Name == "o1-preview" || mod.Name == "o1-mini" {
+		messages = []openai.ChatCompletionMessage{}
+		for _, message := range m.messages {
+			if message.Role == openai.ChatMessageRoleSystem {
+				messages = append(messages, openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleUser,
+					Content: message.Content,
+				})
+			} else {
+				messages = append(messages, message)
+			}
 		}
 	}
 
