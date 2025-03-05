@@ -250,29 +250,60 @@ apis:
       llama3.1-70b:
         aliases: ["llama3.1-cerebras", "llama3.1-70b-cerebras"]
         max-input-chars: 24500
+
   sambanova:
     base-url: https://api.sambanova.ai/v1
     api-key:
     api-key-env: SAMBANOVA_API_KEY
-    models: # https://community.sambanova.ai/t/supported-models/193
-      Meta-Llama-3.1-8B-Instruct:
-        aliases: ["llama3.1-8b-sambanova-4k", "llama3.1-instruct-8b-sambanova-4k"]
-        max-input-chars: 12250
-      Meta-Llama-3.1-70B-Instruct:
-        aliases: ["llama3.1-70b-sambanova-4k", "llama3.1-instruct-70b-sambanova-4k"]
-        max-input-chars: 12250
+    models: # https://docs.sambanova.ai/cloud/docs/get-started/supported-models
+    # Preview models
+      DeepSeek-R1:
+        aliases: ["deepseek-r1-sambanova", "deepseek-r1-preview"]
+        max-input-chars: 24500 # 8k tokens
+    # Production models
+      DeepSeek-R1-Distill-Llama-70B:
+        aliases: ["deepseek-r1-llama-sambanova", "deepseek-r1-distill"]
+        max-input-chars: 98000 # 32k tokens    
+      Llama-3.1-Tulu-3-405B:
+        aliases: ["llama3.1-tulu", "tulu-405b"]
+        max-input-chars: 49000 # 16k tokens
+      Meta-Llama-3.3-70B-Instruct:
+        aliases: ["llama3.3-sambanova", "llama3.3-70b-sambanova"]
+        max-input-chars: 392000 # 128k tokens
+      Meta-Llama-3.2-3B-Instruct:
+        aliases: ["llama3.2-3b-sambanova"]
+        max-input-chars: 24500 # 8k tokens
+      Meta-Llama-3.2-1B-Instruct:
+        aliases: ["llama3.2-1b-sambanova"]
+        max-input-chars: 49000 # 16k tokens
       Meta-Llama-3.1-405B-Instruct:
-        aliases: ["llama3.1-405b-sambanova-4k", "llama3.1-instruct-405b-sambanova-4k"]
-        max-input-chars: 12250
-      Meta-Llama-3.1-8B-Instruct-8k:
-        aliases: ["llama3.1-8b-sambanova", "llama3.1-instruct-8b-sambanova", "llama3.1-8b-sambanova-8k", "llama3.1-instruct-8b-sambanova-8k"]
-        max-input-chars: 24500
-      Meta-Llama-3.1-70B-Instruct-8k:
-        aliases: ["llama3.1-70b-sambanova", "llama3.1-instruct-70b-sambanova", "llama3.1-70b-sambanova-8k", "llama3.1-instruct-70b-sambanova-8k"]
-        max-input-chars: 24500
-      Meta-Llama-3.1-405B-Instruct-8k:
-        aliases: ["llama3.1-405b-sambanova", "llama3.1-instruct-405b-sambanova", "llama3.1-405b-sambanova-8k", "llama3.1-instruct-405b-sambanova-8k"]
-        max-input-chars: 24500
+        aliases: ["llama3.1-405b-sambanova"]
+        max-input-chars: 49000 # 16k tokens
+      Meta-Llama-3.1-70B-Instruct:
+        aliases: ["llama3.1-70b-sambanova"]
+        max-input-chars: 392000 # 128k tokens
+      Meta-Llama-3.1-8B-Instruct:
+        aliases: ["llama3.1-8b-sambanova"]
+        max-input-chars: 49000 # 16k tokens
+      Meta-Llama-Guard-3-8B:
+        aliases: ["llama-guard-sambanova"]
+        max-input-chars: 24500 # 8k tokens
+      Llama-3.2-90B-Vision-Instruct:
+        aliases: ["llama3.2-vision-90b", "llama3.2-90b-vision-sambanova"]
+        max-input-chars: 12250 # 4k tokens
+      Llama-3.2-11B-Vision-Instruct:
+        aliases: ["llama3.2-vision-11b", "llama3.2-11b-vision-sambanova"]
+        max-input-chars: 12250 # 4k tokens
+      Qwen2.5-72B-Instruct:
+        aliases: ["qwen2.5-sambanova", "qwen2.5-72b"]
+        max-input-chars: 49000 # 16k tokens
+      Qwen2.5-Coder-32B-Instruct:
+        aliases: ["qwen2.5-coder-sambanova", "qwen-coder-sambanova"]
+        max-input-chars: 49000 # 16k tokens
+      QwQ-32B-Preview:
+        aliases: ["qwq-sambanova", "qwq-32b"]
+        max-input-chars: 49000 # 16k tokens
+
   localai:
     # LocalAI setup instructions: https://github.com/go-skynet/LocalAI#example-use-gpt4all-j-model
     base-url: http://localhost:8080
