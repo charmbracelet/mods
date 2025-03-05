@@ -234,6 +234,44 @@ apis:
       mixtral-8x7b-32768:
         aliases: ["mixtral"]
         max-input-chars: 98000 # 32,768
+    # Preview models
+      mistral-saba-24b:
+        aliases: ["saba", "mistral-saba", "saba-24b"]
+        max-input-chars: 98000 # 32K
+      qwen-2.5-coder-32b:
+        aliases: ["qwen-coder", "qwen2.5-coder", "qwen-2.5-coder"]
+        max-input-chars: 392000 # 128K
+      deepseek-r1-distill-qwen-32b:
+        aliases: ["deepseek-r1", "r1-qwen", "deepseek-qwen"]
+        max-input-chars: 392000 # 128K
+        max-completion-tokens: 49152 # 16,384
+      deepseek-r1-distill-llama-70b-specdec:
+        aliases: ["deepseek-r1-specdec", "r1-llama-specdec"]
+        max-input-chars: 392000 # 128K
+        max-completion-tokens: 49152 # 16,384
+      deepseek-r1-distill-llama-70b:
+        aliases: ["deepseek-r1-llama", "r1-llama"]
+        max-input-chars: 392000 # 128K
+      llama-3.3-70b-specdec:
+        aliases: ["llama3.3-specdec"]
+        max-input-chars: 24500 # 8,192
+      llama-3.2-1b-preview:
+        aliases: ["llama3.2-1b"]
+        max-input-chars: 392000 # 128K
+        max-completion-tokens: 24500 # 8,192
+      llama-3.2-3b-preview:
+        aliases: ["llama3.2-3b"]
+        max-input-chars: 392000 # 128K
+        max-completion-tokens: 24500 # 8,192
+      llama-3.2-11b-vision-preview:
+        aliases: ["llama3.2-vision", "llama3.2-11b-vision"]
+        max-input-chars: 392000 # 128K
+        max-completion-tokens: 24500 # 8,192
+      llama-3.2-90b-vision-preview:
+        aliases: ["llama3.2-90b-vision"]
+        max-input-chars: 392000 # 128K
+        max-completion-tokens: 24500 # 8,192
+
   cerebras:
     base-url: https://api.cerebras.ai/v1
     api-key:
