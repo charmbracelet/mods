@@ -608,7 +608,7 @@ func (m *Mods) findReadID(in string) (*Conversation, error) {
 }
 
 func (m *Mods) readStdinCmd() tea.Msg {
-	if !isInputTTY() {
+	if !isInputTTY() && shouldReadInput() {
 		reader := bufio.NewReader(os.Stdin)
 		stdinBytes, err := io.ReadAll(reader)
 		if err != nil {
