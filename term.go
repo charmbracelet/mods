@@ -12,6 +12,11 @@ var isInputTTY = OnceValue(func() bool {
 	return isatty.IsTerminal(os.Stdin.Fd())
 })
 
+var shouldReadInput = OnceValue(func() bool {
+	stat, _ := os.Stdin.Stat()
+	return stat.Size() > 0
+})
+
 var isOutputTTY = OnceValue(func() bool {
 	return isatty.IsTerminal(os.Stdout.Fd())
 })
