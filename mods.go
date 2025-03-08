@@ -33,6 +33,8 @@ const (
 	startState state = iota
 	configLoadedState
 	requestState
+	toolCallsPendingState
+	toolCallsRunningState // then back to requestState
 	responseState
 	doneState
 	errorState
@@ -65,6 +67,9 @@ type Mods struct {
 
 	content      []string
 	contentMutex *sync.Mutex
+
+	pendingToolCalls     []openai.ToolCall
+	pendingToolCallMutex *sync.Mutex
 }
 
 func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) *Mods {
@@ -72,15 +77,16 @@ func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) 
 	vp := viewport.New(0, 0)
 	vp.GotoBottom()
 	return &Mods{
-		Styles:       makeStyles(r),
-		glam:         gr,
-		state:        startState,
-		renderer:     r,
-		glamViewport: vp,
-		contentMutex: &sync.Mutex{},
-		db:           db,
-		cache:        cache,
-		Config:       cfg,
+		Styles:               makeStyles(r),
+		glam:                 gr,
+		state:                startState,
+		renderer:             r,
+		glamViewport:         vp,
+		contentMutex:         &sync.Mutex{},
+		pendingToolCallMutex: &sync.Mutex{},
+		db:                   db,
+		cache:                cache,
+		Config:               cfg,
 	}
 }
 
@@ -91,8 +97,11 @@ type completionInput struct {
 
 // completionOutput a tea.Msg that wraps the content returned from openai.
 type completionOutput struct {
-	content string
-	stream  chatCompletionReceiver
+	content              string
+	stream               chatCompletionReceiver
+	incrementalToolCalls string
+	toolCalls            []openai.ToolCall
+	toolCallResults      []openai.ChatCompletionMessage
 }
 
 type chatCompletionReceiver interface {
@@ -156,6 +165,10 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case completionOutput:
 		if msg.stream == nil {
 			m.state = doneState
+			// todo hack until we actually go resend in the loop
+			if len(m.pendingToolCalls) > 0 {
+				m.appendToOutput(")")
+			}
 			return m, m.quit
 		}
 		if msg.content != "" {
@@ -514,6 +527,38 @@ func (m *Mods) handleAPIError(err *openai.APIError, mod Model, content string) t
 	}
 }
 
+func (m *Mods) mergeToolCallChunk(delta openai.ToolCall) string {
+	m.pendingToolCallMutex.Lock()
+	defer m.pendingToolCallMutex.Unlock()
+
+	if len(m.pendingToolCalls) == 0 {
+		m.pendingToolCalls = append(m.pendingToolCalls, openai.ToolCall{})
+	}
+
+	stringDiff := ""
+
+	if delta.ID != "" {
+		m.pendingToolCalls[0].ID = delta.ID
+		stringDiff += "Tool Call: "
+	}
+	if delta.Function.Name != "" {
+		m.pendingToolCalls[0].Function.Name = delta.Function.Name
+		stringDiff += delta.Function.Name + "\n"
+	}
+	if delta.Type != "" {
+		m.pendingToolCalls[0].Type = delta.Type
+	}
+	if delta.Function.Arguments != "" {
+		if m.pendingToolCalls[0].Function.Arguments == "" {
+			stringDiff += "Arguments: "
+
+		}
+		m.pendingToolCalls[0].Function.Arguments += delta.Function.Arguments
+		stringDiff += delta.Function.Arguments
+	}
+	return stringDiff
+}
+
 func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := msg.stream.Recv()
@@ -528,6 +573,11 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		if err != nil {
 			_ = msg.stream.Close()
 			return modsError{err, "There was an error when streaming the API response."}
+		}
+		if len(resp.Choices) > 0 && len(resp.Choices[0].Delta.ToolCalls) > 0 {
+			stringDiff := m.mergeToolCallChunk(resp.Choices[0].Delta.ToolCalls[0])
+			msg.content = stringDiff
+			return msg
 		}
 		if len(resp.Choices) > 0 {
 			msg.content = resp.Choices[0].Delta.Content

@@ -1,6 +1,8 @@
 module github.com/charmbracelet/mods
 
-go 1.21
+go 1.23
+
+toolchain go1.24.0
 
 require (
 	github.com/adrg/xdg v0.5.3
@@ -20,6 +22,7 @@ require (
 	github.com/cohere-ai/cohere-go/v2 v2.12.4
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
+	github.com/mark3labs/mcp-go v0.11.2
 	github.com/mattn/go-isatty v0.0.20
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0

@@ -192,6 +192,14 @@ var (
 				return listConversations(config.Raw)
 			}
 
+			if config.ListMCPServers {
+				return listMCPServers()
+			}
+
+			if config.ListMCPTools {
+				return listMCPTools()
+			}
+
 			if len(config.Delete) > 0 {
 				return deleteConversations()
 			}
@@ -265,6 +273,11 @@ func initFlags() {
 	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
 	flags.StringVar(&config.Theme, "theme", "charm", stdoutStyles().FlagDesc.Render(help["theme"]))
 	flags.BoolVarP(&config.openEditor, "editor", "e", false, stdoutStyles().FlagDesc.Render(help["editor"]))
+	flags.StringVar(&config.MCPServersFrom, "mcp-servers-from", config.MCPServersFrom, stdoutStyles().FlagDesc.Render(help["mcp-servers-from"]))
+	flags.BoolVar(&config.ListMCPServers, "list-mcp-servers", false, stdoutStyles().FlagDesc.Render(help["list-mcp-servers"]))
+	flags.BoolVar(&config.ListMCPTools, "list-mcp-tools", false, stdoutStyles().FlagDesc.Render(help["list-mcp-tools"]))
+	flags.StringArrayVarP(&config.UseMCPServers, "mcp-servers", "T", config.UseMCPServers, stdoutStyles().FlagDesc.Render(help["mcp-servers"]))
+	flags.BoolVarP(&config.UseAllMCPServers, "all-mcp-servers", "A", config.UseAllMCPServers, stdoutStyles().FlagDesc.Render(help["all-mcp-servers"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -303,6 +316,7 @@ func initFlags() {
 		"continue",
 		"continue-last",
 		"reset-settings",
+		"list-mcp-servers",
 	)
 }
 
@@ -735,6 +749,8 @@ func isNoArgs() bool {
 		!config.ShowHelp &&
 		!config.List &&
 		!config.ListRoles &&
+		!config.ListMCPServers &&
+		!config.ListMCPTools &&
 		!config.Dirs &&
 		!config.Settings &&
 		!config.ResetSettings
@@ -752,6 +768,7 @@ func askInfo() error {
 
 	if config.ContinueLast {
 		found, err := db.FindHEAD()
+
 		if err == nil && found != nil && found.Model != nil {
 			config.Model = *found.Model
 		}

@@ -319,3 +319,17 @@ apis:
       deepseek-code:
         aliases: ["ds-code"]
         max-input-chars: 384000
+
+# {{ index .Help "mcp-servers" }}
+mcp-servers:
+  # sqlite:
+    # command: "uvx"
+    # args: ["mcp-server-sqlite", "--db-path", "/Users/YOUR_USERNAME/test.db"]
+
+# {{ index .Help "mcp-servers-from" }}
+mcp-servers-from: ""
+# mcp-servers-from: "~/.mcp-servers.json"
+
+# {{ index .Help "default-mcp-servers" }}
+default-mcp-servers: []
+#   - sqlite
