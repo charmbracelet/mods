@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	cohere "github.com/cohere-ai/cohere-go/v2"
+	"github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/mcp"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -49,6 +53,20 @@ func (m *Mods) createOpenAIStream(content string, ccfg openai.ClientConfig, mod 
 		req.ResponseFormat = responseFormat(cfg)
 	}
 
+	// Add MCP tools if enabled and we're using OpenAI API
+	enabledServers, err := enabledMCPServers()
+	if err != nil {
+		return m.handleRequestError(err, mod, content)
+	}
+	if len(enabledServers) > 0 {
+		// Get all available tools from enabled MCP servers
+		tools, err := getMCPToolsForOpenAI(enabledServers)
+		if err == nil && len(tools) > 0 {
+			req.Tools = tools
+			req.ToolChoice = "auto"
+		}
+	}
+
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		return m.handleRequestError(err, mod, content)
@@ -57,8 +75,89 @@ func (m *Mods) createOpenAIStream(content string, ccfg openai.ClientConfig, mod 
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 }
 
+// getMCPToolsForOpenAI converts MCP tools to OpenAI tools format
+func getMCPToolsForOpenAI(enabledServers []string) ([]openai.Tool, error) {
+	configuredServers, _, err := configuredMCPServers()
+	if err != nil {
+		return nil, err
+	}
+
+	var openaiTools []openai.Tool
+
+	for _, serverName := range enabledServers {
+		serverConfig, exists := configuredServers[serverName]
+		if !exists {
+			continue
+		}
+
+		mcpClient, err := client.NewStdioMCPClient(serverConfig.Command, nil, serverConfig.Args...)
+		if err != nil {
+			continue
+		}
+
+		_, err = mcpClient.Initialize(context.Background(), mcp.InitializeRequest{})
+		if err != nil {
+			mcpClient.Close()
+			continue
+		}
+
+		tools, err := mcpClient.ListTools(context.Background(), mcp.ListToolsRequest{})
+		if err != nil {
+			mcpClient.Close()
+			continue
+		}
+
+		for _, tool := range tools.Tools {
+			// Create a function definition
+			functionDef := &openai.FunctionDefinition{
+				Name:        fmt.Sprintf("%s__%s", serverName, tool.Name),
+				Description: tool.Description,
+			}
+
+			// Convert the MCP tool schema to OpenAI parameters format
+			if tool.RawInputSchema != nil {
+				functionDef.Parameters = json.RawMessage(tool.RawInputSchema)
+			} else {
+				// Convert structured schema
+				params := map[string]interface{}{
+					"type": "object",
+				}
+				if len(tool.InputSchema.Properties) > 0 {
+					params["properties"] = tool.InputSchema.Properties
+				}
+				if len(tool.InputSchema.Required) > 0 {
+					params["required"] = tool.InputSchema.Required
+				}
+
+				paramsJSON, err := json.Marshal(params)
+				if err != nil {
+					continue
+				}
+				functionDef.Parameters = json.RawMessage(paramsJSON)
+			}
+
+			// Create the tool with the function definition
+			openaiTools = append(openaiTools, openai.Tool{
+				Type:     openai.ToolTypeFunction,
+				Function: functionDef,
+			})
+		}
+
+		mcpClient.Close()
+	}
+
+	return openaiTools, nil
+}
+
 func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod Model) tea.Msg {
 	cfg := m.Config
+
+	// Add warning if MCP is configured but we're using Ollama
+	if len(cfg.UseMCPServers) > 0 || cfg.UseAllMCPServers || len(cfg.DefaultMCPServers) > 0 {
+		if !m.Config.Quiet {
+			fmt.Fprintln(os.Stderr, m.Styles.Timeago.Render("Warning: MCP tools are only supported with OpenAI API models"))
+		}
+	}
 
 	client := NewOllamaClientWithConfig(occfg)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -96,6 +195,13 @@ func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod 
 
 func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod Model) tea.Msg {
 	cfg := m.Config
+
+	// Add warning if MCP is configured but we're using Google
+	if len(cfg.UseMCPServers) > 0 || cfg.UseAllMCPServers || len(cfg.DefaultMCPServers) > 0 {
+		if !m.Config.Quiet {
+			fmt.Fprintln(os.Stderr, m.Styles.Timeago.Render("Warning: MCP tools are only supported with OpenAI API models"))
+		}
+	}
 
 	client := NewGoogleClientWithConfig(gccfg)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -166,6 +272,13 @@ func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod 
 func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig, mod Model) tea.Msg {
 	cfg := m.Config
 
+	// Add warning if MCP is configured but we're using Anthropic
+	if len(cfg.UseMCPServers) > 0 || cfg.UseAllMCPServers || len(cfg.DefaultMCPServers) > 0 {
+		if !m.Config.Quiet {
+			fmt.Fprintln(os.Stderr, m.Styles.Timeago.Render("Warning: MCP tools are only supported with OpenAI API models"))
+		}
+	}
+
 	client := NewAnthropicClientWithConfig(accfg)
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelRequest = cancel
@@ -213,6 +326,13 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 
 func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod Model) tea.Msg {
 	cfg := m.Config
+
+	// Add warning if MCP is configured but we're using Cohere
+	if len(cfg.UseMCPServers) > 0 || cfg.UseAllMCPServers || len(cfg.DefaultMCPServers) > 0 {
+		if !m.Config.Quiet {
+			fmt.Fprintln(os.Stderr, m.Styles.Timeago.Render("Warning: MCP tools are only supported with OpenAI API models"))
+		}
+	}
 
 	client := NewCohereClientWithConfig(cccfg)
 	ctx, cancel := context.WithCancel(context.Background())
