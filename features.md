@@ -118,3 +118,76 @@ mods --delete='naturals' --delete='a2e2'
 
 Keep in mind that these operations are not reversible.
 You can repeat the delete flag to delete multiple conversations at once.
+
+
+## Using MCP
+
+Mods can be optionally be used as an MCP client.
+
+### Using an MCP servers.json
+
+You can configure MCP servers in the settings file, or on the command line by passing a `--mcp-servers-from` flag.
+
+```bash
+mods --mcp-servers-from=~/.config/mcp/servers.json --list-mcp-servers
+```
+
+Or in your config file:
+
+```yaml
+mcp-servers-from: ~/.config/mcp/servers.json
+```
+
+### Specifying MCP servers in the mods settings 
+
+In the config file, you can specify the path to the MCP servers file, or a list of servers to use.
+
+use `mods --settings` to edit the settings file.
+
+```yaml
+mcp-servers:
+  sqlite:
+    command: "uvx"
+    args: ["mcp-server-sqlite", "--db-path", "/Users/YOUR_USERNAME/test.db"]
+  fetch:
+    command: "uvx"
+    args: ["mcp-server-fetch"]
+```
+
+### Listing MCP servers
+
+You can list the MCP servers you have configured by running:
+
+```bash
+mods --list-mcp-servers
+```
+
+### Default MCP servers
+
+By default, configured MCP servers will not be exposed to models. You can specify default MCP servers to always enable the settings file.
+
+```yaml
+default-mcp-servers:
+  - sqlite
+```
+
+### Enabling MCP severs
+
+to enable MCP servers on the command line, you can use the `--mcp-servers`, `-T` flag.
+
+```bash
+mods --mcp-servers=fetch
+```
+
+### Listing MCP tools
+
+You can list the MCP tools you have configured by running:
+
+```bash
+mods --list-mcp-tools
+```
+
+
+
+
+
