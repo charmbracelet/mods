@@ -57,6 +57,13 @@ apis:
     api-key-env: OPENAI_API_KEY
     # api-key-cmd: rbw get -f OPENAI_API_KEY chat.openai.com
     models: # https://platform.openai.com/docs/models
+      gpt-4.5-preview: #128k https://platform.openai.com/docs/models/gpt-4.5-preview
+        aliases: ["gpt-4.5", "gpt4.5"]
+        max-input-chars: 392000
+        fallback: gpt-4
+      gpt-4.5-preview-2025-02-27:
+        max-input-chars: 392000
+        fallback: gpt-4
       gpt-4o-mini:
         aliases: ["4o-mini"]
         max-input-chars: 392000
