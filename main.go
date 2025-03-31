@@ -412,7 +412,7 @@ func maybeWriteMemProfile() {
 func handleError(err error) {
 	maybeWriteMemProfile()
 	// exhaust stdin
-	if !isInputTTY() {
+	if !isInputTTY() && shouldReadInput() {
 		_, _ = io.ReadAll(os.Stdin)
 	}
 
