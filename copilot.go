@@ -119,8 +119,9 @@ func copilotLogin(client *http.Client, configPath string) (string, error) {
 
 	deviceCodeResp.UserCode = data.Get("user_code")
 	deviceCodeResp.ExpiresIn, _ = strconv.Atoi(data.Get("expires_in"))
+	deviceCodeResp.Interval, _ = strconv.Atoi(data.Get("interval"))
 	deviceCodeResp.DeviceCode = data.Get("device_code")
-	deviceCodeResp.VerificationUri = data.Get("")
+	deviceCodeResp.VerificationUri = data.Get("verification_uri")
 
 	fmt.Printf("Please go to %s and enter the code %s\n", deviceCodeResp.VerificationUri, deviceCodeResp.UserCode)
 	saveCopilotRefreshToken(client, deviceCodeResp.DeviceCode, deviceCodeResp.Interval, deviceCodeResp.ExpiresIn)
