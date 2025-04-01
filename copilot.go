@@ -315,8 +315,6 @@ func getCopilotOAuthToken(client *http.Client) (string, error) {
 	}
 
 	return "", fmt.Errorf(token)
-
-	return "", fmt.Errorf("no token found in %s", strings.Join(configFiles, ", "))
 }
 
 func extractCopilotTokenFromFile(path string) (string, error) {
