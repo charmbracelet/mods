@@ -241,6 +241,9 @@ apis:
       mixtral-8x7b-32768:
         aliases: ["mixtral"]
         max-input-chars: 98000 # 32,768
+      meta-llama/llama-4-scout-17b-16e-instruct:
+        aliases: ["llama4"]
+        max-input-chars: 392000 # 128K
     # Preview models
       mistral-saba-24b:
         aliases: ["saba", "mistral-saba", "saba-24b"]
@@ -303,7 +306,7 @@ apis:
     # Production models
       DeepSeek-R1-Distill-Llama-70B:
         aliases: ["deepseek-r1-llama-sambanova", "deepseek-r1-distill"]
-        max-input-chars: 98000 # 32k tokens    
+        max-input-chars: 98000 # 32k tokens
       Llama-3.1-Tulu-3-405B:
         aliases: ["llama3.1-tulu", "tulu-405b"]
         max-input-chars: 49000 # 16k tokens
