@@ -236,7 +236,7 @@ func (stream *anthropicStreamReader) processLines() (openai.ChatCompletionStream
 			}
 			writeErr := stream.errAccumulator.Write(noSpaceLine)
 			if writeErr != nil {
-				return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("ollamaStreamReader.processLines: %w", writeErr)
+				return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("anthropicStreamReader.processLines: %w", writeErr)
 			}
 			emptyMessagesCount++
 			if emptyMessagesCount > stream.emptyMessagesLimit {
