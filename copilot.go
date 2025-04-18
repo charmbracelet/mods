@@ -250,6 +250,11 @@ func saveCopilotOAuthToken(oAuthToken copilotOAuthToken, configPath string) erro
 		return fmt.Errorf("Error mashaling oAuthToken: %e", err)
 	}
 
+	configDir := filepath.Dir(configPath)
+	if err = os.MkdirAll(configDir, os.ModePerm); err != nil {
+		return fmt.Errorf("Error creating config directory: %e", err)
+	}
+
 	err = os.WriteFile(configPath, fileContent, os.ModePerm)
 
 	versionsPath := filepath.Join(filepath.Dir(configPath), "versions.json")
