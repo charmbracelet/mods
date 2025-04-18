@@ -17,7 +17,7 @@ import (
 
 const (
 	copilotAuthDeviceCodeURL = "https://github.com/login/device/code"
-	copilotAuthTokenURL      = "https://github.com/login/oauth/access_token"
+	copilotAuthTokenURL      = "https://github.com/login/oauth/access_token" // #nosec G101
 	copilotChatAuthURL       = "https://api.github.com/copilot_internal/v2/token"
 	copilotEditorVersion     = "vscode/1.95.3"
 	copilotUserAgent         = "curl/7.81.0" // Necessay to bypass the user-agent check
@@ -45,22 +45,22 @@ type CopilotAccessToken struct {
 	} `json:"error_details,omitempty"`
 }
 
-type CopilotDeviceCodeResponse struct {
+type copilotDeviceCodeResponse struct {
 	DeviceCode      string `json:"device_code"`
 	UserCode        string `json:"user_code"`
-	VerificationUri string `json:"verification_uri"`
+	VerificationURI string `json:"verification_uri"`
 	ExpiresIn       int    `json:"expires_in"`
 	Interval        int    `json:"interval"`
 }
 
-type CopilotDeviceTokenResponse struct {
+type copilotDeviceTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	Scope       string `json:"scope"`
 	Error       string `json:"error,omitempty"`
 }
 
-type CopilotFailedRequestResponse struct {
+type copilotFailedRequestResponse struct {
 	DocumentationURL string `json:"documentation_url"`
 	Message          string `json:"message"`
 }
@@ -68,7 +68,7 @@ type CopilotFailedRequestResponse struct {
 type copilotGithubOAuthTokenWrapper struct {
 	User        string `json:"user"`
 	OAuthToken  string `json:"oauth_token"`
-	GithubAppId string `json:"githubAppId"`
+	GithubAppID string `json:"githubAppId"`
 }
 
 type copilotOAuthToken struct {
@@ -132,7 +132,13 @@ func copilotLogin(client *http.Client, configPath string) (string, error) {
 		return "", fmt.Errorf("failed to decode device code response: %w", err)
 	}
 
-	var deviceCodeResp CopilotDeviceCodeResponse = CopilotDeviceCodeResponse{}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("error closing response body: %w", closeErr)
+		}
+	}()
+
+	deviceCodeResp := copilotDeviceCodeResponse{}
 
 	parsedData, err := url.ParseQuery(string(responseBody))
 	if err != nil {
@@ -143,9 +149,9 @@ func copilotLogin(client *http.Client, configPath string) (string, error) {
 	deviceCodeResp.ExpiresIn, _ = strconv.Atoi(parsedData.Get("expires_in"))
 	deviceCodeResp.Interval, _ = strconv.Atoi(parsedData.Get("interval"))
 	deviceCodeResp.DeviceCode = parsedData.Get("device_code")
-	deviceCodeResp.VerificationUri = parsedData.Get("verification_uri")
+	deviceCodeResp.VerificationURI = parsedData.Get("verification_uri")
 
-	fmt.Printf("Please go to %s and enter the code %s\n", deviceCodeResp.VerificationUri, deviceCodeResp.UserCode)
+	fmt.Printf("Please go to %s and enter the code %s\n", deviceCodeResp.VerificationURI, deviceCodeResp.UserCode)
 	oAuthToken, err := fetchCopilotRefreshToken(client, deviceCodeResp.DeviceCode, deviceCodeResp.Interval, deviceCodeResp.ExpiresIn)
 
 	if err != nil {
@@ -157,7 +163,7 @@ func copilotLogin(client *http.Client, configPath string) (string, error) {
 			GithubWrapper: copilotGithubOAuthTokenWrapper{
 				User:        "",
 				OAuthToken:  oAuthToken.AccessToken,
-				GithubAppId: copilotClientID,
+				GithubAppID: copilotClientID,
 			},
 		},
 		configPath,
@@ -170,9 +176,9 @@ func copilotLogin(client *http.Client, configPath string) (string, error) {
 	return oAuthToken.AccessToken, nil
 }
 
-func fetchCopilotRefreshToken(client *http.Client, deviceCode string, interval int, expiresIn int) (CopilotDeviceTokenResponse, error) {
-	var accessTokenResp CopilotDeviceTokenResponse
-	var errResp CopilotFailedRequestResponse
+func fetchCopilotRefreshToken(client *http.Client, deviceCode string, interval int, expiresIn int) (copilotDeviceTokenResponse, error) {
+	var accessTokenResp copilotDeviceTokenResponse
+	var errResp copilotFailedRequestResponse
 
 	// Adds a delay to give the user time to open
 	// the browser and type the code
@@ -185,7 +191,7 @@ func fetchCopilotRefreshToken(client *http.Client, deviceCode string, interval i
 
 	for range ticker.C {
 		if time.Now().After(endTime) {
-			return CopilotDeviceTokenResponse{}, fmt.Errorf("authorization polling timeout")
+			return copilotDeviceTokenResponse{}, fmt.Errorf("authorization polling timeout")
 		}
 
 		fmt.Println("Trying to fetch token...")
@@ -198,70 +204,75 @@ func fetchCopilotRefreshToken(client *http.Client, deviceCode string, interval i
 		)
 		req, err := http.NewRequest("POST", copilotAuthTokenURL, data)
 		if err != nil {
-			return CopilotDeviceTokenResponse{}, err
+			return copilotDeviceTokenResponse{}, err
 		}
 		req.Header.Set("Accept", "application/json")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return CopilotDeviceTokenResponse{}, err
+			return copilotDeviceTokenResponse{}, err
 		}
-		defer resp.Body.Close()
+
+		defer func() {
+			if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+				err = fmt.Errorf("error closing response body: %w", closeErr)
+			}
+		}()
 
 		isRequestFailed := resp.StatusCode != 200
 
 		if isRequestFailed {
 			if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
-				return CopilotDeviceTokenResponse{}, err
+				return copilotDeviceTokenResponse{}, err
 			}
 
-			return CopilotDeviceTokenResponse{}, fmt.Errorf(
-				"Failed to check refresh token\n\tMessage: %s\n\tDocumentation: %s",
+			return copilotDeviceTokenResponse{}, fmt.Errorf(
+				"failed to check refresh token\n\tMessage: %s\n\tDocumentation: %s",
 				errResp.Message,
 				errResp.DocumentationURL,
 			)
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&accessTokenResp); err != nil {
-			return CopilotDeviceTokenResponse{}, err
+			return copilotDeviceTokenResponse{}, err
 		}
 
 		if accessTokenResp.AccessToken != "" {
-			// save to the new location
-
 			return accessTokenResp, nil
 		}
 
 		if accessTokenResp.Error != "" {
 			// Handle errors like "authorization_pending" or "expired_token" appropriately
 			if accessTokenResp.Error != "authorization_pending" {
-				return CopilotDeviceTokenResponse{}, fmt.Errorf("token error: %s", accessTokenResp.Error)
+				return copilotDeviceTokenResponse{}, fmt.Errorf("token error: %s", accessTokenResp.Error)
 			}
 		}
 	}
 
-	return CopilotDeviceTokenResponse{}, fmt.Errorf("authorization polling failed or timed out")
+	return copilotDeviceTokenResponse{}, fmt.Errorf("authorization polling failed or timed out")
 }
 
 func saveCopilotOAuthToken(oAuthToken copilotOAuthToken, configPath string) error {
 	fileContent, err := json.Marshal(oAuthToken)
 
 	if err != nil {
-		return fmt.Errorf("Error mashaling oAuthToken: %e", err)
+		return fmt.Errorf("error mashaling oAuthToken: %e", err)
 	}
 
 	configDir := filepath.Dir(configPath)
-	if err = os.MkdirAll(configDir, os.ModePerm); err != nil {
-		return fmt.Errorf("Error creating config directory: %e", err)
+	if err = os.MkdirAll(configDir, 0o600); err != nil {
+		return fmt.Errorf("error creating config directory: %e", err)
 	}
 
-	err = os.WriteFile(configPath, fileContent, os.ModePerm)
+	err = os.WriteFile(configPath, fileContent, 0o600)
+	if err != nil {
+		return fmt.Errorf("error writing oAuthToken to %s: %e", configPath, err)
+	}
 
 	versionsPath := filepath.Join(filepath.Dir(configPath), "versions.json")
-	copilotRegisterApp(versionsPath)
-
+	err = copilotRegisterApp(versionsPath)
 	if err != nil {
-		return fmt.Errorf("Error writing oAuthToken to %s: %e", configPath, err)
+		return fmt.Errorf("error registering mods as copilot app %e", err)
 	}
 
 	return nil
@@ -286,7 +297,7 @@ func copilotRegisterApp(versionsPath string) error {
 		return fmt.Errorf("error marshaling versions data: %w", err)
 	}
 
-	return os.WriteFile(versionsPath, updatedData, 0644)
+	return os.WriteFile(versionsPath, updatedData, 0o600)
 }
 
 func getCopilotOAuthToken(client *http.Client) (string, error) {
@@ -323,7 +334,7 @@ func getCopilotOAuthToken(client *http.Client) (string, error) {
 		return token, nil
 	}
 
-	return "", fmt.Errorf(token)
+	return "", fmt.Errorf("empty token")
 }
 
 func extractCopilotTokenFromFile(path string) (string, error) {
