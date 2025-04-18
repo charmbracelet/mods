@@ -174,6 +174,10 @@ func fetchCopilotRefreshToken(client *http.Client, deviceCode string, interval i
 	var accessTokenResp CopilotDeviceTokenResponse
 	var errResp CopilotFailedRequestResponse
 
+	// Adds a delay to give the user time to open
+	// the browser and type the code
+	time.Sleep(30 * time.Second)
+
 	endTime := time.Now().Add(time.Duration(expiresIn) * time.Second)
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
