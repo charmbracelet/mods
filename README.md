@@ -217,6 +217,13 @@ Groq provides models powered by their LPU inference engine.
 Set the `GROQ_API_KEY` environment variable. If you don't have one yet, you can
 get it from the [Groq console](https://console.groq.com/keys).
 
+### Gemini
+
+Mods supports using Gemini models from Google.
+
+Set the `GOOGLE_API_KEY` enviroment variable. If you don't have one yet,
+you can get it from the [Google AI Studio](https://aistudio.google.com/apikey).
+
 ## Whatcha Think?
 
 We’d love to hear your thoughts on this project. Feel free to drop us a note.
