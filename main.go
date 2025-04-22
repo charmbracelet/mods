@@ -1,3 +1,4 @@
+// Package main provides the mods CLI.
 package main
 
 import (

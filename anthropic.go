@@ -85,7 +85,7 @@ type AnthropicClient struct {
 	requestBuilder AnthropicRequestBuilder
 }
 
-// NewAnthropicClient creates a new AnthropicClient with the given configuration.
+// NewAnthropicClientWithConfig creates a new AnthropicClient with the given configuration.
 func NewAnthropicClientWithConfig(config AnthropicClientConfig) *AnthropicClient {
 	return &AnthropicClient{
 		config:         config,

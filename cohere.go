@@ -37,7 +37,7 @@ type CohereClient struct {
 	*client.Client
 }
 
-// NewCohereClient creates a new [client.Client] with the given configuration.
+// NewCohereClientWithConfig creates a new [client.Client] with the given configuration.
 func NewCohereClientWithConfig(config CohereClientConfig) *CohereClient {
 	opts := []option.RequestOption{
 		client.WithToken(config.AuthToken),

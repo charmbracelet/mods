@@ -19,7 +19,7 @@ const (
 	copilotUserAgent     = "curl/7.81.0" // Necessay to bypass the user-agent check
 )
 
-// Authentication response from GitHub Copilot's token endpoint.
+// CopilotAccessToken response from GitHub Copilot's token endpoint.
 type CopilotAccessToken struct {
 	Token     string `json:"token"`
 	ExpiresAt int64  `json:"expires_at"`
