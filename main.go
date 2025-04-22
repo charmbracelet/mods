@@ -193,6 +193,14 @@ var (
 				return listConversations(config.Raw)
 			}
 
+			if config.MCPList {
+				return mcpList()
+			}
+
+			if config.MCPListTools {
+				return mcpListTools()
+			}
+
 			if len(config.Delete) > 0 {
 				return deleteConversations()
 			}
@@ -266,6 +274,9 @@ func initFlags() {
 	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
 	flags.StringVar(&config.Theme, "theme", "charm", stdoutStyles().FlagDesc.Render(help["theme"]))
 	flags.BoolVarP(&config.openEditor, "editor", "e", false, stdoutStyles().FlagDesc.Render(help["editor"]))
+	flags.BoolVar(&config.MCPList, "mcp-list", false, stdoutStyles().FlagDesc.Render(help["mcp-list"]))
+	flags.BoolVar(&config.MCPListTools, "mcp-list-tools", false, stdoutStyles().FlagDesc.Render(help["mcp-list-tools"]))
+	flags.StringArrayVar(&config.MCPDisable, "mcp-disable", nil, stdoutStyles().FlagDesc.Render(help["mcp-disable"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -304,6 +315,8 @@ func initFlags() {
 		"continue",
 		"continue-last",
 		"reset-settings",
+		"mcp-list",
+		"mcp-list-tools",
 	)
 }
 
@@ -736,6 +749,8 @@ func isNoArgs() bool {
 		!config.ShowHelp &&
 		!config.List &&
 		!config.ListRoles &&
+		!config.MCPList &&
+		!config.MCPListTools &&
 		!config.Dirs &&
 		!config.Settings &&
 		!config.ResetSettings

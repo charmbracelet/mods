@@ -31,11 +31,18 @@ func (m *Mods) createOpenAIStream(content string, ccfg openai.ClientConfig, mod 
 		}
 	}
 
+	// tools, err := mcpTools(ctx)
+	// if err != nil {
+	// 	return m.handleRequestError(err, mod, content)
+	// }
+
 	req := openai.ChatCompletionRequest{
 		Model:    mod.Name,
 		Messages: m.messages,
 		Stream:   true,
 		User:     cfg.User,
+		// Tools:      tools,
+		ToolChoice: "auto",
 	}
 
 	if mod.API != "perplexity" || !strings.Contains(mod.Name, "online") {

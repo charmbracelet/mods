@@ -70,6 +70,10 @@ var help = map[string]string{
 	"theme":             "Theme to use in the forms. Valid units are: 'charm', 'catppuccin', 'dracula', and 'base16'",
 	"show-last":         "Show the last saved conversation.",
 	"editor":            "Edit the prompt in your $EDITOR. Only taken into account if no other args and if STDIN is a TTY.",
+	"mcp-servers":       "MCP Servers configurations",
+	"mcp-disable":       "Disable specific MCP servers.",
+	"mcp-list":          "List all available MCP servers",
+	"mcp-list-tools":    "List all available tools from enabled MCP servers",
 }
 
 // Model represents the LLM model used in the API call.
@@ -181,8 +185,20 @@ type Config struct {
 	DeleteOlderThan     time.Duration
 	User                string
 
+	MCPServers   map[string]MCPServerConfig `yaml:"mcp-servers"`
+	MCPList      bool
+	MCPListTools bool
+	MCPDisable   []string
+
 	openEditor                                         bool
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
+}
+
+// MCPServerConfig holds configuration for an MCP server
+type MCPServerConfig struct {
+	Command string   `yaml:"command"`
+	Env     []string `yaml:"env"`
+	Args    []string `yaml:"args"`
 }
 
 func ensureConfig() (Config, error) {
