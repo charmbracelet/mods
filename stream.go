@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/anthropics/anthropic-sdk-go"
 	tea "github.com/charmbracelet/bubbletea"
 	cohere "github.com/cohere-ai/cohere-go/v2"
 	openai "github.com/sashabaranov/go-openai"
@@ -180,29 +181,37 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 
 	// Anthropic doesn't support the System role so we need to remove those message
 	// and, instead, store their content on the `System` request value.
-	messages := []openai.ChatCompletionMessage{}
+	messages := []anthropic.MessageParam{}
 
 	for _, message := range m.messages {
 		if message.Role == openai.ChatMessageRoleSystem {
 			m.system += message.Content + "\n"
 		} else {
-			messages = append(messages, message)
+			messages = append(
+				messages,
+				anthropic.NewUserMessage(anthropic.NewTextBlock(message.Content)),
+			)
 		}
 	}
 
-	req := AnthropicMessageCompletionRequest{
+	tools, err := mcpTools(ctx)
+	if err != nil {
+		return m.handleRequestError(err, mod, content)
+	}
+
+	req := anthropic.MessageNewParams{
 		Model:         mod.Name,
 		Messages:      messages,
-		System:        m.system,
-		Stream:        true,
-		Temperature:   noOmitFloat(cfg.Temperature),
-		TopP:          noOmitFloat(cfg.TopP),
-		TopK:          cfg.TopK,
+		System:        makeAnthropicSystem(m.system),
+		Temperature:   anthropic.Float(float64(noOmitFloat(cfg.Temperature))),
+		TopP:          anthropic.Float(float64(noOmitFloat(cfg.TopP))),
+		TopK:          anthropic.Int(int64(cfg.TopK)),
 		StopSequences: cfg.Stop,
+		Tools:         tools,
 	}
 
 	if cfg.MaxTokens > 0 {
-		req.MaxTokens = cfg.MaxTokens
+		req.MaxTokens = int64(cfg.MaxTokens)
 	} else {
 		req.MaxTokens = 4096
 	}
