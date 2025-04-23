@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -40,7 +41,7 @@ func NewAnthropicClientWithConfig(config AnthropicClientConfig) *AnthropicClient
 		option.WithHTTPClient(config.HTTPClient),
 	}
 	if config.BaseURL != "" {
-		opts = append(opts, option.WithBaseURL(config.BaseURL))
+		opts = append(opts, option.WithBaseURL(strings.TrimSuffix(config.BaseURL, "/v1")))
 	}
 	client := anthropic.NewClient(opts...)
 	return &AnthropicClient{
@@ -79,15 +80,16 @@ type AnthropicChatCompletionStream struct {
 
 type anthropicStreamReader struct {
 	*ssestream.Stream[anthropic.MessageStreamEventUnion]
+	message anthropic.Message
 }
 
 // Recv reads the next response from the stream.
 func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
-	if err := r.Err(); err != nil {
-		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
-	}
-	for r.Next() {
+	if r.Next() {
 		event := r.Current()
+		if err := r.message.Accumulate(event); err != nil {
+			return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+		}
 		switch eventVariant := event.AsAny().(type) {
 		case anthropic.ContentBlockDeltaEvent:
 			switch deltaVariant := eventVariant.Delta.AsAny().(type) {
@@ -105,8 +107,25 @@ func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResp
 				}, nil
 			}
 		}
+		return openai.ChatCompletionStreamResponse{}, errNoContent
+	}
+	if err := r.Err(); err != nil {
+		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
 	}
 	return openai.ChatCompletionStreamResponse{}, io.EOF
+}
+
+func (r *anthropicStreamReader) CallTools() {
+	// fmt.Println("AQUI", r.message)
+	for _, block := range r.message.Content {
+		fmt.Printf("\n\n\nBBBBBBBBBBBBBBBBBBBBBb %s\r\n", block.Type)
+		switch variant := block.AsAny().(type) {
+		case anthropic.ToolUseBlock:
+			fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA " + block.Name + " _ " + variant.Name)
+			// default:
+			// 	fmt.Printf("AQUI %+T\n", variant)
+		}
+	}
 }
 
 // Close closes the stream.

@@ -199,6 +199,20 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 		return m.handleRequestError(err, mod, content)
 	}
 
+	weather := anthropic.ToolParam{
+		Name:        "get_coordinates",
+		Description: anthropic.String("Accepts a place as an address, then returns the latitude and longitude coordinates."),
+		InputSchema: anthropic.ToolInputSchemaParam{
+			Properties: map[string]interface{}{
+				"location": map[string]interface{}{
+					"type":        "string",
+					"description": "The location to look up.",
+				},
+			},
+		},
+	}
+	tools = append(tools, anthropic.ToolUnionParam{OfTool: &weather})
+
 	req := anthropic.MessageNewParams{
 		Model:         mod.Name,
 		Messages:      messages,

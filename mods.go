@@ -100,6 +100,10 @@ type chatCompletionReceiver interface {
 	Close() error
 }
 
+type toolRunner interface {
+	CallTools()
+}
+
 // Init implements tea.Model.
 func (m *Mods) Init() tea.Cmd {
 	return m.findCacheOpsDetails()
@@ -511,15 +515,24 @@ func (m *Mods) handleAPIError(err *openai.APIError, mod Model, content string) t
 	}
 }
 
+var errNoContent = errors.New("no content")
+
 func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
+		msg.content = ""
 		resp, err := msg.stream.Recv()
+		if errors.Is(err, errNoContent) {
+			return msg
+		}
 		if errors.Is(err, io.EOF) {
 			_ = msg.stream.Close()
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleAssistant,
 				Content: m.Output,
 			})
+			if caller, ok := msg.stream.(toolRunner); ok {
+				caller.CallTools()
+			}
 			return completionOutput{}
 		}
 		if err != nil {
