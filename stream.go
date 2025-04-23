@@ -175,19 +175,29 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelRequest = cancel
 
-	if err := m.setupStreamContext(content, mod); err != nil {
-		return err
+	if len(m.messages) == 0 {
+		if err := m.setupStreamContext(content, mod); err != nil {
+			return err
+		}
 	}
 
 	// Anthropic doesn't support the System role so we need to remove those message
 	// and, instead, store their content on the `System` request value.
 	messages := []anthropic.MessageParam{}
 
+	var blocks []anthropic.ContentBlockParamUnion
 	for _, message := range m.messages {
 		switch message.Role {
 		case openai.ChatMessageRoleSystem:
 			m.system += message.Content + "\n"
 		case openai.ChatMessageRoleUser:
+			if len(blocks) > 0 {
+				messages = append(
+					messages,
+					anthropic.NewUserMessage(blocks...),
+				)
+				blocks = nil
+			}
 			messages = append(
 				messages,
 				anthropic.NewUserMessage(
@@ -195,16 +205,11 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 				),
 			)
 		case openai.ChatMessageRoleTool:
-			messages = append(
-				messages,
-				anthropic.NewUserMessage(
-					anthropic.NewToolResultBlock(
-						message.ToolCallID,
-						message.Content,
-						false,
-					),
-				),
-			)
+			blocks = append(blocks, anthropic.NewToolResultBlock(
+				message.ToolCallID,
+				message.Content,
+				false,
+			))
 		}
 	}
 

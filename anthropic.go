@@ -120,7 +120,7 @@ func (r *anthropicStreamReader) CallTools() ([]ToolCallResult, error) {
 	for _, block := range r.message.Content {
 		switch variant := block.AsAny().(type) {
 		case anthropic.ToolUseBlock:
-			result, err := toolCall(variant.Name, []byte(variant.JSON.Input.Raw()))
+			result, _, err := toolCall(variant.Name, []byte(variant.JSON.Input.Raw()))
 			if err != nil {
 				return nil, fmt.Errorf("mcp: %w", err)
 			}
