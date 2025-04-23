@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/mark3labs/mcp-go/client"
@@ -88,4 +90,58 @@ func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mc
 		return nil, fmt.Errorf("could not setup %s: %w", name, err)
 	}
 	return tools.Tools, nil
+}
+
+func toolCall(name string, input []byte) (string, error) {
+	sname, tool, ok := strings.Cut(name, "_")
+	if !ok {
+		return "", fmt.Errorf("mcp: invalid tool name: %q", name)
+	}
+	server, ok := enabledMCPs()[sname]
+	if !ok {
+		return "", fmt.Errorf("mcp: invalid server name: %q", sname)
+	}
+	client, err := client.NewStdioMCPClient(server.Command, server.Env, server.Args...)
+	if err != nil {
+		return "", fmt.Errorf("mcp: %w", err)
+	}
+	defer client.Close()
+
+	// Initialize the client
+	if _, err = client.Initialize(context.Background(), mcp.InitializeRequest{}); err != nil {
+		return "", fmt.Errorf("mcp: %w", err)
+	}
+
+	var args map[string]any
+	if err := json.Unmarshal(input, &args); err != nil {
+		return "", fmt.Errorf("mcp: %w", err)
+	}
+
+	result, err := client.CallTool(context.Background(), mcp.CallToolRequest{
+		Params: struct {
+			Name      string         `json:"name"`
+			Arguments map[string]any `json:"arguments,omitempty"`
+			Meta      *struct {
+				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
+			} `json:"_meta,omitempty"`
+		}{
+			Name:      tool,
+			Arguments: args,
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("mcp: %w", err)
+	}
+
+	var sb strings.Builder
+	for _, content := range result.Content {
+		switch content := content.(type) {
+		case mcp.TextContent:
+			sb.WriteString(content.Text)
+		default:
+			// TODO: can we make this better somehow?
+			sb.WriteString("[Non-text content]")
+		}
+	}
+	return sb.String(), nil
 }

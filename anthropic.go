@@ -115,17 +115,22 @@ func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResp
 	return openai.ChatCompletionStreamResponse{}, io.EOF
 }
 
-func (r *anthropicStreamReader) CallTools() {
-	// fmt.Println("AQUI", r.message)
+func (r *anthropicStreamReader) CallTools() ([]ToolCallResult, error) {
+	var results []ToolCallResult
 	for _, block := range r.message.Content {
-		fmt.Printf("\n\n\nBBBBBBBBBBBBBBBBBBBBBb %s\r\n", block.Type)
 		switch variant := block.AsAny().(type) {
 		case anthropic.ToolUseBlock:
-			fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA " + block.Name + " _ " + variant.Name)
-			// default:
-			// 	fmt.Printf("AQUI %+T\n", variant)
+			result, err := toolCall(variant.Name, []byte(variant.JSON.Input.Raw()))
+			if err != nil {
+				return nil, fmt.Errorf("mcp: %w", err)
+			}
+			results = append(results, ToolCallResult{
+				ID:      block.ID,
+				Content: result,
+			})
 		}
 	}
+	return results, nil
 }
 
 // Close closes the stream.

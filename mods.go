@@ -95,13 +95,20 @@ type completionOutput struct {
 	stream  chatCompletionReceiver
 }
 
+type calledTools struct{}
+
 type chatCompletionReceiver interface {
 	Recv() (openai.ChatCompletionStreamResponse, error)
 	Close() error
 }
 
-type toolRunner interface {
-	CallTools()
+type ToolCallResult struct {
+	Content string
+	ID      string
+}
+
+type toolCaller interface {
+	CallTools() ([]ToolCallResult, error)
 }
 
 // Init implements tea.Model.
@@ -166,7 +173,13 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.appendToOutput(msg.content)
 			m.state = responseState
 		}
-		cmds = append(cmds, m.receiveCompletionStreamCmd(msg))
+		cmds = append(cmds, m.receiveCompletionStreamCmd(completionOutput{
+			stream: msg.stream,
+		}))
+	case calledTools:
+		m.appendToOutput("\n\nCalled tools...\n\n")
+		m.state = responseState
+		cmds = append(cmds, m.startCompletionCmd(""))
 	case modsError:
 		m.Error = &msg
 		m.state = errorState
@@ -519,7 +532,6 @@ var errNoContent = errors.New("no content")
 
 func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
-		msg.content = ""
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, errNoContent) {
 			return msg
@@ -530,8 +542,25 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 				Role:    openai.ChatMessageRoleAssistant,
 				Content: m.Output,
 			})
-			if caller, ok := msg.stream.(toolRunner); ok {
-				caller.CallTools()
+			caller, ok := msg.stream.(toolCaller)
+			if !ok {
+				// cant call tools, good bye
+				return completionOutput{}
+			}
+
+			results, err := caller.CallTools()
+			if err != nil {
+				return modsError{err, "MCP error"}
+			}
+			for _, result := range results {
+				m.messages = append(m.messages, openai.ChatCompletionMessage{
+					Role:       openai.ChatMessageRoleTool,
+					Content:    result.Content,
+					ToolCallID: result.ID,
+				})
+			}
+			if len(results) > 0 {
+				return calledTools{}
 			}
 			return completionOutput{}
 		}

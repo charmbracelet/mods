@@ -184,12 +184,26 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	messages := []anthropic.MessageParam{}
 
 	for _, message := range m.messages {
-		if message.Role == openai.ChatMessageRoleSystem {
+		switch message.Role {
+		case openai.ChatMessageRoleSystem:
 			m.system += message.Content + "\n"
-		} else {
+		case openai.ChatMessageRoleUser:
 			messages = append(
 				messages,
-				anthropic.NewUserMessage(anthropic.NewTextBlock(message.Content)),
+				anthropic.NewUserMessage(
+					anthropic.NewTextBlock(message.Content),
+				),
+			)
+		case openai.ChatMessageRoleTool:
+			messages = append(
+				messages,
+				anthropic.NewUserMessage(
+					anthropic.NewToolResultBlock(
+						message.ToolCallID,
+						message.Content,
+						false,
+					),
+				),
 			)
 		}
 	}
@@ -198,20 +212,6 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	if err != nil {
 		return m.handleRequestError(err, mod, content)
 	}
-
-	weather := anthropic.ToolParam{
-		Name:        "get_coordinates",
-		Description: anthropic.String("Accepts a place as an address, then returns the latitude and longitude coordinates."),
-		InputSchema: anthropic.ToolInputSchemaParam{
-			Properties: map[string]interface{}{
-				"location": map[string]interface{}{
-					"type":        "string",
-					"description": "The location to look up.",
-				},
-			},
-		},
-	}
-	tools = append(tools, anthropic.ToolUnionParam{OfTool: &weather})
 
 	req := anthropic.MessageNewParams{
 		Model:         mod.Name,
