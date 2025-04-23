@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -82,6 +83,9 @@ type anthropicStreamReader struct {
 
 // Recv reads the next response from the stream.
 func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+	if err := r.Err(); err != nil {
+		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+	}
 	for r.Next() {
 		event := r.Current()
 		switch eventVariant := event.AsAny().(type) {
@@ -102,10 +106,7 @@ func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResp
 			}
 		}
 	}
-	if err := r.Err(); err != nil {
-		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
-	}
-	return openai.ChatCompletionStreamResponse{}, r.Close()
+	return openai.ChatCompletionStreamResponse{}, io.EOF
 }
 
 // Close closes the stream.
