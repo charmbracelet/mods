@@ -326,9 +326,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				accfg.BaseURL = api.BaseURL
 			}
-			if api.Version != "" {
-				accfg.Version = AnthropicAPIVersion(api.Version)
-			}
 		case "google":
 			key, err := m.ensureKey(api, "GOOGLE_API_KEY", "https://aistudio.google.com/app/apikey")
 			if err != nil {
