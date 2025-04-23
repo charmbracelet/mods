@@ -47,6 +47,30 @@ func NewAnthropicClientWithConfig(config AnthropicClientConfig) *AnthropicClient
 	}
 }
 
+// CreateChatCompletionStream — API call to create a chat completion w/
+// streaming support.
+func (c *AnthropicClient) CreateChatCompletionStream(
+	ctx context.Context,
+	request anthropic.MessageNewParams,
+) (*AnthropicChatCompletionStream, error) {
+	return &AnthropicChatCompletionStream{
+		anthropicStreamReader: &anthropicStreamReader{
+			Stream: c.Messages.NewStreaming(ctx, request),
+		},
+	}, nil
+}
+
+func makeAnthropicSystem(system string) []anthropic.TextBlockParam {
+	if system == "" {
+		return nil
+	}
+	return []anthropic.TextBlockParam{
+		{
+			Text: system,
+		},
+	}
+}
+
 // AnthropicChatCompletionStream represents a stream for chat completion.
 type AnthropicChatCompletionStream struct {
 	*anthropicStreamReader
@@ -57,27 +81,13 @@ type anthropicStreamReader struct {
 }
 
 // Recv reads the next response from the stream.
-func (stream *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
-	return stream.processMessages()
-}
-
-// Close closes the stream.
-func (stream *anthropicStreamReader) Close() error {
-	if err := stream.Stream.Close(); err != nil {
-		return fmt.Errorf("anthropic: %w", err)
-	}
-	return nil
-}
-
-func (stream *anthropicStreamReader) processMessages() (openai.ChatCompletionStreamResponse, error) {
-	for stream.Next() {
-		event := stream.Current()
+func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+	for r.Next() {
+		event := r.Current()
 		switch eventVariant := event.AsAny().(type) {
 		case anthropic.ContentBlockDeltaEvent:
 			switch deltaVariant := eventVariant.Delta.AsAny().(type) {
 			case anthropic.TextDelta:
-				// NOTE: Leverage the existing logic based on OpenAI ChatCompletionStreamResponse by
-				//       converting the Anthropic events into them.
 				return openai.ChatCompletionStreamResponse{
 					Choices: []openai.ChatCompletionStreamChoice{
 						{
@@ -92,26 +102,16 @@ func (stream *anthropicStreamReader) processMessages() (openai.ChatCompletionStr
 			}
 		}
 	}
-	return openai.ChatCompletionStreamResponse{}, nil
-}
-
-// CreateChatCompletionStream — API call to create a chat completion w/ streaming
-// support.
-func (c *AnthropicClient) CreateChatCompletionStream(
-	ctx context.Context,
-	request anthropic.MessageNewParams,
-) (*AnthropicChatCompletionStream, error) {
-	return &AnthropicChatCompletionStream{
-		anthropicStreamReader: &anthropicStreamReader{
-			Stream: c.Client.Messages.NewStreaming(ctx, request),
-		},
-	}, nil
-}
-
-func makeAnthropicSystem(system string) []anthropic.TextBlockParam {
-	return []anthropic.TextBlockParam{
-		{
-			Text: system,
-		},
+	if err := r.Err(); err != nil {
+		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
 	}
+	return openai.ChatCompletionStreamResponse{}, r.Close()
+}
+
+// Close closes the stream.
+func (r *anthropicStreamReader) Close() error {
+	if err := r.Stream.Close(); err != nil {
+		return fmt.Errorf("anthropic: %w", err)
+	}
+	return nil
 }
