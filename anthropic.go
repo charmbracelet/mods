@@ -53,12 +53,12 @@ func NewAnthropicClientWithConfig(config AnthropicClientConfig) *AnthropicClient
 func (c *AnthropicClient) CreateChatCompletionStream(
 	ctx context.Context,
 	request anthropic.MessageNewParams,
-) (*AnthropicChatCompletionStream, error) {
+) *AnthropicChatCompletionStream {
 	return &AnthropicChatCompletionStream{
 		anthropicStreamReader: &anthropicStreamReader{
 			Stream: c.Messages.NewStreaming(ctx, request),
 		},
-	}, nil
+	}
 }
 
 func makeAnthropicSystem(system string) []anthropic.TextBlockParam {
