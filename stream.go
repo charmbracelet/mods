@@ -216,11 +216,7 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 		req.MaxTokens = 4096
 	}
 
-	stream, err := client.CreateChatCompletionStream(ctx, req)
-	if err != nil {
-		return m.handleRequestError(err, mod, content)
-	}
-
+	stream := client.CreateChatCompletionStream(ctx, req)
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 }
 
