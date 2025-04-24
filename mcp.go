@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 
@@ -78,7 +79,11 @@ func mcpTools(ctx context.Context) ([]anthropic.ToolUnionParam, error) {
 }
 
 func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mcp.Tool, error) {
-	cli, err := client.NewStdioMCPClient(server.Command, server.Env, server.Args...)
+	cli, err := client.NewStdioMCPClient(
+		server.Command,
+		append(os.Environ(), server.Env...),
+		server.Args...,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("could not setup %s: %w", name, err)
 	}
@@ -102,7 +107,11 @@ func toolCall(name string, input []byte) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("mcp: invalid server name: %q", sname)
 	}
-	client, err := client.NewStdioMCPClient(server.Command, server.Env, server.Args...)
+	client, err := client.NewStdioMCPClient(
+		server.Command,
+		append(os.Environ(), server.Env...),
+		server.Args...,
+	)
 	if err != nil {
 		return "", fmt.Errorf("mcp: %w", err)
 	}
