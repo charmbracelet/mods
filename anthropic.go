@@ -134,9 +134,9 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionSt
 		case anthropic.ToolUseBlock:
 			content, err := toolCall(variant.Name, []byte(variant.JSON.Input.Raw()))
 			toolResults = append(toolResults, anthropic.NewToolResultBlock(block.ID, content, err != nil))
-			_, _ = sb.WriteString("Called tool: " + variant.Name)
+			_, _ = sb.WriteString("> **Called tool**: `" + variant.Name + "`")
 			if err != nil {
-				_, _ = sb.WriteString(" (failed: " + err.Error() + ")")
+				_, _ = sb.WriteString(" (failed: `" + err.Error() + "`)")
 			}
 			_, _ = sb.WriteString("\n")
 		}
