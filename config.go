@@ -80,7 +80,7 @@ var help = map[string]string{
 type Model struct {
 	Name     string
 	API      string
-	MaxChars int      `yaml:"max-input-chars"`
+	MaxChars int64    `yaml:"max-input-chars"`
 	Aliases  []string `yaml:"aliases"`
 	Fallback string   `yaml:"fallback"`
 }
@@ -142,13 +142,13 @@ type Config struct {
 	FormatAs            string     `yaml:"format-as" env:"FORMAT_AS"`
 	Raw                 bool       `yaml:"raw" env:"RAW"`
 	Quiet               bool       `yaml:"quiet" env:"QUIET"`
-	MaxTokens           int        `yaml:"max-tokens" env:"MAX_TOKENS"`
-	MaxCompletionTokens int        `yaml:"max-completion-tokens" env:"MAX_COMPLETION_TOKENS"`
-	MaxInputChars       int        `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
-	Temperature         float32    `yaml:"temp" env:"TEMP"`
+	MaxTokens           int64      `yaml:"max-tokens" env:"MAX_TOKENS"`
+	MaxCompletionTokens int64      `yaml:"max-completion-tokens" env:"MAX_COMPLETION_TOKENS"`
+	MaxInputChars       int64      `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
+	Temperature         float64    `yaml:"temp" env:"TEMP"`
 	Stop                []string   `yaml:"stop" env:"STOP"`
-	TopP                float32    `yaml:"topp" env:"TOPP"`
-	TopK                int        `yaml:"topk" env:"TOPK"`
+	TopP                float64    `yaml:"topp" env:"TOPP"`
+	TopK                int64      `yaml:"topk" env:"TOPK"`
 	NoLimit             bool       `yaml:"no-limit" env:"NO_LIMIT"`
 	CachePath           string     `yaml:"cache-path" env:"CACHE_PATH"`
 	NoCache             bool       `yaml:"no-cache" env:"NO_CACHE"`

@@ -10,6 +10,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
+	"github.com/mark3labs/mcp-go/mcp"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -174,4 +175,22 @@ func (r *AnthropicChatCompletionStream) Close() error {
 	}
 	r.stream = nil
 	return nil
+}
+
+func makeAnthropicMCPTools(mcps map[string][]mcp.Tool) []anthropic.ToolUnionParam {
+	var tools []anthropic.ToolUnionParam
+	for name, serverTools := range mcps {
+		for _, tool := range serverTools {
+			tools = append(tools, anthropic.ToolUnionParam{
+				OfTool: &anthropic.ToolParam{
+					InputSchema: anthropic.ToolInputSchemaParam{
+						Properties: tool.InputSchema.Properties,
+					},
+					Name:        fmt.Sprintf("%s_%s", name, tool.Name),
+					Description: anthropic.String(tool.Description),
+				},
+			})
+		}
+	}
+	return tools
 }

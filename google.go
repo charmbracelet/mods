@@ -50,9 +50,9 @@ type GoogleGenerationConfig struct {
 	ResponseMimeType string   `json:"responseMimeType,omitempty"`
 	CandidateCount   uint     `json:"candidateCount,omitempty"`
 	MaxOutputTokens  uint     `json:"maxOutputTokens,omitempty"`
-	Temperature      float32  `json:"temperature,omitempty"`
-	TopP             float32  `json:"topP,omitempty"`
-	TopK             int      `json:"topK,omitempty"`
+	Temperature      float64  `json:"temperature,omitempty"`
+	TopP             float64  `json:"topP,omitempty"`
+	TopK             int64    `json:"topK,omitempty"`
 }
 
 // GoogleMessageCompletionRequest represents the valid parameters and value options for the request.

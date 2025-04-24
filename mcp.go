@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -56,26 +55,16 @@ func mcpListTools() error {
 	return nil
 }
 
-func mcpTools(ctx context.Context) ([]anthropic.ToolUnionParam, error) {
-	var tools []anthropic.ToolUnionParam
+func mcpTools(ctx context.Context) (map[string][]mcp.Tool, error) {
+	result := map[string][]mcp.Tool{}
 	for sname, server := range enabledMCPs() {
 		serverTools, err := mcpToolsFor(ctx, sname, server)
 		if err != nil {
 			return nil, err
 		}
-		for _, tool := range serverTools {
-			tools = append(tools, anthropic.ToolUnionParam{
-				OfTool: &anthropic.ToolParam{
-					InputSchema: anthropic.ToolInputSchemaParam{
-						Properties: tool.InputSchema.Properties,
-					},
-					Name:        fmt.Sprintf("%s_%s", sname, tool.Name),
-					Description: anthropic.String(tool.Description),
-				},
-			})
-		}
+		result[sname] = append(result[sname], serverTools...)
 	}
-	return tools, nil
+	return result, nil
 }
 
 func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mcp.Tool, error) {
@@ -98,7 +87,7 @@ func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mc
 	return tools.Tools, nil
 }
 
-func toolCall(name string, input []byte) (string, error) {
+func toolCall(name string, data []byte) (string, error) {
 	sname, tool, ok := strings.Cut(name, "_")
 	if !ok {
 		return "", fmt.Errorf("mcp: invalid tool name: %q", name)
@@ -123,7 +112,7 @@ func toolCall(name string, input []byte) (string, error) {
 	}
 
 	var args map[string]any
-	if err := json.Unmarshal(input, &args); err != nil {
+	if err := json.Unmarshal(data, &args); err != nil {
 		return "", fmt.Errorf("mcp: %w", err)
 	}
 

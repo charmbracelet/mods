@@ -267,7 +267,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var ok bool
 		var mod Model
 		var api API
-		var ccfg openai.ClientConfig
+		var ccfg OpenAIClientConfig
 		var accfg AnthropicClientConfig
 		var cccfg CohereClientConfig
 		var occfg OllamaClientConfig
@@ -351,9 +351,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "Azure authentication failed"}
 			}
-			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
+			ccfg = OpenAIClientConfig{
+				AuthToken: key,
+				BaseURL:   api.BaseURL,
+			}
 			if mod.API == "azure-ad" {
-				ccfg.APIType = openai.APITypeAzureAD
+				ccfg.APIType = "azure-ad"
 			}
 			if api.User != "" {
 				cfg.User = api.User
@@ -365,9 +368,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				return modsError{err, "Copilot authentication failed"}
 			}
 
-			ccfg = openai.DefaultConfig(accessToken.Token)
-			ccfg.HTTPClient = ghCopilotHTTPClient
-			ccfg.HTTPClient.(*copilotHTTPClient).AccessToken = &accessToken
+			ccfg = OpenAIClientConfig{
+				AuthToken: accessToken.Token,
+				BaseURL:   api.BaseURL,
+			}
+			// TODO: port this
+			// ccfg.HTTPClient = ghCopilotHTTPClient
+			// ccfg.HTTPClient.(*copilotHTTPClient).AccessToken = &accessToken
 			ccfg.BaseURL = ordered.First(api.BaseURL, accessToken.Endpoints.API)
 
 		default:
@@ -375,9 +382,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "OpenAI authentication failed"}
 			}
-			ccfg = openai.DefaultConfig(key)
-			if api.BaseURL != "" {
-				ccfg.BaseURL = api.BaseURL
+			ccfg = OpenAIClientConfig{
+				AuthToken: key,
+				BaseURL:   api.BaseURL,
 			}
 		}
 
@@ -633,9 +640,9 @@ func (m *Mods) readStdinCmd() tea.Msg {
 // of 0.0 so it doesn't get stripped from the request and replaced server side
 // with the default values.
 // Issue: https://github.com/sashabaranov/go-openai/issues/9
-func noOmitFloat(f float32) float32 {
+func noOmitFloat(f float64) float64 {
 	if f == 0.0 {
-		return math.SmallestNonzeroFloat32
+		return math.SmallestNonzeroFloat64
 	}
 	return f
 }

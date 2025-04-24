@@ -33,15 +33,15 @@ type OllamaMessageCompletionRequestOptions struct {
 	Mirostat      int     `json:"mirostat,omitempty"`
 	MirostatEta   int     `json:"mirostat_eta,omitempty"`
 	MirostatTau   int     `json:"mirostat_tau,omitempty"`
-	NumCtx        int     `json:"num_ctx,omitempty"`
+	NumCtx        int64   `json:"num_ctx,omitempty"`
 	RepeatLastN   int     `json:"repeat_last_n,omitempty"`
-	RepeatPenalty float32 `json:"repeat_penalty,omitempty"`
-	Temperature   float32 `json:"temperature,omitempty"`
+	RepeatPenalty float64 `json:"repeat_penalty,omitempty"`
+	Temperature   float64 `json:"temperature,omitempty"`
 	Seed          int     `json:"seed,omitempty"`
 	Stop          string  `json:"stop,omitempty"`
-	TfsZ          float32 `json:"tfs_z,omitempty"`
+	TfsZ          float64 `json:"tfs_z,omitempty"`
 	NumPredict    int     `json:"num_predict,omitempty"`
-	TopP          float32 `json:"top_p,omitempty"`
+	TopP          float64 `json:"top_p,omitempty"`
 	TopK          int     `json:"top_k,omitempty"`
 }
 
