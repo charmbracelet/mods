@@ -135,7 +135,7 @@ func (r *OpenAIChatCompletionStream) Recv() (oldopenai.ChatCompletionStreamRespo
 	var sb strings.Builder
 	_, _ = sb.WriteString("\n\n")
 	for _, call := range toolCalls {
-		content, err := toolCall(call.Function.Name, []byte(call.Function.JSON.Arguments.Raw()))
+		content, err := toolCall(call.Function.Name, []byte(call.Function.Arguments))
 		r.request.Messages = append(r.request.Messages, openai.ToolMessage(content, call.ID))
 		_, _ = sb.WriteString("> Called tool: `" + call.Function.Name + "`")
 		if err != nil {

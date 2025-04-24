@@ -112,8 +112,10 @@ func toolCall(name string, data []byte) (string, error) {
 	}
 
 	var args map[string]any
-	if err := json.Unmarshal(data, &args); err != nil {
-		return "", fmt.Errorf("mcp: %w", err)
+	if len(data) > 0 {
+		if err := json.Unmarshal(data, &args); err != nil {
+			return "", fmt.Errorf("mcp: %w: %s", err, string(data))
+		}
 	}
 
 	result, err := client.CallTool(context.Background(), mcp.CallToolRequest{
