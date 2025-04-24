@@ -68,7 +68,10 @@ type Mods struct {
 }
 
 func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) *Mods {
-	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig(), glamour.WithWordWrap(cfg.WordWrap))
+	gr, _ := glamour.NewTermRenderer(
+		glamour.WithEnvironmentConfig(),
+		glamour.WithWordWrap(cfg.WordWrap),
+	)
 	vp := viewport.New(0, 0)
 	vp.GotoBottom()
 	return &Mods{
@@ -670,7 +673,9 @@ func (m *Mods) appendToOutput(s string) {
 	m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
 	m.glamHeight = lipgloss.Height(m.glamOutput)
 	m.glamOutput += "\n"
-	truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
+	truncatedGlamOutput := m.renderer.NewStyle().
+		MaxWidth(m.width).
+		Render(m.glamOutput)
 	m.glamViewport.SetContent(truncatedGlamOutput)
 	if oldHeight < m.glamHeight && wasAtBottom {
 		// If the viewport's at the bottom and we've received a new
