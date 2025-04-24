@@ -55,11 +55,16 @@ func (c *AnthropicClient) CreateChatCompletionStream(
 	ctx context.Context,
 	request anthropic.MessageNewParams,
 ) *AnthropicChatCompletionStream {
-	return &AnthropicChatCompletionStream{
-		anthropicStreamReader: &anthropicStreamReader{
-			Stream: c.Messages.NewStreaming(ctx, request),
-		},
+	s := &AnthropicChatCompletionStream{
+		stream:  c.Messages.NewStreaming(ctx, request),
+		request: request,
 	}
+
+	s.factory = func() *ssestream.Stream[anthropic.MessageStreamEventUnion] {
+		return c.Messages.NewStreaming(ctx, s.request)
+	}
+
+	return s
 }
 
 func makeAnthropicSystem(system string) []anthropic.TextBlockParam {
@@ -75,18 +80,21 @@ func makeAnthropicSystem(system string) []anthropic.TextBlockParam {
 
 // AnthropicChatCompletionStream represents a stream for chat completion.
 type AnthropicChatCompletionStream struct {
-	*anthropicStreamReader
-}
-
-type anthropicStreamReader struct {
-	*ssestream.Stream[anthropic.MessageStreamEventUnion]
+	stream  *ssestream.Stream[anthropic.MessageStreamEventUnion]
+	request anthropic.MessageNewParams
+	factory func() *ssestream.Stream[anthropic.MessageStreamEventUnion]
 	message anthropic.Message
 }
 
 // Recv reads the next response from the stream.
-func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
-	if r.Next() {
-		event := r.Current()
+func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+	if r.stream == nil {
+		r.stream = r.factory()
+		r.message = anthropic.Message{}
+	}
+
+	if r.stream.Next() {
+		event := r.stream.Current()
 		if err := r.message.Accumulate(event); err != nil {
 			return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
 		}
@@ -109,34 +117,61 @@ func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResp
 		}
 		return openai.ChatCompletionStreamResponse{}, errNoContent
 	}
-	if err := r.Err(); err != nil {
+	if err := r.stream.Err(); err != nil {
 		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
 	}
-	return openai.ChatCompletionStreamResponse{}, io.EOF
-}
+	if err := r.stream.Close(); err != nil {
+		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+	}
+	r.request.Messages = append(r.request.Messages, r.message.ToParam())
 
-func (r *anthropicStreamReader) CallTools() ([]ToolCallResult, error) {
-	var results []ToolCallResult
+	toolResults := []anthropic.ContentBlockParamUnion{}
+
+	var sb strings.Builder
+	_, _ = sb.WriteString("\n\n")
 	for _, block := range r.message.Content {
 		switch variant := block.AsAny().(type) {
 		case anthropic.ToolUseBlock:
-			result, _, err := toolCall(variant.Name, []byte(variant.JSON.Input.Raw()))
+			content, err := toolCall(variant.Name, []byte(variant.JSON.Input.Raw()))
+			toolResults = append(toolResults, anthropic.NewToolResultBlock(block.ID, content, err != nil))
+			_, _ = sb.WriteString("Called tool: " + variant.Name)
 			if err != nil {
-				return nil, fmt.Errorf("mcp: %w", err)
+				_, _ = sb.WriteString(" (failed: " + err.Error() + ")")
 			}
-			results = append(results, ToolCallResult{
-				ID:      block.ID,
-				Content: result,
-			})
+			_, _ = sb.WriteString("\n")
 		}
 	}
-	return results, nil
+	_, _ = sb.WriteString("\n")
+
+	if len(toolResults) == 0 {
+		return openai.ChatCompletionStreamResponse{}, io.EOF
+	}
+
+	msg := anthropic.NewUserMessage(toolResults...)
+	r.request.Messages = append(r.request.Messages, msg)
+	r.stream = nil
+
+	return openai.ChatCompletionStreamResponse{
+		Choices: []openai.ChatCompletionStreamChoice{
+			{
+				Index: 0,
+				Delta: openai.ChatCompletionStreamChoiceDelta{
+					Content: sb.String(),
+					Role:    openai.ChatMessageRoleTool,
+				},
+			},
+		},
+	}, nil
 }
 
 // Close closes the stream.
-func (r *anthropicStreamReader) Close() error {
-	if err := r.Stream.Close(); err != nil {
+func (r *AnthropicChatCompletionStream) Close() error {
+	if r.stream == nil {
+		return nil
+	}
+	if err := r.stream.Close(); err != nil {
 		return fmt.Errorf("anthropic: %w", err)
 	}
+	r.stream = nil
 	return nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -92,29 +93,29 @@ func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mc
 	return tools.Tools, nil
 }
 
-func toolCall(name string, input []byte) (string, bool, error) {
+func toolCall(name string, input []byte) (string, error) {
 	sname, tool, ok := strings.Cut(name, "_")
 	if !ok {
-		return "", true, fmt.Errorf("mcp: invalid tool name: %q", name)
+		return "", fmt.Errorf("mcp: invalid tool name: %q", name)
 	}
 	server, ok := enabledMCPs()[sname]
 	if !ok {
-		return "", true, fmt.Errorf("mcp: invalid server name: %q", sname)
+		return "", fmt.Errorf("mcp: invalid server name: %q", sname)
 	}
 	client, err := client.NewStdioMCPClient(server.Command, server.Env, server.Args...)
 	if err != nil {
-		return "", true, fmt.Errorf("mcp: %w", err)
+		return "", fmt.Errorf("mcp: %w", err)
 	}
 	defer client.Close()
 
 	// Initialize the client
 	if _, err = client.Initialize(context.Background(), mcp.InitializeRequest{}); err != nil {
-		return "", true, fmt.Errorf("mcp: %w", err)
+		return "", fmt.Errorf("mcp: %w", err)
 	}
 
 	var args map[string]any
 	if err := json.Unmarshal(input, &args); err != nil {
-		return "", true, fmt.Errorf("mcp: %w", err)
+		return "", fmt.Errorf("mcp: %w", err)
 	}
 
 	result, err := client.CallTool(context.Background(), mcp.CallToolRequest{
@@ -130,7 +131,7 @@ func toolCall(name string, input []byte) (string, bool, error) {
 		},
 	})
 	if err != nil {
-		return "", true, fmt.Errorf("mcp: %w", err)
+		return "", fmt.Errorf("mcp: %w", err)
 	}
 
 	var sb strings.Builder
@@ -143,5 +144,9 @@ func toolCall(name string, input []byte) (string, bool, error) {
 			sb.WriteString("[Non-text content]")
 		}
 	}
-	return sb.String(), result.IsError, nil
+
+	if result.IsError {
+		return sb.String(), errors.New("mcp: tool failed")
+	}
+	return sb.String(), nil
 }
