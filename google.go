@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -108,14 +107,12 @@ func (c *GoogleClient) newRequest(ctx context.Context, method, url string, sette
 func (c *GoogleClient) handleErrorResp(resp *http.Response) error {
 	// Print the response text
 	var errRes openai.Error
-	err := json.NewDecoder(resp.Body).Decode(&errRes)
-	if err != nil || errRes.Error == nil {
+	if err := json.NewDecoder(resp.Body).Decode(&errRes); err != nil {
 		return &openai.Error{
 			StatusCode: resp.StatusCode,
-			Message:    cmp.Or(errRes.Error(), err.Error()),
+			Message:    err.Error(),
 		}
 	}
-
 	errRes.StatusCode = resp.StatusCode
 	return &errRes
 }

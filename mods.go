@@ -656,14 +656,14 @@ func noOmitFloat(f float64) float64 {
 
 func (m *Mods) readFromCache() tea.Cmd {
 	return func() tea.Msg {
-		var messages []openai.ChatCompletionMessage
+		var messages []modsMessage
 		if err := m.cache.read(m.Config.cacheReadFromID, &messages); err != nil {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 
 		return m.receiveCompletionStreamCmd(completionOutput{
 			stream: &cachedCompletionStream{
-				messages: messages,
+				messages: fromModsMessages(messages),
 			},
 		})()
 	}

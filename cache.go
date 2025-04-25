@@ -95,11 +95,11 @@ func (c *Cache[T]) Delete(id string) error {
 }
 
 type convoCache struct {
-	cache *Cache[[]openai.ChatCompletionMessage]
+	cache *Cache[[]modsMessage]
 }
 
 func newCache(dir string) *convoCache {
-	cache, err := NewCache[[]openai.ChatCompletionMessage](dir, ConversationCache)
+	cache, err := NewCache[[]modsMessage](dir, ConversationCache)
 	if err != nil {
 		return nil
 	}
@@ -108,13 +108,13 @@ func newCache(dir string) *convoCache {
 	}
 }
 
-func (c *convoCache) read(id string, messages *[]openai.ChatCompletionMessage) error {
+func (c *convoCache) read(id string, messages *[]modsMessage) error {
 	return c.cache.Read(id, func(r io.Reader) error {
 		return decode(r, messages)
 	})
 }
 
-func (c *convoCache) write(id string, messages *[]openai.ChatCompletionMessage) error {
+func (c *convoCache) write(id string, messages *[]modsMessage) error {
 	return c.cache.Write(id, func(w io.Writer) error {
 		return encode(w, messages)
 	})

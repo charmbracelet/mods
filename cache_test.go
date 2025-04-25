@@ -20,13 +20,13 @@ var update = flag.Bool("update", false, "update .golden files")
 func TestCache(t *testing.T) {
 	t.Run("read non-existent", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		err := cache.read("super-fake", &[]openai.ChatCompletionMessage{})
+		err := cache.read("super-fake", &[]modsMessage{})
 		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("write", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		messages := []openai.ChatCompletionMessage{
+		messages := []modsMessage{
 			{
 				Role:    "user",
 				Content: "first 4 natural numbers",
@@ -38,7 +38,7 @@ func TestCache(t *testing.T) {
 		}
 		require.NoError(t, cache.write("fake", &messages))
 
-		result := []openai.ChatCompletionMessage{}
+		result := []modsMessage{}
 		require.NoError(t, cache.read("fake", &result))
 
 		require.ElementsMatch(t, messages, result)
@@ -46,7 +46,7 @@ func TestCache(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		cache.write("fake", &[]openai.ChatCompletionMessage{})
+		cache.write("fake", &[]modsMessage{})
 		require.NoError(t, cache.delete("fake"))
 		require.ErrorIs(t, cache.read("fake", nil), os.ErrNotExist)
 	})

@@ -369,7 +369,8 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 	}
 
 	if !cfg.NoCache && cfg.cacheReadFromID != "" {
-		if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
+		messages := toModsMessages(m.messages)
+		if err := m.cache.read(cfg.cacheReadFromID, &messages); err != nil {
 			return modsError{
 				err: err,
 				reason: fmt.Sprintf(
