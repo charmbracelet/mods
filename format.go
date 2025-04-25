@@ -9,21 +9,29 @@ import (
 	"github.com/openai/openai-go/shared/constant"
 )
 
+const (
+	roleSystem    = "system"
+	roleUser      = "user"
+	roleAssistant = "assistant"
+	roleFunction  = "function"
+	roleTool      = "tool"
+)
+
 type modsMessage struct {
-	Role       string                `json:"role"`
-	Content    string                `json:"content,omitempty"`
-	ToolCallID string                `json:"tool_call_id,omitempty"`
-	ToolCalls  []modsMessageToolCall `json:"tool_calls,omitempty"`
+	Role       string
+	Content    string
+	ToolCallID string
+	ToolCalls  []modsMessageToolCall
 }
 
 type modsMessageToolCall struct {
-	ID       string       `json:"id,omitempty"`
-	Function modsFunction `json:"function,omitzero,required"`
+	ID       string
+	Function modsFunction
 }
 
 type modsFunction struct {
-	Arguments string `json:"arguments,required"`
-	Name      string `json:"name,required"`
+	Arguments string
+	Name      string
 }
 
 func fromModsMessages(in []modsMessage) []openai.ChatCompletionMessage {

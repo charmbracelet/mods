@@ -83,7 +83,7 @@ func (stream *cohereStreamReader) Recv() (response openai.ChatCompletionChunk, e
 					Index: 0,
 					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: message.TextGeneration.Text,
-						Role:    "assistant",
+						Role:    roleAssistant,
 					},
 				},
 			},

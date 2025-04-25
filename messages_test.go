@@ -15,7 +15,7 @@ func TestLastPrompt(t *testing.T) {
 	t.Run("single prompt", func(t *testing.T) {
 		require.Equal(t, "single", lastPrompt([]openai.ChatCompletionMessage{
 			{
-				Role:    "user",
+				Role:    roleUser,
 				Content: "single",
 			},
 		}))
@@ -24,23 +24,23 @@ func TestLastPrompt(t *testing.T) {
 	t.Run("multiple prompts", func(t *testing.T) {
 		require.Equal(t, "last", lastPrompt([]openai.ChatCompletionMessage{
 			{
-				Role:    "user",
+				Role:    roleUser,
 				Content: "first",
 			},
 			{
-				Role:    "assistant",
+				Role:    roleAssistant,
 				Content: "hallo",
 			},
 			{
-				Role:    "user",
+				Role:    roleUser,
 				Content: "middle 1",
 			},
 			{
-				Role:    "user",
+				Role:    roleUser,
 				Content: "middle 2",
 			},
 			{
-				Role:    "user",
+				Role:    roleUser,
 				Content: "last",
 			},
 		}))

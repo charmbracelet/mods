@@ -144,7 +144,7 @@ func (r *OpenAIChatCompletionStream) Recv() (openai.ChatCompletionChunk, error) 
 				Index: 0,
 				Delta: openai.ChatCompletionChunkChoiceDelta{
 					Content: sb.String(),
-					Role:    "tool",
+					Role:    roleTool,
 				},
 			},
 		},

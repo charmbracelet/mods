@@ -220,7 +220,6 @@ func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionChunk, er
 					Index: 0,
 					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: chunk.Message.Content,
-						Role:    "assistant",
 					},
 				},
 			},

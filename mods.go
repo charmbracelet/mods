@@ -536,7 +536,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		if errors.Is(err, io.EOF) {
 			_ = msg.stream.Close()
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    "assistant",
+				Role:    roleAssistant,
 				Content: m.Output,
 			})
 			return completionOutput{}

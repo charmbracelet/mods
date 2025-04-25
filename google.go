@@ -223,7 +223,7 @@ func (stream *googleStreamReader) processLines() (openai.ChatCompletionChunk, er
 					Index: 0,
 					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: chunk.Candidates[0].Content.Parts[0].Text,
-						Role:    "assistant",
+						Role:    roleAssistant,
 					},
 				},
 			},

@@ -28,11 +28,11 @@ func TestCache(t *testing.T) {
 		cache := newCache(t.TempDir())
 		messages := []modsMessage{
 			{
-				Role:    "user",
+				Role:    roleUser,
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    "assistant",
+				Role:    roleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 		}
@@ -71,32 +71,32 @@ func TestCachedCompletionStream(t *testing.T) {
 	stream := cachedCompletionStream{
 		messages: []openai.ChatCompletionMessage{
 			{
-				Role:    "system",
+				Role:    roleSystem,
 				Content: "you are a medieval king",
 			},
 			{
-				Role:    "user",
+				Role:    roleUser,
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    "assistant",
+				Role:    roleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 
 			{
-				Role:    "user",
+				Role:    roleUser,
 				Content: "as a json array",
 			},
 			{
-				Role:    "assistant",
+				Role:    roleAssistant,
 				Content: "[ 1, 2, 3, 4 ]",
 			},
 			{
-				Role:    "assistant",
+				Role:    roleAssistant,
 				Content: "something from an assistant",
 			},
 			{
-				Role:    "function",
+				Role:    roleFunction,
 				Content: "something from a function",
 			},
 		},

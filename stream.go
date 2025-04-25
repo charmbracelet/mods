@@ -142,12 +142,12 @@ func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod 
 				{Text: fmt.Sprintf("%s\n", message.Content)},
 			}
 			messages = append(messages, GoogleContent{
-				Role:  "user",
+				Role:  roleUser,
 				Parts: parts,
 			})
 		} else {
-			role := "user"
-			if message.Role == "assistant" {
+			role := roleUser
+			if message.Role == roleAssistant {
 				role = "model"
 			}
 			parts := []GoogleParts{
@@ -332,7 +332,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 	m.messages = []openai.ChatCompletionMessage{}
 	if txt := cfg.FormatText[cfg.FormatAs]; cfg.Format && txt != "" {
 		m.messages = append(m.messages, openai.ChatCompletionMessage{
-			Role:    "system",
+			Role:    roleSystem,
 			Content: txt,
 		})
 	}
@@ -354,7 +354,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 				}
 			}
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    "system",
+				Role:    roleSystem,
 				Content: content,
 			})
 		}
@@ -383,7 +383,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 	}
 
 	m.messages = append(m.messages, openai.ChatCompletionMessage{
-		Role:    "user",
+		Role:    roleUser,
 		Content: content,
 	})
 

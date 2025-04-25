@@ -109,7 +109,7 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionCh
 							Index: 0,
 							Delta: openai.ChatCompletionChunkChoiceDelta{
 								Content: deltaVariant.Text,
-								Role:    "assistant",
+								Role:    roleAssistant,
 							},
 						},
 					},
@@ -156,7 +156,7 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionCh
 				Index: 0,
 				Delta: openai.ChatCompletionChunkChoiceDelta{
 					Content: sb.String(),
-					Role:    "tool",
+					Role:    roleTool,
 				},
 			},
 		},
