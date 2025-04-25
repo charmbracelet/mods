@@ -15,7 +15,6 @@ import (
 	"github.com/openai/openai-go/option"
 	"github.com/openai/openai-go/packages/ssestream"
 	"github.com/openai/openai-go/shared/constant"
-	oldopenai "github.com/sashabaranov/go-openai"
 )
 
 type OpenAIClient struct {
@@ -97,7 +96,7 @@ func (r *OpenAIChatCompletionStream) Close() error {
 }
 
 // Recv implements chatCompletionReceiver.
-func (r *OpenAIChatCompletionStream) Recv() (oldopenai.ChatCompletionStreamResponse, error) {
+func (r *OpenAIChatCompletionStream) Recv() (openai.ChatCompletionChunk, error) {
 	if r.stream == nil {
 		r.stream = r.factory()
 		r.message = openai.ChatCompletionAccumulator{}
@@ -106,28 +105,18 @@ func (r *OpenAIChatCompletionStream) Recv() (oldopenai.ChatCompletionStreamRespo
 	if r.stream.Next() {
 		event := r.stream.Current()
 		if !r.message.AddChunk(event) {
-			return oldopenai.ChatCompletionStreamResponse{}, errors.New("openai: could not accumulate chunk")
+			return openai.ChatCompletionChunk{}, errors.New("openai: could not accumulate chunk")
 		}
 		if len(event.Choices) > 0 {
-			return oldopenai.ChatCompletionStreamResponse{
-				Choices: []oldopenai.ChatCompletionStreamChoice{
-					{
-						Index: 0,
-						Delta: oldopenai.ChatCompletionStreamChoiceDelta{
-							Content: event.Choices[0].Delta.Content,
-							Role:    oldopenai.ChatMessageRoleAssistant,
-						},
-					},
-				},
-			}, nil
+			return event, nil
 		}
-		return oldopenai.ChatCompletionStreamResponse{}, errNoContent
+		return openai.ChatCompletionChunk{}, errNoContent
 	}
 	if err := r.stream.Err(); err != nil {
-		return oldopenai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
 	}
 	if err := r.stream.Close(); err != nil {
-		return oldopenai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
 	}
 	r.request.Messages = append(r.request.Messages, r.message.Choices[0].Message.ToParam())
 
@@ -146,18 +135,18 @@ func (r *OpenAIChatCompletionStream) Recv() (oldopenai.ChatCompletionStreamRespo
 	_, _ = sb.WriteString("\n")
 
 	if len(toolCalls) == 0 {
-		return oldopenai.ChatCompletionStreamResponse{}, io.EOF
+		return openai.ChatCompletionChunk{}, io.EOF
 	}
 
 	r.stream = nil
 
-	return oldopenai.ChatCompletionStreamResponse{
-		Choices: []oldopenai.ChatCompletionStreamChoice{
+	return openai.ChatCompletionChunk{
+		Choices: []openai.ChatCompletionChunkChoice{
 			{
 				Index: 0,
-				Delta: oldopenai.ChatCompletionStreamChoiceDelta{
+				Delta: openai.ChatCompletionChunkChoiceDelta{
 					Content: sb.String(),
-					Role:    oldopenai.ChatMessageRoleTool,
+					Role:    "tool",
 				},
 			},
 		},

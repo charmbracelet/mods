@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 // CacheType represents the type of cache being used.
@@ -134,38 +134,38 @@ type cachedCompletionStream struct {
 
 func (c *cachedCompletionStream) Close() error { return nil }
 
-func (c *cachedCompletionStream) Recv() (openai.ChatCompletionStreamResponse, error) {
+func (c *cachedCompletionStream) Recv() (openai.ChatCompletionChunk, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
 	if c.read == len(c.messages) {
-		return openai.ChatCompletionStreamResponse{}, io.EOF
+		return openai.ChatCompletionChunk{}, io.EOF
 	}
 
 	msg := c.messages[c.read]
 	prefix := ""
 
 	switch msg.Role {
-	case openai.ChatMessageRoleSystem:
+	case "system":
 		prefix += "\n**System**: "
-	case openai.ChatMessageRoleUser:
+	case "user":
 		prefix += "\n**Prompt**: "
-	case openai.ChatMessageRoleAssistant:
+	case "assistant":
 		prefix += "\n**Assistant**: "
-	case openai.ChatMessageRoleFunction:
+	case "function":
 		prefix += "\n**Function**: "
-	case openai.ChatMessageRoleTool:
+	case "tool":
 		prefix += "\n**Tool**: "
 	}
 
 	c.read++
 
-	return openai.ChatCompletionStreamResponse{
-		Choices: []openai.ChatCompletionStreamChoice{
+	return openai.ChatCompletionChunk{
+		Choices: []openai.ChatCompletionChunkChoice{
 			{
-				Delta: openai.ChatCompletionStreamChoiceDelta{
+				Delta: openai.ChatCompletionChunkChoiceDelta{
 					Content: prefix + msg.Content + "\n",
-					Role:    msg.Role,
+					Role:    string(msg.Role),
 				},
 			},
 		},

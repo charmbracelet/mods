@@ -3,13 +3,13 @@ package main
 import (
 	"strings"
 
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 func lastPrompt(messages []openai.ChatCompletionMessage) string {
 	var result string
 	for _, msg := range messages {
-		if msg.Role != openai.ChatMessageRoleUser {
+		if msg.Role != "user" {
 			continue
 		}
 		result = msg.Content

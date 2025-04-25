@@ -11,7 +11,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
 	"github.com/mark3labs/mcp-go/mcp"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 // AnthropicClientConfig represents the configuration for the Anthropic API client.
@@ -88,7 +88,7 @@ type AnthropicChatCompletionStream struct {
 }
 
 // Recv reads the next response from the stream.
-func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionChunk, err error) {
 	if r.stream == nil {
 		r.stream = r.factory()
 		r.message = anthropic.Message{}
@@ -97,17 +97,17 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionSt
 	if r.stream.Next() {
 		event := r.stream.Current()
 		if err := r.message.Accumulate(event); err != nil {
-			return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+			return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
 		}
 		switch eventVariant := event.AsAny().(type) {
 		case anthropic.ContentBlockDeltaEvent:
 			switch deltaVariant := eventVariant.Delta.AsAny().(type) {
 			case anthropic.TextDelta:
-				return openai.ChatCompletionStreamResponse{
-					Choices: []openai.ChatCompletionStreamChoice{
+				return openai.ChatCompletionChunk{
+					Choices: []openai.ChatCompletionChunkChoice{
 						{
 							Index: 0,
-							Delta: openai.ChatCompletionStreamChoiceDelta{
+							Delta: openai.ChatCompletionChunkChoiceDelta{
 								Content: deltaVariant.Text,
 								Role:    "assistant",
 							},
@@ -116,13 +116,13 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionSt
 				}, nil
 			}
 		}
-		return openai.ChatCompletionStreamResponse{}, errNoContent
+		return openai.ChatCompletionChunk{}, errNoContent
 	}
 	if err := r.stream.Err(); err != nil {
-		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
 	}
 	if err := r.stream.Close(); err != nil {
-		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
 	}
 	r.request.Messages = append(r.request.Messages, r.message.ToParam())
 
@@ -145,20 +145,20 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionSt
 	_, _ = sb.WriteString("\n")
 
 	if len(toolResults) == 0 {
-		return openai.ChatCompletionStreamResponse{}, io.EOF
+		return openai.ChatCompletionChunk{}, io.EOF
 	}
 
 	msg := anthropic.NewUserMessage(toolResults...)
 	r.request.Messages = append(r.request.Messages, msg)
 	r.stream = nil
 
-	return openai.ChatCompletionStreamResponse{
-		Choices: []openai.ChatCompletionStreamChoice{
+	return openai.ChatCompletionChunk{
+		Choices: []openai.ChatCompletionChunkChoice{
 			{
 				Index: 0,
-				Delta: openai.ChatCompletionStreamChoiceDelta{
+				Delta: openai.ChatCompletionChunkChoiceDelta{
 					Content: sb.String(),
-					Role:    openai.ChatMessageRoleTool,
+					Role:    "tool",
 				},
 			},
 		},

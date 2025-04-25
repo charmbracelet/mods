@@ -10,7 +10,6 @@ import (
 	cohere "github.com/cohere-ai/cohere-go/v2"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/shared"
-	oldopenai "github.com/sashabaranov/go-openai"
 )
 
 func (m *Mods) createOpenAIStream(content string, ccfg OpenAIClientConfig, mod Model) tea.Msg {
@@ -27,10 +26,10 @@ func (m *Mods) createOpenAIStream(content string, ccfg OpenAIClientConfig, mod M
 	// Remap System role to User for o1-preview and o1-mini as they don't support system messages
 	if mod.Name == "o1-preview" || mod.Name == "o1-mini" {
 		for i, message := range m.messages {
-			if message.Role != oldopenai.ChatMessageRoleSystem {
+			if message.Role != "system" {
 				continue
 			}
-			m.messages[i].Role = oldopenai.ChatMessageRoleUser
+			m.messages[i].Role = "user"
 		}
 	}
 
@@ -42,12 +41,14 @@ func (m *Mods) createOpenAIStream(content string, ccfg OpenAIClientConfig, mod M
 	var messages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range m.messages {
 		switch msg.Role {
-		case oldopenai.ChatMessageRoleSystem:
+		case "system":
 			messages = append(messages, openai.SystemMessage(msg.Content))
-		case oldopenai.ChatMessageRoleTool:
-			messages = append(messages, openai.ToolMessage(msg.Content, msg.ToolCallID))
-		case oldopenai.ChatMessageRoleUser:
+		case "tool":
+			messages = append(messages, openai.ToolMessage(msg.Content, msg.ToParam().OfTool.ToolCallID))
+		case "user":
 			messages = append(messages, openai.UserMessage(msg.Content))
+		case "assistant":
+			messages = append(messages, openai.AssistantMessage(msg.Content))
 		}
 	}
 
@@ -136,7 +137,7 @@ func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod 
 	messages := []GoogleContent{}
 
 	for _, message := range m.messages {
-		if message.Role == oldopenai.ChatMessageRoleSystem {
+		if message.Role == "system" {
 			parts := []GoogleParts{
 				{Text: fmt.Sprintf("%s\n", message.Content)},
 			}
@@ -146,7 +147,7 @@ func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod 
 			})
 		} else {
 			role := "user"
-			if message.Role == oldopenai.ChatMessageRoleAssistant {
+			if message.Role == "assistant" {
 				role = "model"
 			}
 			parts := []GoogleParts{
@@ -206,9 +207,9 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	var blocks []anthropic.ContentBlockParamUnion
 	for _, message := range m.messages {
 		switch message.Role {
-		case oldopenai.ChatMessageRoleSystem:
+		case "system":
 			m.system += message.Content + "\n"
-		case oldopenai.ChatMessageRoleUser:
+		case "user":
 			if len(blocks) > 0 {
 				messages = append(
 					messages,
@@ -222,9 +223,16 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 					anthropic.NewTextBlock(message.Content),
 				),
 			)
-		case oldopenai.ChatMessageRoleTool:
+		case "assistant":
+			messages = append(
+				messages,
+				anthropic.NewAssistantMessage(
+					anthropic.NewTextBlock(message.Content),
+				),
+			)
+		case "tool":
 			blocks = append(blocks, anthropic.NewToolResultBlock(
-				message.ToolCallID,
+				message.ToParam().OfTool.ToolCallID,
 				message.Content,
 				false,
 			))
@@ -271,18 +279,18 @@ func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod 
 	var messages []*cohere.Message
 	for _, message := range m.messages {
 		switch message.Role {
-		case oldopenai.ChatMessageRoleSystem:
+		case "system":
 			// For system, it is recommended to use the `preamble` field
 			// rather than a "SYSTEM" role message
 			m.system += message.Content + "\n"
-		case oldopenai.ChatMessageRoleAssistant:
+		case "assistant":
 			messages = append(messages, &cohere.Message{
 				Role: "CHATBOT",
 				Chatbot: &cohere.ChatMessage{
 					Message: message.Content,
 				},
 			})
-		case oldopenai.ChatMessageRoleUser:
+		case "user":
 			messages = append(messages, &cohere.Message{
 				Role: "USER",
 				User: &cohere.ChatMessage{
@@ -321,10 +329,10 @@ func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod 
 
 func (m *Mods) setupStreamContext(content string, mod Model) error {
 	cfg := m.Config
-	m.messages = []oldopenai.ChatCompletionMessage{}
+	m.messages = []openai.ChatCompletionMessage{}
 	if txt := cfg.FormatText[cfg.FormatAs]; cfg.Format && txt != "" {
-		m.messages = append(m.messages, oldopenai.ChatCompletionMessage{
-			Role:    oldopenai.ChatMessageRoleSystem,
+		m.messages = append(m.messages, openai.ChatCompletionMessage{
+			Role:    "system",
 			Content: txt,
 		})
 	}
@@ -345,8 +353,8 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 					reason: "Could not use role",
 				}
 			}
-			m.messages = append(m.messages, oldopenai.ChatCompletionMessage{
-				Role:    oldopenai.ChatMessageRoleSystem,
+			m.messages = append(m.messages, openai.ChatCompletionMessage{
+				Role:    "system",
 				Content: content,
 			})
 		}
@@ -373,8 +381,8 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 		}
 	}
 
-	m.messages = append(m.messages, oldopenai.ChatCompletionMessage{
-		Role:    oldopenai.ChatMessageRoleUser,
+	m.messages = append(m.messages, openai.ChatCompletionMessage{
+		Role:    "user",
 		Content: content,
 	})
 

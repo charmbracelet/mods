@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +15,7 @@ func TestLastPrompt(t *testing.T) {
 	t.Run("single prompt", func(t *testing.T) {
 		require.Equal(t, "single", lastPrompt([]openai.ChatCompletionMessage{
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    "user",
 				Content: "single",
 			},
 		}))
@@ -24,23 +24,23 @@ func TestLastPrompt(t *testing.T) {
 	t.Run("multiple prompts", func(t *testing.T) {
 		require.Equal(t, "last", lastPrompt([]openai.ChatCompletionMessage{
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    "user",
 				Content: "first",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    "assistant",
 				Content: "hallo",
 			},
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    "user",
 				Content: "middle 1",
 			},
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    "user",
 				Content: "middle 2",
 			},
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    "user",
 				Content: "last",
 			},
 		}))

@@ -12,7 +12,7 @@ import (
 	"github.com/cohere-ai/cohere-go/v2/client"
 	"github.com/cohere-ai/cohere-go/v2/core"
 	"github.com/cohere-ai/cohere-go/v2/option"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 // CohereClientConfig represents the configuration for the Cohere API client.
@@ -63,27 +63,25 @@ type cohereStreamReader struct {
 }
 
 // Recv reads the next response from the stream.
-func (stream *cohereStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+func (stream *cohereStreamReader) Recv() (response openai.ChatCompletionChunk, err error) {
 	for {
 		message, err := stream.Stream.Recv()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				return *new(openai.ChatCompletionStreamResponse), io.EOF
+				return *new(openai.ChatCompletionChunk), io.EOF
 			}
-			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("cohere: %w", err)
+			return *new(openai.ChatCompletionChunk), fmt.Errorf("cohere: %w", err)
 		}
 
 		if message.EventType != "text-generation" {
 			continue
 		}
 
-		// NOTE: Leverage the existing logic based on OpenAI ChatCompletionStreamResponse by
-		//       converting the Cohere events into them.
-		response := openai.ChatCompletionStreamResponse{
-			Choices: []openai.ChatCompletionStreamChoice{
+		response := openai.ChatCompletionChunk{
+			Choices: []openai.ChatCompletionChunkChoice{
 				{
 					Index: 0,
-					Delta: openai.ChatCompletionStreamChoiceDelta{
+					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: message.TextGeneration.Text,
 						Role:    "assistant",
 					},
@@ -145,8 +143,8 @@ func CohereToOpenAIAPIError(err error) error {
 		message = unwrapped.Error()
 	}
 
-	return &openai.APIError{
-		HTTPStatusCode: ce.StatusCode,
-		Message:        message,
+	return &openai.Error{
+		StatusCode: ce.StatusCode,
+		Message:    message,
 	}
 }

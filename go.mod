@@ -27,7 +27,6 @@ require (
 	github.com/muesli/roff v0.1.0
 	github.com/muesli/termenv v0.16.0
 	github.com/openai/openai-go v0.1.0-beta.10
-	github.com/sashabaranov/go-openai v1.38.2
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0

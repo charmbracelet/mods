@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,11 +28,11 @@ func TestCache(t *testing.T) {
 		cache := newCache(t.TempDir())
 		messages := []openai.ChatCompletionMessage{
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    "user",
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    "assistant",
 				Content: "1, 2, 3, 4",
 			},
 		}
@@ -71,32 +71,32 @@ func TestCachedCompletionStream(t *testing.T) {
 	stream := cachedCompletionStream{
 		messages: []openai.ChatCompletionMessage{
 			{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    "system",
 				Content: "you are a medieval king",
 			},
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    "user",
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    "assistant",
 				Content: "1, 2, 3, 4",
 			},
 
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    "user",
 				Content: "as a json array",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    "assistant",
 				Content: "[ 1, 2, 3, 4 ]",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    "assistant",
 				Content: "something from an assistant",
 			},
 			{
-				Role:    openai.ChatMessageRoleFunction,
+				Role:    "function",
 				Content: "something from a function",
 			},
 		},

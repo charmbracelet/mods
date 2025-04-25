@@ -24,7 +24,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/exp/ordered"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 type state int
@@ -99,7 +99,7 @@ type completionOutput struct {
 }
 
 type chatCompletionReceiver interface {
-	Recv() (openai.ChatCompletionStreamResponse, error)
+	Recv() (openai.ChatCompletionChunk, error)
 	Close() error
 }
 
@@ -464,7 +464,7 @@ func (m Mods) ensureKey(api API, defaultEnv, docsURL string) (string, error) {
 }
 
 func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg {
-	ae := &openai.APIError{}
+	ae := &openai.Error{}
 	if errors.As(err, &ae) {
 		return m.handleAPIError(ae, mod, content)
 	}
@@ -474,9 +474,9 @@ func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg 
 	)}
 }
 
-func (m *Mods) handleAPIError(err *openai.APIError, mod Model, content string) tea.Msg {
+func (m *Mods) handleAPIError(err *openai.Error, mod Model, content string) tea.Msg {
 	cfg := m.Config
-	switch err.HTTPStatusCode {
+	switch err.StatusCode {
 	case http.StatusNotFound:
 		if mod.Fallback != "" {
 			m.Config.Model = mod.Fallback
@@ -534,7 +534,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		if errors.Is(err, io.EOF) {
 			_ = msg.stream.Close()
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleAssistant, // TODO: role tool call
+				Role:    "assistant",
 				Content: m.Output,
 			})
 			return completionOutput{}
@@ -698,32 +698,6 @@ func removeWhitespace(s string) string {
 		return ""
 	}
 	return s
-}
-
-func responseFormat(cfg *Config) *openai.ChatCompletionResponseFormat {
-	if cfg.API != "openai" {
-		// only openai's api supports ChatCompletionResponseFormat
-		return nil
-	}
-	return &openai.ChatCompletionResponseFormat{
-		Type: responseType(cfg),
-	}
-}
-
-func responseType(cfg *Config) openai.ChatCompletionResponseFormatType {
-	if !cfg.Format {
-		return openai.ChatCompletionResponseFormatTypeText
-	}
-	// only these two models support json
-	if cfg.Model != "gpt-4-1106-preview" && cfg.Model != "gpt-3.5-turbo-1106" {
-		return openai.ChatCompletionResponseFormatTypeText
-	}
-	switch cfg.FormatAs {
-	case "json":
-		return openai.ChatCompletionResponseFormatTypeJSONObject
-	default:
-		return openai.ChatCompletionResponseFormatTypeText
-	}
 }
 
 var tokenErrRe = regexp.MustCompile(`This model's maximum context length is (\d+) tokens. However, your messages resulted in (\d+) tokens`)

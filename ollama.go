@@ -3,13 +3,14 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 // OllamaClientConfig represents the configuration for the Ollama API client.
@@ -101,21 +102,17 @@ func (c *OllamaClient) newRequest(ctx context.Context, method, url string, sette
 
 func (c *OllamaClient) handleErrorResp(resp *http.Response) error {
 	// Print the response text
-	var errRes openai.ErrorResponse
+	var errRes openai.Error
 	err := json.NewDecoder(resp.Body).Decode(&errRes)
 	if err != nil || errRes.Error == nil {
-		reqErr := &openai.RequestError{
-			HTTPStatusCode: resp.StatusCode,
-			Err:            err,
+		return &openai.Error{
+			StatusCode: resp.StatusCode,
+			Message:    cmp.Or(errRes.Error(), err.Error()),
 		}
-		if errRes.Error != nil {
-			reqErr.Err = errRes.Error
-		}
-		return reqErr
 	}
 
-	errRes.Error.HTTPStatusCode = resp.StatusCode
-	return errRes.Error
+	errRes.StatusCode = resp.StatusCode
+	return &errRes
 }
 
 // OllamaMessageUsage represents the usage of an Ollama message.
@@ -180,7 +177,7 @@ type ollamaStreamReader struct {
 }
 
 // Recv reads the next response from the stream.
-func (stream *ollamaStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+func (stream *ollamaStreamReader) Recv() (response openai.ChatCompletionChunk, err error) {
 	if stream.isFinished {
 		err = io.EOF
 		return
@@ -196,12 +193,12 @@ func (stream *ollamaStreamReader) Close() error {
 }
 
 //nolint:gocognit
-func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionStreamResponse, error) {
+func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionChunk, error) {
 	for {
 		rawLine, readErr := stream.reader.ReadBytes('\n')
 
 		if readErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("ollamaStreamReader.processLines: %w", readErr)
+			return *new(openai.ChatCompletionChunk), fmt.Errorf("ollamaStreamReader.processLines: %w", readErr)
 		}
 
 		noSpaceLine := bytes.TrimSpace(rawLine)
@@ -209,24 +206,22 @@ func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionStreamRes
 		var chunk OllamaCompletionMessageResponse
 		unmarshalErr := stream.unmarshaler.Unmarshal(noSpaceLine, &chunk)
 		if unmarshalErr != nil {
-			return openai.ChatCompletionStreamResponse{}, fmt.Errorf("ollamaStreamReader.processLines: %w", unmarshalErr)
+			return openai.ChatCompletionChunk{}, fmt.Errorf("ollamaStreamReader.processLines: %w", unmarshalErr)
 		}
 
 		if chunk.Done {
-			return openai.ChatCompletionStreamResponse{}, nil
+			return openai.ChatCompletionChunk{}, nil
 		}
 
 		if chunk.Message.Content == "" {
 			continue
 		}
 
-		// NOTE: Leverage the existing logic based on OpenAI ChatCompletionStreamResponse by
-		//       converting the Ollama events into them.
-		response := openai.ChatCompletionStreamResponse{
-			Choices: []openai.ChatCompletionStreamChoice{
+		response := openai.ChatCompletionChunk{
+			Choices: []openai.ChatCompletionChunkChoice{
 				{
 					Index: 0,
-					Delta: openai.ChatCompletionStreamChoiceDelta{
+					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: chunk.Message.Content,
 						Role:    "assistant",
 					},

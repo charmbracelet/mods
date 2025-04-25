@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 func encode(w io.Writer, messages *[]openai.ChatCompletionMessage) error {
