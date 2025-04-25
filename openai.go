@@ -113,10 +113,10 @@ func (r *OpenAIChatCompletionStream) Recv() (openai.ChatCompletionChunk, error) 
 		return openai.ChatCompletionChunk{}, errNoContent
 	}
 	if err := r.stream.Err(); err != nil {
-		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
+		return openai.ChatCompletionChunk{}, fmt.Errorf("openai: %w", err)
 	}
 	if err := r.stream.Close(); err != nil {
-		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
+		return openai.ChatCompletionChunk{}, fmt.Errorf("openai: %w", err)
 	}
 	r.request.Messages = append(r.request.Messages, r.message.Choices[0].Message.ToParam())
 	r.stream = nil
