@@ -119,14 +119,14 @@ func (r *OpenAIChatCompletionStream) Recv() (openai.ChatCompletionChunk, error) 
 		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
 	}
 	r.request.Messages = append(r.request.Messages, r.message.Choices[0].Message.ToParam())
+	r.stream = nil
 
 	toolCalls := r.message.Choices[0].Message.ToolCalls
 	var sb strings.Builder
-	_, _ = sb.WriteString("\n\n")
 	for _, call := range toolCalls {
 		content, err := toolCall(call.Function.Name, []byte(call.Function.Arguments))
 		r.request.Messages = append(r.request.Messages, openai.ToolMessage(content, call.ID))
-		_, _ = sb.WriteString("> Called tool: `" + call.Function.Name + "`")
+		_, _ = sb.WriteString("\n> Ran: `" + call.Function.Name + "`")
 		if err != nil {
 			_, _ = sb.WriteString(" (failed: `" + err.Error() + "`)")
 		}
@@ -137,8 +137,6 @@ func (r *OpenAIChatCompletionStream) Recv() (openai.ChatCompletionChunk, error) 
 	if len(toolCalls) == 0 {
 		return openai.ChatCompletionChunk{}, io.EOF
 	}
-
-	r.stream = nil
 
 	return openai.ChatCompletionChunk{
 		Choices: []openai.ChatCompletionChunkChoice{

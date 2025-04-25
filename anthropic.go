@@ -125,17 +125,16 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionCh
 		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
 	}
 	r.request.Messages = append(r.request.Messages, r.message.ToParam())
+	r.stream = nil
 
 	toolResults := []anthropic.ContentBlockParamUnion{}
-
 	var sb strings.Builder
-	_, _ = sb.WriteString("\n\n")
 	for _, block := range r.message.Content {
 		switch variant := block.AsAny().(type) {
 		case anthropic.ToolUseBlock:
 			content, err := toolCall(variant.Name, []byte(variant.JSON.Input.Raw()))
 			toolResults = append(toolResults, anthropic.NewToolResultBlock(block.ID, content, err != nil))
-			_, _ = sb.WriteString("> Called tool: `" + variant.Name + "`")
+			_, _ = sb.WriteString("\n> Ran: `" + variant.Name + "`")
 			if err != nil {
 				_, _ = sb.WriteString(" (failed: `" + err.Error() + "`)")
 			}
@@ -150,7 +149,6 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionCh
 
 	msg := anthropic.NewUserMessage(toolResults...)
 	r.request.Messages = append(r.request.Messages, msg)
-	r.stream = nil
 
 	return openai.ChatCompletionChunk{
 		Choices: []openai.ChatCompletionChunkChoice{

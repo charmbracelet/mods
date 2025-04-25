@@ -529,7 +529,9 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := msg.stream.Recv()
 		if errors.Is(err, errNoContent) {
-			return msg
+			return completionOutput{
+				stream: msg.stream,
+			}
 		}
 		if errors.Is(err, io.EOF) {
 			_ = msg.stream.Close()
@@ -543,10 +545,15 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 			_ = msg.stream.Close()
 			return modsError{err, "There was an error when streaming the API response."}
 		}
-		if len(resp.Choices) > 0 {
-			msg.content = resp.Choices[0].Delta.Content
+		if len(resp.Choices) == 0 {
+			return completionOutput{
+				stream: msg.stream,
+			}
 		}
-		return msg
+		return completionOutput{
+			content: resp.Choices[0].Delta.Content,
+			stream:  msg.stream,
+		}
 	}
 }
 
