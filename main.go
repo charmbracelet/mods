@@ -711,8 +711,7 @@ func saveConversation(mods *Mods) error {
 		title = firstLine(lastPrompt(mods.messages))
 	}
 
-	messages := toModsMessages(mods.messages)
-	if err := cache.write(id, &messages); err != nil {
+	if err := cache.write(id, &mods.messages); err != nil {
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
 			config.cacheWriteToID,

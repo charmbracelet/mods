@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/mods/proto"
 	"github.com/openai/openai-go"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +21,7 @@ var update = flag.Bool("update", false, "update .golden files")
 func TestCache(t *testing.T) {
 	t.Run("read non-existent", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		err := cache.read("super-fake", &[]modsMessage{})
+		err := cache.read("super-fake", &[]proto.Message{})
 		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 

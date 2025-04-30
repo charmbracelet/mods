@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -116,6 +117,7 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionCh
 				}, nil
 			}
 		}
+		errNoContent := errors.New("no content")
 		return openai.ChatCompletionChunk{}, errNoContent
 	}
 	if err := r.stream.Err(); err != nil {

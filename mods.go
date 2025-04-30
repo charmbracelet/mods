@@ -23,8 +23,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/mods/internal/openai"
+	"github.com/charmbracelet/mods/proto"
+	"github.com/charmbracelet/mods/stream"
 	"github.com/charmbracelet/x/exp/ordered"
-	"github.com/openai/openai-go"
 )
 
 type state int
@@ -53,7 +55,7 @@ type Mods struct {
 	glamViewport  viewport.Model
 	glamOutput    string
 	glamHeight    int
-	messages      []openai.ChatCompletionMessage
+	messages      []proto.Message
 	cancelRequest context.CancelFunc
 	anim          tea.Model
 	width         int
@@ -95,12 +97,7 @@ type completionInput struct {
 // completionOutput a tea.Msg that wraps the content returned from openai.
 type completionOutput struct {
 	content string
-	stream  chatCompletionReceiver
-}
-
-type chatCompletionReceiver interface {
-	Recv() (openai.ChatCompletionChunk, error)
-	Close() error
+	stream  stream.Stream
 }
 
 // Init implements tea.Model.
@@ -267,7 +264,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var ok bool
 		var mod Model
 		var api API
-		var ccfg OpenAIClientConfig
+		var ccfg openai.Config
 		var accfg AnthropicClientConfig
 		var cccfg CohereClientConfig
 		var occfg OllamaClientConfig
@@ -351,7 +348,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "Azure authentication failed"}
 			}
-			ccfg = OpenAIClientConfig{
+			ccfg = openai.Config{
 				AuthToken: key,
 				BaseURL:   api.BaseURL,
 			}
@@ -368,7 +365,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				return modsError{err, "Copilot authentication failed"}
 			}
 
-			ccfg = OpenAIClientConfig{
+			ccfg = openai.Config{
 				AuthToken: accessToken.Token,
 				BaseURL:   api.BaseURL,
 			}
@@ -382,7 +379,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "OpenAI authentication failed"}
 			}
-			ccfg = OpenAIClientConfig{
+			ccfg = openai.Config{
 				AuthToken: key,
 				BaseURL:   api.BaseURL,
 			}
@@ -422,7 +419,39 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		case "ollama":
 			return m.createOllamaStream(content, occfg, mod)
 		default:
-			return m.createOpenAIStream(content, ccfg, mod)
+			client := openai.New(ccfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			m.cancelRequest = cancel
+
+			tools, err := mcpTools(ctx)
+			if err != nil {
+				return modsError{err, "Could not setup MCP"}
+			}
+
+			if err := m.setupStreamContext(content, mod); err != nil {
+				return err
+			}
+
+			request := proto.Request{
+				Messages:    m.messages,
+				API:         mod.API,
+				Model:       mod.Name,
+				User:        cfg.User,
+				Temperature: &cfg.Temperature,
+				TopP:        &cfg.TopP,
+				TopK:        &cfg.TopK,
+				Stop:        cfg.Stop,
+				Tools:       tools,
+				ToolCaller:  toolCall,
+			}
+			if cfg.MaxTokens > 0 {
+				request.MaxTokens = &cfg.MaxTokens
+			}
+			if cfg.Format && config.FormatAs == "json" {
+				request.ResponseFormat = &config.FormatAs
+			}
+			stream := client.Request(ctx, request)
+			return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 		}
 	}
 }
@@ -463,97 +492,38 @@ func (m Mods) ensureKey(api API, defaultEnv, docsURL string) (string, error) {
 	}
 }
 
-func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg {
-	ae := &openai.Error{}
-	if errors.As(err, &ae) {
-		return m.handleAPIError(ae, mod, content)
-	}
-	return modsError{err, fmt.Sprintf(
-		"There was a problem with the %s API request.",
-		mod.API,
-	)}
-}
-
-func (m *Mods) handleAPIError(err *openai.Error, mod Model, content string) tea.Msg {
-	cfg := m.Config
-	switch err.StatusCode {
-	case http.StatusNotFound:
-		if mod.Fallback != "" {
-			m.Config.Model = mod.Fallback
-			return m.retry(content, modsError{
-				err:    err,
-				reason: fmt.Sprintf("%s API server error.", mod.API),
-			})
-		}
-		return modsError{err: err, reason: fmt.Sprintf(
-			"Missing model '%s' for API '%s'.",
-			cfg.Model,
-			cfg.API,
-		)}
-	case http.StatusBadRequest:
-		if err.Code == "context_length_exceeded" {
-			pe := modsError{err: err, reason: "Maximum prompt size exceeded."}
-			if cfg.NoLimit {
-				return pe
-			}
-
-			return m.retry(cutPrompt(err.Message, content), pe)
-		}
-		// bad request (do not retry)
-		return modsError{err: err, reason: fmt.Sprintf("%s API request error.", mod.API)}
-	case http.StatusUnauthorized:
-		// invalid auth or key (do not retry)
-		return modsError{err: err, reason: fmt.Sprintf("Invalid %s API key.", mod.API)}
-	case http.StatusTooManyRequests:
-		// rate limiting or engine overload (wait and retry)
-		return m.retry(content, modsError{
-			err: err, reason: fmt.Sprintf("You’ve hit your %s API rate limit.", mod.API),
-		})
-	case http.StatusInternalServerError:
-		if mod.API == "openai" {
-			return m.retry(content, modsError{err: err, reason: "OpenAI API server error."})
-		}
-		return modsError{err: err, reason: fmt.Sprintf(
-			"Error loading model '%s' for API '%s'.",
-			mod.Name,
-			mod.API,
-		)}
-	default:
-		return m.retry(content, modsError{err: err, reason: "Unknown API error."})
-	}
-}
-
-var errNoContent = errors.New("no content")
-
 func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
-		resp, err := msg.stream.Recv()
-		if errors.Is(err, errNoContent) {
+		if msg.stream.Next() {
+			chunk, err := msg.stream.Current()
+			if err != nil {
+				_ = msg.stream.Close()
+				return modsError{err, "There was an error when streaming the API response."}
+			}
 			return completionOutput{
-				stream: msg.stream,
+				content: chunk.Content,
+				stream:  msg.stream,
 			}
 		}
-		if errors.Is(err, io.EOF) {
-			_ = msg.stream.Close()
-			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    roleAssistant,
-				Content: m.Output,
-			})
-			return completionOutput{}
-		}
-		if err != nil {
-			_ = msg.stream.Close()
+
+		// stream is done, check for errors
+		if err := msg.stream.Err(); err != nil {
 			return modsError{err, "There was an error when streaming the API response."}
 		}
-		if len(resp.Choices) == 0 {
-			return completionOutput{
-				stream: msg.stream,
+
+		results := msg.stream.CallTools()
+		toolMsg := completionOutput{stream: msg.stream}
+		for _, call := range results {
+			toolMsg.content += fmt.Sprintf("> Ran tool: `%s`", call.Name)
+			if call.Err != nil {
+				toolMsg.content += fmt.Sprintf(" - failed: `%s`", call.Err.Error())
 			}
+			toolMsg.content += "\n\n"
 		}
-		return completionOutput{
-			content: resp.Choices[0].Delta.Content,
-			stream:  msg.stream,
+		if len(results) == 0 {
+			return completionOutput{}
 		}
+		return toolMsg
 	}
 }
 
@@ -656,14 +626,14 @@ func noOmitFloat(f float64) float64 {
 
 func (m *Mods) readFromCache() tea.Cmd {
 	return func() tea.Msg {
-		var messages []modsMessage
+		var messages []proto.Message
 		if err := m.cache.read(m.Config.cacheReadFromID, &messages); err != nil {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 
 		return m.receiveCompletionStreamCmd(completionOutput{
 			stream: &cachedCompletionStream{
-				messages: fromModsMessages(messages),
+				messages: messages,
 			},
 		})()
 	}
