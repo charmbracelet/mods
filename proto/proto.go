@@ -1,6 +1,10 @@
 package proto
 
-import "github.com/mark3labs/mcp-go/mcp"
+import (
+	"strings"
+
+	"github.com/mark3labs/mcp-go/mcp"
+)
 
 const (
 	RoleSystem    = "system"
@@ -48,4 +52,29 @@ type Request struct {
 	MaxTokens      *int64
 	ResponseFormat *string
 	ToolCaller     func(name string, data []byte) (string, error)
+}
+
+type Messages []Message
+
+func (messages Messages) String() string {
+	var sb strings.Builder
+	for _, msg := range messages {
+		if msg.Content == "" {
+			continue
+		}
+		switch msg.Role {
+		case RoleSystem:
+			sb.WriteString("**System**: ")
+		case RoleUser:
+			sb.WriteString("**User**: ")
+		case RoleTool:
+			sb.WriteString("> Ran tool\n\n")
+			continue
+		case RoleAssistant:
+			sb.WriteString("**Assistant**: ")
+		}
+		sb.WriteString(msg.Content)
+		sb.WriteString("\n\n")
+	}
+	return sb.String()
 }

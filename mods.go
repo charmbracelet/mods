@@ -521,6 +521,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 			toolMsg.content += "\n\n"
 		}
 		if len(results) == 0 {
+			m.messages = msg.stream.Messages()
 			return completionOutput{}
 		}
 		return toolMsg
@@ -631,11 +632,8 @@ func (m *Mods) readFromCache() tea.Cmd {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 
-		return m.receiveCompletionStreamCmd(completionOutput{
-			stream: &cachedCompletionStream{
-				messages: messages,
-			},
-		})()
+		m.appendToOutput(proto.Messages(messages).String())
+		return completionOutput{}
 	}
 }
 

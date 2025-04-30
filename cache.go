@@ -8,11 +8,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/charmbracelet/mods/proto"
-	"github.com/charmbracelet/mods/stream"
 )
 
 // CacheType represents the type of cache being used.
@@ -124,21 +122,6 @@ func (c *convoCache) write(id string, messages *[]proto.Message) error {
 func (c *convoCache) delete(id string) error {
 	return c.cache.Delete(id)
 }
-
-var _ stream.Stream = &cachedCompletionStream{}
-
-type cachedCompletionStream struct {
-	messages []proto.Message
-	read     int
-	m        sync.Mutex
-}
-
-func (c *cachedCompletionStream) CallTools() []proto.ToolCallStatus { return nil }
-func (c *cachedCompletionStream) Current() (proto.Chunk, error)     { return proto.Chunk{}, nil }
-func (c *cachedCompletionStream) Err() error                        { return nil }
-func (c *cachedCompletionStream) Messages() []proto.Message         { return c.messages }
-func (c *cachedCompletionStream) Next() bool                        { return false }
-func (c *cachedCompletionStream) Close() error                      { return nil }
 
 // ExpiringCache is a cache implementation that supports expiration of cached items.
 type ExpiringCache[T any] struct {

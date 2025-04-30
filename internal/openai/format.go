@@ -52,6 +52,7 @@ func toProtoMessages(input []openai.ChatCompletionMessageParamUnion) []proto.Mes
 		msg := proto.Message{
 			Role: msgRole(in),
 		}
+		// for _, call:= range in.OfAssistant.ToolCalls {}
 		switch content := in.GetContent().AsAny().(type) {
 		case *string:
 			if content == nil {
