@@ -313,7 +313,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 	}
 
 	m.messages = append(m.messages, proto.Message{
-		Role:    roleUser,
+		Role:    proto.RoleUser,
 		Content: content,
 	})
 
