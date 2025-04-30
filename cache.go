@@ -8,10 +8,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/openai/openai-go"
+	"github.com/charmbracelet/mods/proto"
 )
 
 // CacheType represents the type of cache being used.
@@ -95,11 +94,11 @@ func (c *Cache[T]) Delete(id string) error {
 }
 
 type convoCache struct {
-	cache *Cache[[]modsMessage]
+	cache *Cache[[]proto.Message]
 }
 
 func newCache(dir string) *convoCache {
-	cache, err := NewCache[[]modsMessage](dir, ConversationCache)
+	cache, err := NewCache[[]proto.Message](dir, ConversationCache)
 	if err != nil {
 		return nil
 	}
@@ -108,13 +107,13 @@ func newCache(dir string) *convoCache {
 	}
 }
 
-func (c *convoCache) read(id string, messages *[]modsMessage) error {
+func (c *convoCache) read(id string, messages *[]proto.Message) error {
 	return c.cache.Read(id, func(r io.Reader) error {
 		return decode(r, messages)
 	})
 }
 
-func (c *convoCache) write(id string, messages *[]modsMessage) error {
+func (c *convoCache) write(id string, messages *[]proto.Message) error {
 	return c.cache.Write(id, func(w io.Writer) error {
 		return encode(w, messages)
 	})
@@ -122,54 +121,6 @@ func (c *convoCache) write(id string, messages *[]modsMessage) error {
 
 func (c *convoCache) delete(id string) error {
 	return c.cache.Delete(id)
-}
-
-var _ chatCompletionReceiver = &cachedCompletionStream{}
-
-type cachedCompletionStream struct {
-	messages []openai.ChatCompletionMessage
-	read     int
-	m        sync.Mutex
-}
-
-func (c *cachedCompletionStream) Close() error { return nil }
-
-func (c *cachedCompletionStream) Recv() (openai.ChatCompletionChunk, error) {
-	c.m.Lock()
-	defer c.m.Unlock()
-
-	if c.read == len(c.messages) {
-		return openai.ChatCompletionChunk{}, io.EOF
-	}
-
-	msg := c.messages[c.read]
-	prefix := ""
-
-	switch msg.Role {
-	case "system":
-		prefix += "\n**System**: "
-	case "user":
-		prefix += "\n**Prompt**: "
-	case "assistant":
-		prefix += "\n**Assistant**: "
-	case "function":
-		prefix += "\n**Function**: "
-	case "tool":
-		prefix += "\n**Tool**: "
-	}
-
-	c.read++
-
-	return openai.ChatCompletionChunk{
-		Choices: []openai.ChatCompletionChunkChoice{
-			{
-				Delta: openai.ChatCompletionChunkChoiceDelta{
-					Content: prefix + msg.Content + "\n",
-					Role:    string(msg.Role),
-				},
-			},
-		},
-	}, nil
 }
 
 // ExpiringCache is a cache implementation that supports expiration of cached items.

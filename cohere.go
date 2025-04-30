@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/charmbracelet/mods/proto"
 	cohere "github.com/cohere-ai/cohere-go/v2"
 	"github.com/cohere-ai/cohere-go/v2/client"
 	"github.com/cohere-ai/cohere-go/v2/core"
@@ -83,7 +84,7 @@ func (stream *cohereStreamReader) Recv() (response openai.ChatCompletionChunk, e
 					Index: 0,
 					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: message.TextGeneration.Text,
-						Role:    roleAssistant,
+						Role:    proto.RoleAssistant,
 					},
 				},
 			},

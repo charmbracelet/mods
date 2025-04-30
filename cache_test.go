@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openai/openai-go"
+	"github.com/charmbracelet/mods/proto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,25 +20,25 @@ var update = flag.Bool("update", false, "update .golden files")
 func TestCache(t *testing.T) {
 	t.Run("read non-existent", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		err := cache.read("super-fake", &[]modsMessage{})
+		err := cache.read("super-fake", &[]proto.Message{})
 		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("write", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		messages := []modsMessage{
+		messages := []proto.Message{
 			{
-				Role:    roleUser,
+				Role:    proto.RoleUser,
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    roleAssistant,
+				Role:    proto.RoleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 		}
 		require.NoError(t, cache.write("fake", &messages))
 
-		result := []modsMessage{}
+		result := []proto.Message{}
 		require.NoError(t, cache.read("fake", &result))
 
 		require.ElementsMatch(t, messages, result)
@@ -46,7 +46,7 @@ func TestCache(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		cache.write("fake", &[]modsMessage{})
+		cache.write("fake", &[]proto.Message{})
 		require.NoError(t, cache.delete("fake"))
 		require.ErrorIs(t, cache.read("fake", nil), os.ErrNotExist)
 	})
@@ -69,35 +69,31 @@ func TestCache(t *testing.T) {
 
 func TestCachedCompletionStream(t *testing.T) {
 	stream := cachedCompletionStream{
-		messages: []openai.ChatCompletionMessage{
+		messages: []proto.Message{
 			{
-				Role:    roleSystem,
+				Role:    proto.RoleSystem,
 				Content: "you are a medieval king",
 			},
 			{
-				Role:    roleUser,
+				Role:    proto.RoleUser,
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    roleAssistant,
+				Role:    proto.RoleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 
 			{
-				Role:    roleUser,
+				Role:    proto.RoleUser,
 				Content: "as a json array",
 			},
 			{
-				Role:    roleAssistant,
+				Role:    proto.RoleAssistant,
 				Content: "[ 1, 2, 3, 4 ]",
 			},
 			{
-				Role:    roleAssistant,
+				Role:    proto.RoleAssistant,
 				Content: "something from an assistant",
-			},
-			{
-				Role:    roleFunction,
-				Content: "something from a function",
 			},
 		},
 	}
@@ -105,13 +101,13 @@ func TestCachedCompletionStream(t *testing.T) {
 
 	var output []string
 
-	for {
-		resp, err := stream.Recv()
+	for stream.Next() {
+		resp, err := stream.Current()
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		require.NoError(t, err)
-		output = append(output, resp.Choices[0].Delta.Content)
+		output = append(output, resp.Content)
 	}
 
 	golden := filepath.Join("testdata", t.Name()+".md.golden")

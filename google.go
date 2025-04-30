@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/charmbracelet/mods/proto"
 	"github.com/openai/openai-go"
 )
 
@@ -223,7 +224,7 @@ func (stream *googleStreamReader) processLines() (openai.ChatCompletionChunk, er
 					Index: 0,
 					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: chunk.Candidates[0].Content.Parts[0].Text,
-						Role:    roleAssistant,
+						Role:    proto.RoleAssistant,
 					},
 				},
 			},
