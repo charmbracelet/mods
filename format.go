@@ -8,31 +8,6 @@ import (
 	"github.com/charmbracelet/mods/proto"
 )
 
-const (
-	roleSystem    = "system"
-	roleUser      = "user"
-	roleAssistant = "assistant"
-	roleFunction  = "function"
-	roleTool      = "tool"
-)
-
-type modsMessage struct {
-	Role       string
-	Content    string
-	ToolCallID string
-	ToolCalls  []modsMessageToolCall
-}
-
-type modsMessageToolCall struct {
-	ID       string
-	Function modsFunction
-}
-
-type modsFunction struct {
-	Arguments string
-	Name      string
-}
-
 func encode(w io.Writer, messages *[]proto.Message) error {
 	if err := gob.NewEncoder(w).Encode(messages); err != nil {
 		return fmt.Errorf("encode: %w", err)

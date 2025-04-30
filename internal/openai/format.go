@@ -33,13 +33,13 @@ func fromProtoMessages(input []proto.Message) []openai.ChatCompletionMessagePara
 	var messages []openai.ChatCompletionMessageParamUnion
 	for _, msg := range input {
 		switch msg.Role {
-		case "system":
+		case proto.RoleSystem:
 			messages = append(messages, openai.SystemMessage(msg.Content))
-		case "tool":
+		case proto.RoleTool:
 			messages = append(messages, openai.ToolMessage(msg.Content, msg.ToolCallID))
-		case "user":
+		case proto.RoleUser:
 			messages = append(messages, openai.UserMessage(msg.Content))
-		case "assistant":
+		case proto.RoleAssistant:
 			messages = append(messages, openai.AssistantMessage(msg.Content))
 		}
 	}

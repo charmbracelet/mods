@@ -263,7 +263,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 	m.messages = []proto.Message{}
 	if txt := cfg.FormatText[cfg.FormatAs]; cfg.Format && txt != "" {
 		m.messages = append(m.messages, proto.Message{
-			Role:    roleSystem,
+			Role:    proto.RoleSystem,
 			Content: txt,
 		})
 	}
@@ -285,7 +285,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 				}
 			}
 			m.messages = append(m.messages, proto.Message{
-				Role:    roleSystem,
+				Role:    proto.RoleSystem,
 				Content: content,
 			})
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
+	"github.com/charmbracelet/mods/proto"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/openai/openai-go"
 )
@@ -110,7 +111,7 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionCh
 							Index: 0,
 							Delta: openai.ChatCompletionChunkChoiceDelta{
 								Content: deltaVariant.Text,
-								Role:    roleAssistant,
+								Role:    proto.RoleAssistant,
 							},
 						},
 					},
@@ -158,7 +159,7 @@ func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionCh
 				Index: 0,
 				Delta: openai.ChatCompletionChunkChoiceDelta{
 					Content: sb.String(),
-					Role:    roleTool,
+					Role:    proto.RoleTool,
 				},
 			},
 		},
