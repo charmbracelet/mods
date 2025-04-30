@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,25 +20,25 @@ var update = flag.Bool("update", false, "update .golden files")
 func TestCache(t *testing.T) {
 	t.Run("read non-existent", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		err := cache.read("super-fake", &[]openai.ChatCompletionMessage{})
+		err := cache.read("super-fake", &[]modsMessage{})
 		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("write", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		messages := []openai.ChatCompletionMessage{
+		messages := []modsMessage{
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    roleUser,
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    roleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 		}
 		require.NoError(t, cache.write("fake", &messages))
 
-		result := []openai.ChatCompletionMessage{}
+		result := []modsMessage{}
 		require.NoError(t, cache.read("fake", &result))
 
 		require.ElementsMatch(t, messages, result)
@@ -46,7 +46,7 @@ func TestCache(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		cache := newCache(t.TempDir())
-		cache.write("fake", &[]openai.ChatCompletionMessage{})
+		cache.write("fake", &[]modsMessage{})
 		require.NoError(t, cache.delete("fake"))
 		require.ErrorIs(t, cache.read("fake", nil), os.ErrNotExist)
 	})
@@ -71,32 +71,32 @@ func TestCachedCompletionStream(t *testing.T) {
 	stream := cachedCompletionStream{
 		messages: []openai.ChatCompletionMessage{
 			{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    roleSystem,
 				Content: "you are a medieval king",
 			},
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    roleUser,
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    roleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 
 			{
-				Role:    openai.ChatMessageRoleUser,
+				Role:    roleUser,
 				Content: "as a json array",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    roleAssistant,
 				Content: "[ 1, 2, 3, 4 ]",
 			},
 			{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    roleAssistant,
 				Content: "something from an assistant",
 			},
 			{
-				Role:    openai.ChatMessageRoleFunction,
+				Role:    roleFunction,
 				Content: "something from a function",
 			},
 		},

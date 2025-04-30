@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/openai/openai-go"
 )
 
 // AnthropicClientConfig represents the configuration for the Anthropic API client.
@@ -40,7 +42,7 @@ func NewAnthropicClientWithConfig(config AnthropicClientConfig) *AnthropicClient
 		option.WithHTTPClient(config.HTTPClient),
 	}
 	if config.BaseURL != "" {
-		opts = append(opts, option.WithBaseURL(config.BaseURL))
+		opts = append(opts, option.WithBaseURL(strings.TrimSuffix(config.BaseURL, "/v1")))
 	}
 	client := anthropic.NewClient(opts...)
 	return &AnthropicClient{
@@ -54,11 +56,16 @@ func (c *AnthropicClient) CreateChatCompletionStream(
 	ctx context.Context,
 	request anthropic.MessageNewParams,
 ) *AnthropicChatCompletionStream {
-	return &AnthropicChatCompletionStream{
-		anthropicStreamReader: &anthropicStreamReader{
-			Stream: c.Messages.NewStreaming(ctx, request),
-		},
+	s := &AnthropicChatCompletionStream{
+		stream:  c.Messages.NewStreaming(ctx, request),
+		request: request,
 	}
+
+	s.factory = func() *ssestream.Stream[anthropic.MessageStreamEventUnion] {
+		return c.Messages.NewStreaming(ctx, s.request)
+	}
+
+	return s
 }
 
 func makeAnthropicSystem(system string) []anthropic.TextBlockParam {
@@ -74,45 +81,114 @@ func makeAnthropicSystem(system string) []anthropic.TextBlockParam {
 
 // AnthropicChatCompletionStream represents a stream for chat completion.
 type AnthropicChatCompletionStream struct {
-	*anthropicStreamReader
-}
-
-type anthropicStreamReader struct {
-	*ssestream.Stream[anthropic.MessageStreamEventUnion]
+	stream  *ssestream.Stream[anthropic.MessageStreamEventUnion]
+	request anthropic.MessageNewParams
+	factory func() *ssestream.Stream[anthropic.MessageStreamEventUnion]
+	message anthropic.Message
 }
 
 // Recv reads the next response from the stream.
-func (r *anthropicStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
-	if err := r.Err(); err != nil {
-		return openai.ChatCompletionStreamResponse{}, fmt.Errorf("anthropic: %w", err)
+func (r *AnthropicChatCompletionStream) Recv() (response openai.ChatCompletionChunk, err error) {
+	if r.stream == nil {
+		r.stream = r.factory()
+		r.message = anthropic.Message{}
 	}
-	for r.Next() {
-		event := r.Current()
+
+	if r.stream.Next() {
+		event := r.stream.Current()
+		if err := r.message.Accumulate(event); err != nil {
+			return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
+		}
 		switch eventVariant := event.AsAny().(type) {
 		case anthropic.ContentBlockDeltaEvent:
 			switch deltaVariant := eventVariant.Delta.AsAny().(type) {
 			case anthropic.TextDelta:
-				return openai.ChatCompletionStreamResponse{
-					Choices: []openai.ChatCompletionStreamChoice{
+				return openai.ChatCompletionChunk{
+					Choices: []openai.ChatCompletionChunkChoice{
 						{
 							Index: 0,
-							Delta: openai.ChatCompletionStreamChoiceDelta{
+							Delta: openai.ChatCompletionChunkChoiceDelta{
 								Content: deltaVariant.Text,
-								Role:    "assistant",
+								Role:    roleAssistant,
 							},
 						},
 					},
 				}, nil
 			}
 		}
+		return openai.ChatCompletionChunk{}, errNoContent
 	}
-	return openai.ChatCompletionStreamResponse{}, io.EOF
+	if err := r.stream.Err(); err != nil {
+		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
+	}
+	if err := r.stream.Close(); err != nil {
+		return openai.ChatCompletionChunk{}, fmt.Errorf("anthropic: %w", err)
+	}
+	r.request.Messages = append(r.request.Messages, r.message.ToParam())
+	r.stream = nil
+
+	toolResults := []anthropic.ContentBlockParamUnion{}
+	var sb strings.Builder
+	for _, block := range r.message.Content {
+		switch variant := block.AsAny().(type) {
+		case anthropic.ToolUseBlock:
+			content, err := toolCall(variant.Name, []byte(variant.JSON.Input.Raw()))
+			toolResults = append(toolResults, anthropic.NewToolResultBlock(block.ID, content, err != nil))
+			_, _ = sb.WriteString("\n> Ran: `" + variant.Name + "`")
+			if err != nil {
+				_, _ = sb.WriteString(" (failed: `" + err.Error() + "`)")
+			}
+			_, _ = sb.WriteString("\n")
+		}
+	}
+	_, _ = sb.WriteString("\n")
+
+	if len(toolResults) == 0 {
+		return openai.ChatCompletionChunk{}, io.EOF
+	}
+
+	msg := anthropic.NewUserMessage(toolResults...)
+	r.request.Messages = append(r.request.Messages, msg)
+
+	return openai.ChatCompletionChunk{
+		Choices: []openai.ChatCompletionChunkChoice{
+			{
+				Index: 0,
+				Delta: openai.ChatCompletionChunkChoiceDelta{
+					Content: sb.String(),
+					Role:    roleTool,
+				},
+			},
+		},
+	}, nil
 }
 
 // Close closes the stream.
-func (r *anthropicStreamReader) Close() error {
-	if err := r.Stream.Close(); err != nil {
+func (r *AnthropicChatCompletionStream) Close() error {
+	if r.stream == nil {
+		return nil
+	}
+	if err := r.stream.Close(); err != nil {
 		return fmt.Errorf("anthropic: %w", err)
 	}
+	r.stream = nil
 	return nil
+}
+
+func makeAnthropicMCPTools(mcps map[string][]mcp.Tool) []anthropic.ToolUnionParam {
+	var tools []anthropic.ToolUnionParam
+	for name, serverTools := range mcps {
+		for _, tool := range serverTools {
+			tools = append(tools, anthropic.ToolUnionParam{
+				OfTool: &anthropic.ToolParam{
+					InputSchema: anthropic.ToolInputSchemaParam{
+						Properties: tool.InputSchema.Properties,
+					},
+					Name:        fmt.Sprintf("%s_%s", name, tool.Name),
+					Description: anthropic.String(tool.Description),
+				},
+			})
+		}
+	}
+	return tools
 }

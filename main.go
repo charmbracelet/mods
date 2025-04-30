@@ -193,6 +193,14 @@ var (
 				return listConversations(config.Raw)
 			}
 
+			if config.MCPList {
+				return mcpList()
+			}
+
+			if config.MCPListTools {
+				return mcpListTools()
+			}
+
 			if len(config.Delete) > 0 {
 				return deleteConversations()
 			}
@@ -250,12 +258,12 @@ func initFlags() {
 	flags.BoolVarP(&config.Version, "version", "v", false, stdoutStyles().FlagDesc.Render(help["version"]))
 	flags.IntVar(&config.MaxRetries, "max-retries", config.MaxRetries, stdoutStyles().FlagDesc.Render(help["max-retries"]))
 	flags.BoolVar(&config.NoLimit, "no-limit", config.NoLimit, stdoutStyles().FlagDesc.Render(help["no-limit"]))
-	flags.IntVar(&config.MaxTokens, "max-tokens", config.MaxTokens, stdoutStyles().FlagDesc.Render(help["max-tokens"]))
+	flags.Int64Var(&config.MaxTokens, "max-tokens", config.MaxTokens, stdoutStyles().FlagDesc.Render(help["max-tokens"]))
 	flags.IntVar(&config.WordWrap, "word-wrap", config.WordWrap, stdoutStyles().FlagDesc.Render(help["word-wrap"]))
-	flags.Float32Var(&config.Temperature, "temp", config.Temperature, stdoutStyles().FlagDesc.Render(help["temp"]))
+	flags.Float64Var(&config.Temperature, "temp", config.Temperature, stdoutStyles().FlagDesc.Render(help["temp"]))
 	flags.StringArrayVar(&config.Stop, "stop", config.Stop, stdoutStyles().FlagDesc.Render(help["stop"]))
-	flags.Float32Var(&config.TopP, "topp", config.TopP, stdoutStyles().FlagDesc.Render(help["topp"]))
-	flags.IntVar(&config.TopK, "topk", config.TopK, stdoutStyles().FlagDesc.Render(help["topk"]))
+	flags.Float64Var(&config.TopP, "topp", config.TopP, stdoutStyles().FlagDesc.Render(help["topp"]))
+	flags.Int64Var(&config.TopK, "topk", config.TopK, stdoutStyles().FlagDesc.Render(help["topk"]))
 	flags.UintVar(&config.Fanciness, "fanciness", config.Fanciness, stdoutStyles().FlagDesc.Render(help["fanciness"]))
 	flags.StringVar(&config.StatusText, "status-text", config.StatusText, stdoutStyles().FlagDesc.Render(help["status-text"]))
 	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles().FlagDesc.Render(help["no-cache"]))
@@ -266,6 +274,9 @@ func initFlags() {
 	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
 	flags.StringVar(&config.Theme, "theme", "charm", stdoutStyles().FlagDesc.Render(help["theme"]))
 	flags.BoolVarP(&config.openEditor, "editor", "e", false, stdoutStyles().FlagDesc.Render(help["editor"]))
+	flags.BoolVar(&config.MCPList, "mcp-list", false, stdoutStyles().FlagDesc.Render(help["mcp-list"]))
+	flags.BoolVar(&config.MCPListTools, "mcp-list-tools", false, stdoutStyles().FlagDesc.Render(help["mcp-list-tools"]))
+	flags.StringArrayVar(&config.MCPDisable, "mcp-disable", nil, stdoutStyles().FlagDesc.Render(help["mcp-disable"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -304,6 +315,8 @@ func initFlags() {
 		"continue",
 		"continue-last",
 		"reset-settings",
+		"mcp-list",
+		"mcp-list-tools",
 	)
 }
 
@@ -698,7 +711,8 @@ func saveConversation(mods *Mods) error {
 		title = firstLine(lastPrompt(mods.messages))
 	}
 
-	if err := cache.write(id, &mods.messages); err != nil {
+	messages := toModsMessages(mods.messages)
+	if err := cache.write(id, &messages); err != nil {
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
 			config.cacheWriteToID,
@@ -736,6 +750,8 @@ func isNoArgs() bool {
 		!config.ShowHelp &&
 		!config.List &&
 		!config.ListRoles &&
+		!config.MCPList &&
+		!config.MCPListTools &&
 		!config.Dirs &&
 		!config.Settings &&
 		!config.ResetSettings

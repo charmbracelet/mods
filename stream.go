@@ -8,13 +8,14 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	tea "github.com/charmbracelet/bubbletea"
 	cohere "github.com/cohere-ai/cohere-go/v2"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/shared"
 )
 
-func (m *Mods) createOpenAIStream(content string, ccfg openai.ClientConfig, mod Model) tea.Msg {
+func (m *Mods) createOpenAIStream(content string, ccfg OpenAIClientConfig, mod Model) tea.Msg {
 	cfg := m.Config
+	client := NewOpenAIClientWithConfig(ccfg)
 
-	client := openai.NewClientWithConfig(ccfg)
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelRequest = cancel
 
@@ -25,33 +26,58 @@ func (m *Mods) createOpenAIStream(content string, ccfg openai.ClientConfig, mod 
 	// Remap System role to User for o1-preview and o1-mini as they don't support system messages
 	if mod.Name == "o1-preview" || mod.Name == "o1-mini" {
 		for i, message := range m.messages {
-			if message.Role != openai.ChatMessageRoleSystem {
+			if message.Role != "system" {
 				continue
 			}
-			m.messages[i].Role = openai.ChatMessageRoleUser
+			m.messages[i].Role = "user"
 		}
 	}
 
-	req := openai.ChatCompletionRequest{
-		Model:    mod.Name,
-		Messages: m.messages,
-		Stream:   true,
-		User:     cfg.User,
-	}
-
-	if mod.API != "perplexity" || !strings.Contains(mod.Name, "online") {
-		req.Temperature = noOmitFloat(cfg.Temperature)
-		req.TopP = noOmitFloat(cfg.TopP)
-		req.Stop = cfg.Stop
-		req.MaxTokens = cfg.MaxTokens
-		req.ResponseFormat = responseFormat(cfg)
-	}
-
-	stream, err := client.CreateChatCompletionStream(ctx, req)
+	mcps, err := mcpTools(ctx)
 	if err != nil {
 		return m.handleRequestError(err, mod, content)
 	}
 
+	var messages []openai.ChatCompletionMessageParamUnion
+	for _, msg := range m.messages {
+		switch msg.Role {
+		case "system":
+			messages = append(messages, openai.SystemMessage(msg.Content))
+		case "tool":
+			messages = append(messages, openai.ToolMessage(msg.Content, msg.ToParam().OfTool.ToolCallID))
+		case "user":
+			messages = append(messages, openai.UserMessage(msg.Content))
+		case "assistant":
+			messages = append(messages, openai.AssistantMessage(msg.Content))
+		}
+	}
+
+	req := openai.ChatCompletionNewParams{
+		Model:    mod.Name,
+		Messages: messages,
+		User:     openai.String(cfg.User),
+		Tools:    makeOpenAIMCPTools(mcps),
+	}
+
+	if mod.API != "perplexity" || !strings.Contains(mod.Name, "online") {
+		req.Temperature = openai.Float(noOmitFloat(cfg.Temperature))
+		req.TopP = openai.Float(noOmitFloat(cfg.TopP))
+		req.Stop = openai.ChatCompletionNewParamsStopUnion{
+			OfChatCompletionNewsStopArray: cfg.Stop,
+		}
+
+		if cfg.MaxTokens > 0 {
+			req.MaxTokens = openai.Int(cfg.MaxTokens)
+		}
+
+		if cfg.API == "openai" && cfg.Format && cfg.FormatAs == "json" {
+			req.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
+				OfJSONObject: &shared.ResponseFormatJSONObjectParam{},
+			}
+		}
+	}
+
+	stream := client.CreateChatCompletionStream(ctx, req)
 	return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 }
 
@@ -111,17 +137,17 @@ func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod 
 	messages := []GoogleContent{}
 
 	for _, message := range m.messages {
-		if message.Role == openai.ChatMessageRoleSystem {
+		if message.Role == "system" {
 			parts := []GoogleParts{
 				{Text: fmt.Sprintf("%s\n", message.Content)},
 			}
 			messages = append(messages, GoogleContent{
-				Role:  "user",
+				Role:  roleUser,
 				Parts: parts,
 			})
 		} else {
-			role := "user"
-			if message.Role == openai.ChatMessageRoleAssistant {
+			role := roleUser
+			if message.Role == roleAssistant {
 				role = "model"
 			}
 			parts := []GoogleParts{
@@ -168,23 +194,54 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancelRequest = cancel
 
-	if err := m.setupStreamContext(content, mod); err != nil {
-		return err
+	if len(m.messages) == 0 {
+		if err := m.setupStreamContext(content, mod); err != nil {
+			return err
+		}
 	}
 
 	// Anthropic doesn't support the System role so we need to remove those message
 	// and, instead, store their content on the `System` request value.
 	messages := []anthropic.MessageParam{}
 
+	var blocks []anthropic.ContentBlockParamUnion
 	for _, message := range m.messages {
-		if message.Role == openai.ChatMessageRoleSystem {
+		switch message.Role {
+		case "system":
 			m.system += message.Content + "\n"
-		} else {
+		case "user":
+			if len(blocks) > 0 {
+				messages = append(
+					messages,
+					anthropic.NewUserMessage(blocks...),
+				)
+				blocks = nil
+			}
 			messages = append(
 				messages,
-				anthropic.NewUserMessage(anthropic.NewTextBlock(message.Content)),
+				anthropic.NewUserMessage(
+					anthropic.NewTextBlock(message.Content),
+				),
 			)
+		case "assistant":
+			messages = append(
+				messages,
+				anthropic.NewAssistantMessage(
+					anthropic.NewTextBlock(message.Content),
+				),
+			)
+		case "tool":
+			blocks = append(blocks, anthropic.NewToolResultBlock(
+				message.ToParam().OfTool.ToolCallID,
+				message.Content,
+				false,
+			))
 		}
+	}
+
+	mcps, err := mcpTools(ctx)
+	if err != nil {
+		return m.handleRequestError(err, mod, content)
 	}
 
 	req := anthropic.MessageNewParams{
@@ -195,6 +252,7 @@ func (m *Mods) createAnthropicStream(content string, accfg AnthropicClientConfig
 		TopP:          anthropic.Float(float64(noOmitFloat(cfg.TopP))),
 		TopK:          anthropic.Int(int64(cfg.TopK)),
 		StopSequences: cfg.Stop,
+		Tools:         makeAnthropicMCPTools(mcps),
 	}
 
 	if cfg.MaxTokens > 0 {
@@ -221,18 +279,18 @@ func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod 
 	var messages []*cohere.Message
 	for _, message := range m.messages {
 		switch message.Role {
-		case openai.ChatMessageRoleSystem:
+		case "system":
 			// For system, it is recommended to use the `preamble` field
 			// rather than a "SYSTEM" role message
 			m.system += message.Content + "\n"
-		case openai.ChatMessageRoleAssistant:
+		case "assistant":
 			messages = append(messages, &cohere.Message{
 				Role: "CHATBOT",
 				Chatbot: &cohere.ChatMessage{
 					Message: message.Content,
 				},
 			})
-		case openai.ChatMessageRoleUser:
+		case "user":
 			messages = append(messages, &cohere.Message{
 				Role: "USER",
 				User: &cohere.ChatMessage{
@@ -252,13 +310,13 @@ func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod 
 		ChatHistory:   history,
 		Message:       messages[len(messages)-1].User.Message,
 		Preamble:      cohere.String(m.system),
-		Temperature:   cohere.Float64(float64(cfg.Temperature)),
-		P:             cohere.Float64(float64(cfg.TopP)),
+		Temperature:   cohere.Float64(cfg.Temperature),
+		P:             cohere.Float64(cfg.TopP),
 		StopSequences: cfg.Stop,
 	}
 
 	if cfg.MaxTokens > 0 {
-		req.MaxTokens = cohere.Int(cfg.MaxTokens)
+		req.MaxTokens = cohere.Int(int(cfg.MaxTokens))
 	}
 
 	stream, err := client.CreateChatCompletionStream(ctx, req)
@@ -274,7 +332,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 	m.messages = []openai.ChatCompletionMessage{}
 	if txt := cfg.FormatText[cfg.FormatAs]; cfg.Format && txt != "" {
 		m.messages = append(m.messages, openai.ChatCompletionMessage{
-			Role:    openai.ChatMessageRoleSystem,
+			Role:    roleSystem,
 			Content: txt,
 		})
 	}
@@ -296,7 +354,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 				}
 			}
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleSystem,
+				Role:    roleSystem,
 				Content: content,
 			})
 		}
@@ -306,12 +364,13 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 		content = strings.TrimSpace(prefix + "\n\n" + content)
 	}
 
-	if !cfg.NoLimit && len(content) > mod.MaxChars {
+	if !cfg.NoLimit && int64(len(content)) > mod.MaxChars {
 		content = content[:mod.MaxChars]
 	}
 
 	if !cfg.NoCache && cfg.cacheReadFromID != "" {
-		if err := m.cache.read(cfg.cacheReadFromID, &m.messages); err != nil {
+		messages := toModsMessages(m.messages)
+		if err := m.cache.read(cfg.cacheReadFromID, &messages); err != nil {
 			return modsError{
 				err: err,
 				reason: fmt.Sprintf(
@@ -324,7 +383,7 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 	}
 
 	m.messages = append(m.messages, openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleUser,
+		Role:    roleUser,
 		Content: content,
 	})
 

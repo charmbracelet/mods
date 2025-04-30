@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 var (
@@ -50,9 +50,9 @@ type GoogleGenerationConfig struct {
 	ResponseMimeType string   `json:"responseMimeType,omitempty"`
 	CandidateCount   uint     `json:"candidateCount,omitempty"`
 	MaxOutputTokens  uint     `json:"maxOutputTokens,omitempty"`
-	Temperature      float32  `json:"temperature,omitempty"`
-	TopP             float32  `json:"topP,omitempty"`
-	TopK             int      `json:"topK,omitempty"`
+	Temperature      float64  `json:"temperature,omitempty"`
+	TopP             float64  `json:"topP,omitempty"`
+	TopK             int64    `json:"topK,omitempty"`
 }
 
 // GoogleMessageCompletionRequest represents the valid parameters and value options for the request.
@@ -106,21 +106,15 @@ func (c *GoogleClient) newRequest(ctx context.Context, method, url string, sette
 
 func (c *GoogleClient) handleErrorResp(resp *http.Response) error {
 	// Print the response text
-	var errRes openai.ErrorResponse
-	err := json.NewDecoder(resp.Body).Decode(&errRes)
-	if err != nil || errRes.Error == nil {
-		reqErr := &openai.RequestError{
-			HTTPStatusCode: resp.StatusCode,
-			Err:            err,
+	var errRes openai.Error
+	if err := json.NewDecoder(resp.Body).Decode(&errRes); err != nil {
+		return &openai.Error{
+			StatusCode: resp.StatusCode,
+			Message:    err.Error(),
 		}
-		if errRes.Error != nil {
-			reqErr.Err = errRes.Error
-		}
-		return reqErr
 	}
-
-	errRes.Error.HTTPStatusCode = resp.StatusCode
-	return errRes.Error
+	errRes.StatusCode = resp.StatusCode
+	return &errRes
 }
 
 // GoogleCandidate represents a response candidate generated from the model.
@@ -154,7 +148,7 @@ type googleStreamReader struct {
 }
 
 // Recv reads the next response from the stream.
-func (stream *googleStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+func (stream *googleStreamReader) Recv() (response openai.ChatCompletionChunk, err error) {
 	if stream.isFinished {
 		err = io.EOF
 		return
@@ -170,7 +164,7 @@ func (stream *googleStreamReader) Close() error {
 }
 
 //nolint:gocognit
-func (stream *googleStreamReader) processLines() (openai.ChatCompletionStreamResponse, error) {
+func (stream *googleStreamReader) processLines() (openai.ChatCompletionChunk, error) {
 	var (
 		emptyMessagesCount uint
 		hasError           bool
@@ -180,7 +174,7 @@ func (stream *googleStreamReader) processLines() (openai.ChatCompletionStreamRes
 		rawLine, readErr := stream.reader.ReadBytes('\n')
 
 		if readErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("googleStreamReader.processLines: %w", readErr)
+			return *new(openai.ChatCompletionChunk), fmt.Errorf("googleStreamReader.processLines: %w", readErr)
 		}
 
 		noSpaceLine := bytes.TrimSpace(rawLine)
@@ -197,11 +191,11 @@ func (stream *googleStreamReader) processLines() (openai.ChatCompletionStreamRes
 			}
 			writeErr := stream.errAccumulator.Write(noSpaceLine)
 			if writeErr != nil {
-				return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("ollamaStreamReader.processLines: %w", writeErr)
+				return *new(openai.ChatCompletionChunk), fmt.Errorf("ollamaStreamReader.processLines: %w", writeErr)
 			}
 			emptyMessagesCount++
 			if emptyMessagesCount > stream.emptyMessagesLimit {
-				return *new(openai.ChatCompletionStreamResponse), ErrTooManyEmptyStreamMessages
+				return *new(openai.ChatCompletionChunk), ErrTooManyEmptyStreamMessages
 			}
 			continue
 		}
@@ -211,7 +205,7 @@ func (stream *googleStreamReader) processLines() (openai.ChatCompletionStreamRes
 		var chunk GoogleCompletionMessageResponse
 		unmarshalErr := stream.unmarshaler.Unmarshal(noPrefixLine, &chunk)
 		if unmarshalErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("googleStreamReader.processLines: %w", unmarshalErr)
+			return *new(openai.ChatCompletionChunk), fmt.Errorf("googleStreamReader.processLines: %w", unmarshalErr)
 		}
 
 		// NOTE: Leverage the existing logic based on OpenAI ChatCompletionStreamResponse by
@@ -223,13 +217,13 @@ func (stream *googleStreamReader) processLines() (openai.ChatCompletionStreamRes
 		if len(parts) == 0 {
 			continue
 		}
-		response := openai.ChatCompletionStreamResponse{
-			Choices: []openai.ChatCompletionStreamChoice{
+		response := openai.ChatCompletionChunk{
+			Choices: []openai.ChatCompletionChunkChoice{
 				{
 					Index: 0,
-					Delta: openai.ChatCompletionStreamChoiceDelta{
+					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: chunk.Candidates[0].Content.Parts[0].Text,
-						Role:    "assistant",
+						Role:    roleAssistant,
 					},
 				},
 			},

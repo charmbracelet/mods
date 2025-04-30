@@ -24,7 +24,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/exp/ordered"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 type state int
@@ -68,7 +68,10 @@ type Mods struct {
 }
 
 func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) *Mods {
-	gr, _ := glamour.NewTermRenderer(glamour.WithEnvironmentConfig(), glamour.WithWordWrap(cfg.WordWrap))
+	gr, _ := glamour.NewTermRenderer(
+		glamour.WithEnvironmentConfig(),
+		glamour.WithWordWrap(cfg.WordWrap),
+	)
 	vp := viewport.New(0, 0)
 	vp.GotoBottom()
 	return &Mods{
@@ -96,7 +99,7 @@ type completionOutput struct {
 }
 
 type chatCompletionReceiver interface {
-	Recv() (openai.ChatCompletionStreamResponse, error)
+	Recv() (openai.ChatCompletionChunk, error)
 	Close() error
 }
 
@@ -162,7 +165,9 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.appendToOutput(msg.content)
 			m.state = responseState
 		}
-		cmds = append(cmds, m.receiveCompletionStreamCmd(msg))
+		cmds = append(cmds, m.receiveCompletionStreamCmd(completionOutput{
+			stream: msg.stream,
+		}))
 	case modsError:
 		m.Error = &msg
 		m.state = errorState
@@ -262,7 +267,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var ok bool
 		var mod Model
 		var api API
-		var ccfg openai.ClientConfig
+		var ccfg OpenAIClientConfig
 		var accfg AnthropicClientConfig
 		var cccfg CohereClientConfig
 		var occfg OllamaClientConfig
@@ -346,9 +351,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "Azure authentication failed"}
 			}
-			ccfg = openai.DefaultAzureConfig(key, api.BaseURL)
+			ccfg = OpenAIClientConfig{
+				AuthToken: key,
+				BaseURL:   api.BaseURL,
+			}
 			if mod.API == "azure-ad" {
-				ccfg.APIType = openai.APITypeAzureAD
+				ccfg.APIType = "azure-ad"
 			}
 			if api.User != "" {
 				cfg.User = api.User
@@ -360,9 +368,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				return modsError{err, "Copilot authentication failed"}
 			}
 
-			ccfg = openai.DefaultConfig(accessToken.Token)
-			ccfg.HTTPClient = ghCopilotHTTPClient
-			ccfg.HTTPClient.(*copilotHTTPClient).AccessToken = &accessToken
+			ccfg = OpenAIClientConfig{
+				AuthToken: accessToken.Token,
+				BaseURL:   api.BaseURL,
+			}
+			// TODO: port this
+			// ccfg.HTTPClient = ghCopilotHTTPClient
+			// ccfg.HTTPClient.(*copilotHTTPClient).AccessToken = &accessToken
 			ccfg.BaseURL = ordered.First(api.BaseURL, accessToken.Endpoints.API)
 
 		default:
@@ -370,9 +382,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "OpenAI authentication failed"}
 			}
-			ccfg = openai.DefaultConfig(key)
-			if api.BaseURL != "" {
-				ccfg.BaseURL = api.BaseURL
+			ccfg = OpenAIClientConfig{
+				AuthToken: key,
+				BaseURL:   api.BaseURL,
 			}
 		}
 
@@ -452,7 +464,7 @@ func (m Mods) ensureKey(api API, defaultEnv, docsURL string) (string, error) {
 }
 
 func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg {
-	ae := &openai.APIError{}
+	ae := &openai.Error{}
 	if errors.As(err, &ae) {
 		return m.handleAPIError(ae, mod, content)
 	}
@@ -462,9 +474,9 @@ func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg 
 	)}
 }
 
-func (m *Mods) handleAPIError(err *openai.APIError, mod Model, content string) tea.Msg {
+func (m *Mods) handleAPIError(err *openai.Error, mod Model, content string) tea.Msg {
 	cfg := m.Config
-	switch err.HTTPStatusCode {
+	switch err.StatusCode {
 	case http.StatusNotFound:
 		if mod.Fallback != "" {
 			m.Config.Model = mod.Fallback
@@ -511,13 +523,20 @@ func (m *Mods) handleAPIError(err *openai.APIError, mod Model, content string) t
 	}
 }
 
+var errNoContent = errors.New("no content")
+
 func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := msg.stream.Recv()
+		if errors.Is(err, errNoContent) {
+			return completionOutput{
+				stream: msg.stream,
+			}
+		}
 		if errors.Is(err, io.EOF) {
 			_ = msg.stream.Close()
 			m.messages = append(m.messages, openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleAssistant,
+				Role:    roleAssistant,
 				Content: m.Output,
 			})
 			return completionOutput{}
@@ -526,10 +545,15 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 			_ = msg.stream.Close()
 			return modsError{err, "There was an error when streaming the API response."}
 		}
-		if len(resp.Choices) > 0 {
-			msg.content = resp.Choices[0].Delta.Content
+		if len(resp.Choices) == 0 {
+			return completionOutput{
+				stream: msg.stream,
+			}
 		}
-		return msg
+		return completionOutput{
+			content: resp.Choices[0].Delta.Content,
+			stream:  msg.stream,
+		}
 	}
 }
 
@@ -623,23 +647,23 @@ func (m *Mods) readStdinCmd() tea.Msg {
 // of 0.0 so it doesn't get stripped from the request and replaced server side
 // with the default values.
 // Issue: https://github.com/sashabaranov/go-openai/issues/9
-func noOmitFloat(f float32) float32 {
+func noOmitFloat(f float64) float64 {
 	if f == 0.0 {
-		return math.SmallestNonzeroFloat32
+		return math.SmallestNonzeroFloat64
 	}
 	return f
 }
 
 func (m *Mods) readFromCache() tea.Cmd {
 	return func() tea.Msg {
-		var messages []openai.ChatCompletionMessage
+		var messages []modsMessage
 		if err := m.cache.read(m.Config.cacheReadFromID, &messages); err != nil {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 
 		return m.receiveCompletionStreamCmd(completionOutput{
 			stream: &cachedCompletionStream{
-				messages: messages,
+				messages: fromModsMessages(messages),
 			},
 		})()
 	}
@@ -663,7 +687,9 @@ func (m *Mods) appendToOutput(s string) {
 	m.glamOutput = strings.ReplaceAll(m.glamOutput, "\t", strings.Repeat(" ", tabWidth))
 	m.glamHeight = lipgloss.Height(m.glamOutput)
 	m.glamOutput += "\n"
-	truncatedGlamOutput := m.renderer.NewStyle().MaxWidth(m.width).Render(m.glamOutput)
+	truncatedGlamOutput := m.renderer.NewStyle().
+		MaxWidth(m.width).
+		Render(m.glamOutput)
 	m.glamViewport.SetContent(truncatedGlamOutput)
 	if oldHeight < m.glamHeight && wasAtBottom {
 		// If the viewport's at the bottom and we've received a new
@@ -679,32 +705,6 @@ func removeWhitespace(s string) string {
 		return ""
 	}
 	return s
-}
-
-func responseFormat(cfg *Config) *openai.ChatCompletionResponseFormat {
-	if cfg.API != "openai" {
-		// only openai's api supports ChatCompletionResponseFormat
-		return nil
-	}
-	return &openai.ChatCompletionResponseFormat{
-		Type: responseType(cfg),
-	}
-}
-
-func responseType(cfg *Config) openai.ChatCompletionResponseFormatType {
-	if !cfg.Format {
-		return openai.ChatCompletionResponseFormatTypeText
-	}
-	// only these two models support json
-	if cfg.Model != "gpt-4-1106-preview" && cfg.Model != "gpt-3.5-turbo-1106" {
-		return openai.ChatCompletionResponseFormatTypeText
-	}
-	switch cfg.FormatAs {
-	case "json":
-		return openai.ChatCompletionResponseFormatTypeJSONObject
-	default:
-		return openai.ChatCompletionResponseFormatTypeText
-	}
 }
 
 var tokenErrRe = regexp.MustCompile(`This model's maximum context length is (\d+) tokens. However, your messages resulted in (\d+) tokens`)

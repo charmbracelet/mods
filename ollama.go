@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/openai/openai-go"
 )
 
 // OllamaClientConfig represents the configuration for the Ollama API client.
@@ -33,15 +33,15 @@ type OllamaMessageCompletionRequestOptions struct {
 	Mirostat      int     `json:"mirostat,omitempty"`
 	MirostatEta   int     `json:"mirostat_eta,omitempty"`
 	MirostatTau   int     `json:"mirostat_tau,omitempty"`
-	NumCtx        int     `json:"num_ctx,omitempty"`
+	NumCtx        int64   `json:"num_ctx,omitempty"`
 	RepeatLastN   int     `json:"repeat_last_n,omitempty"`
-	RepeatPenalty float32 `json:"repeat_penalty,omitempty"`
-	Temperature   float32 `json:"temperature,omitempty"`
+	RepeatPenalty float64 `json:"repeat_penalty,omitempty"`
+	Temperature   float64 `json:"temperature,omitempty"`
 	Seed          int     `json:"seed,omitempty"`
 	Stop          string  `json:"stop,omitempty"`
-	TfsZ          float32 `json:"tfs_z,omitempty"`
+	TfsZ          float64 `json:"tfs_z,omitempty"`
 	NumPredict    int     `json:"num_predict,omitempty"`
-	TopP          float32 `json:"top_p,omitempty"`
+	TopP          float64 `json:"top_p,omitempty"`
 	TopK          int     `json:"top_k,omitempty"`
 }
 
@@ -101,21 +101,15 @@ func (c *OllamaClient) newRequest(ctx context.Context, method, url string, sette
 
 func (c *OllamaClient) handleErrorResp(resp *http.Response) error {
 	// Print the response text
-	var errRes openai.ErrorResponse
-	err := json.NewDecoder(resp.Body).Decode(&errRes)
-	if err != nil || errRes.Error == nil {
-		reqErr := &openai.RequestError{
-			HTTPStatusCode: resp.StatusCode,
-			Err:            err,
+	var errRes openai.Error
+	if err := json.NewDecoder(resp.Body).Decode(&errRes); err != nil {
+		return &openai.Error{
+			StatusCode: resp.StatusCode,
+			Message:    err.Error(),
 		}
-		if errRes.Error != nil {
-			reqErr.Err = errRes.Error
-		}
-		return reqErr
 	}
-
-	errRes.Error.HTTPStatusCode = resp.StatusCode
-	return errRes.Error
+	errRes.StatusCode = resp.StatusCode
+	return &errRes
 }
 
 // OllamaMessageUsage represents the usage of an Ollama message.
@@ -180,7 +174,7 @@ type ollamaStreamReader struct {
 }
 
 // Recv reads the next response from the stream.
-func (stream *ollamaStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
+func (stream *ollamaStreamReader) Recv() (response openai.ChatCompletionChunk, err error) {
 	if stream.isFinished {
 		err = io.EOF
 		return
@@ -196,12 +190,12 @@ func (stream *ollamaStreamReader) Close() error {
 }
 
 //nolint:gocognit
-func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionStreamResponse, error) {
+func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionChunk, error) {
 	for {
 		rawLine, readErr := stream.reader.ReadBytes('\n')
 
 		if readErr != nil {
-			return *new(openai.ChatCompletionStreamResponse), fmt.Errorf("ollamaStreamReader.processLines: %w", readErr)
+			return *new(openai.ChatCompletionChunk), fmt.Errorf("ollamaStreamReader.processLines: %w", readErr)
 		}
 
 		noSpaceLine := bytes.TrimSpace(rawLine)
@@ -209,26 +203,23 @@ func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionStreamRes
 		var chunk OllamaCompletionMessageResponse
 		unmarshalErr := stream.unmarshaler.Unmarshal(noSpaceLine, &chunk)
 		if unmarshalErr != nil {
-			return openai.ChatCompletionStreamResponse{}, fmt.Errorf("ollamaStreamReader.processLines: %w", unmarshalErr)
+			return openai.ChatCompletionChunk{}, fmt.Errorf("ollamaStreamReader.processLines: %w", unmarshalErr)
 		}
 
 		if chunk.Done {
-			return openai.ChatCompletionStreamResponse{}, nil
+			return openai.ChatCompletionChunk{}, nil
 		}
 
 		if chunk.Message.Content == "" {
 			continue
 		}
 
-		// NOTE: Leverage the existing logic based on OpenAI ChatCompletionStreamResponse by
-		//       converting the Ollama events into them.
-		response := openai.ChatCompletionStreamResponse{
-			Choices: []openai.ChatCompletionStreamChoice{
+		response := openai.ChatCompletionChunk{
+			Choices: []openai.ChatCompletionChunkChoice{
 				{
 					Index: 0,
-					Delta: openai.ChatCompletionStreamChoiceDelta{
+					Delta: openai.ChatCompletionChunkChoiceDelta{
 						Content: chunk.Message.Content,
-						Role:    "assistant",
 					},
 				},
 			},
