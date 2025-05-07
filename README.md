@@ -33,6 +33,9 @@ Use a package manager:
 # macOS or Linux
 brew install charmbracelet/tap/mods
 
+# macOS, Linux or Windows (with Pixi)
+pixi global install mods
+
 # Windows (with Winget)
 winget install charmbracelet.mods
 
