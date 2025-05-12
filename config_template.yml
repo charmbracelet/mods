@@ -110,13 +110,13 @@ apis:
         aliases: ["o1-mini"]
         max-input-chars: 128000
       o3-mini:
-        aliases: ["o3m", "o3-mini"]
+        aliases: ["o3-mini", "o3m"]
         max-input-chars: 200000
   copilot:
     base-url: https://api.githubcopilot.com
     models:
       gpt-4o-2024-05-13:
-        aliases: ["4o-2024", "4o", "gpt-4o"]
+        aliases: ["4o", "4o-2024", "gpt-4o"]
         max-input-chars: 392000
       gpt-4:
         aliases: ["4"]
@@ -128,19 +128,19 @@ apis:
         aliases: ["o1-preview", "o1p"]
         max-input-chars: 128000
       claude-3.5-sonnet:
-        aliases: ["claude3.5-sonnet", "sonnet-3.5", "claude-3-5-sonnet"]
+        aliases: ["claude-3-5-sonnet", "claude3.5-sonnet", "sonnet-3.5"]
         max-input-chars: 680000
       o1-preview:
         aliases: ["o1-preview"]
         max-input-chars: 128000
       o1-mini:
-        aliases: ["o1-mini", "o1m", "o1-mini-2024-09-12"]
+        aliases: ["o1-mini", "o1-mini-2024-09-12", "o1m"]
         max-input-chars: 128000
       o3-mini:
-        aliases: ["o3m", "o3-mini"]
+        aliases: ["o3-mini", "o3m"]
         max-input-chars: 128000
       gemini-2.0-flash-001:
-        aliases: ["gm2f", "flash-2", "gemini-2-flash"]
+        aliases: ["flash-2", "gemini-2-flash", "gm2f"]
         max-input-chars: 4194304
   anthropic:
     base-url: https://api.anthropic.com/v1
@@ -148,12 +148,12 @@ apis:
     api-key-env: ANTHROPIC_API_KEY
     models: # https://docs.anthropic.com/en/docs/about-claude/models
       claude-3-7-sonnet-latest:
-        aliases: ["claude3.7-sonnet", "claude-3-7-sonnet", "sonnet-3.7"]
+        aliases: ["claude-3-7-sonnet", "claude3.7-sonnet", "sonnet-3.7"]
         max-input-chars: 680000
       claude-3-7-sonnet-20250219:
         max-input-chars: 680000
       claude-3-5-sonnet-latest:
-        aliases: ["claude3.5-sonnet", "claude-3-5-sonnet", "sonnet-3.5"]
+        aliases: ["claude-3-5-sonnet", "claude3.5-sonnet", "sonnet-3.5"]
         max-input-chars: 680000
       claude-3-5-sonnet-20241022:
         max-input-chars: 680000
@@ -172,16 +172,16 @@ apis:
   google:
     models: # https://ai.google.dev/gemini-api/docs/models/gemini
       gemini-1.5-pro-latest:
-        aliases: ["gmp", "gemini", "gemini-1.5-pro"]
+        aliases: ["gemini", "gemini-1.5-pro", "gmp"]
         max-input-chars: 392000
       gemini-1.5-flash-latest:
-        aliases: ["gmf", "flash", "gemini-1.5-flash"]
+        aliases: ["flash", "gemini-1.5-flash", "gmf"]
         max-input-chars: 392000
       gemini-2.0-flash-001:
-        aliases: ["gm2f", "flash-2", "gemini-2-flash"]
+        aliases: ["flash-2", "gemini-2-flash", "gm2f"]
         max-input-chars: 4194304
       gemini-2.0-flash-lite:
-        aliases: ["gm2fl", "flash-2-lite", "gemini-2-flash-lite"]
+        aliases: ["flash-2-lite", "gemini-2-flash-lite", "gm2fl"]
         max-input-chars: 4194304
 
   ollama:
@@ -218,7 +218,7 @@ apis:
     models: # https://console.groq.com/docs/models
     # Production models
       gemma2-9b-it:
-        aliases: ["gemma2", "gemma"]
+        aliases: ["gemma", "gemma2"]
         max-input-chars: 24500 # 8,192
       llama-3.3-70b-versatile:
         aliases: ["llama3.3", "llama3.3-70b", "llama3.3-versatile"]
@@ -242,17 +242,20 @@ apis:
         aliases: ["mixtral"]
         max-input-chars: 98000 # 32,768
       meta-llama/llama-4-scout-17b-16e-instruct:
-        aliases: ["llama4"]
+        aliases: ["llama4-scout"]
+        max-input-chars: 392000 # 128K
+      meta-llama/llama-4-maverick-17b-128e-instruct:
+        aliases: ["llama4", "llama4-maverick"]
         max-input-chars: 392000 # 128K
     # Preview models
       mistral-saba-24b:
-        aliases: ["saba", "mistral-saba", "saba-24b"]
+        aliases: ["mistral-saba", "saba", "saba-24b"]
         max-input-chars: 98000 # 32K
       qwen-2.5-coder-32b:
-        aliases: ["qwen-coder", "qwen2.5-coder", "qwen-2.5-coder"]
+        aliases: ["qwen-2.5-coder", "qwen-coder", "qwen2.5-coder"]
         max-input-chars: 392000 # 128K
       deepseek-r1-distill-qwen-32b:
-        aliases: ["deepseek-r1", "r1-qwen", "deepseek-qwen"]
+        aliases: ["deepseek-qwen", "deepseek-r1", "r1-qwen"]
         max-input-chars: 392000 # 128K
         max-completion-tokens: 49152 # 16,384
       deepseek-r1-distill-llama-70b-specdec:
@@ -274,7 +277,7 @@ apis:
         max-input-chars: 392000 # 128K
         max-completion-tokens: 24500 # 8,192
       llama-3.2-11b-vision-preview:
-        aliases: ["llama3.2-vision", "llama3.2-11b-vision"]
+        aliases: ["llama3.2-11b-vision", "llama3.2-vision"]
         max-input-chars: 392000 # 128K
         max-completion-tokens: 24500 # 8,192
       llama-3.2-90b-vision-preview:
@@ -291,7 +294,7 @@ apis:
         aliases: ["llama3.1-8b-cerebras"]
         max-input-chars: 24500
       llama3.1-70b:
-        aliases: ["llama3.1-cerebras", "llama3.1-70b-cerebras"]
+        aliases: ["llama3.1-70b-cerebras", "llama3.1-cerebras"]
         max-input-chars: 24500
 
   sambanova:
@@ -301,17 +304,17 @@ apis:
     models: # https://docs.sambanova.ai/cloud/docs/get-started/supported-models
     # Preview models
       DeepSeek-R1:
-        aliases: ["deepseek-r1-sambanova", "deepseek-r1-preview"]
+        aliases: ["deepseek-r1-preview", "deepseek-r1-sambanova"]
         max-input-chars: 24500 # 8k tokens
     # Production models
       DeepSeek-R1-Distill-Llama-70B:
-        aliases: ["deepseek-r1-llama-sambanova", "deepseek-r1-distill"]
+        aliases: ["deepseek-r1-distill", "deepseek-r1-llama-sambanova"]
         max-input-chars: 98000 # 32k tokens
       Llama-3.1-Tulu-3-405B:
         aliases: ["llama3.1-tulu", "tulu-405b"]
         max-input-chars: 49000 # 16k tokens
       Meta-Llama-3.3-70B-Instruct:
-        aliases: ["llama3.3-sambanova", "llama3.3-70b-sambanova"]
+        aliases: ["llama3.3-70b-sambanova", "llama3.3-sambanova"]
         max-input-chars: 392000 # 128k tokens
       Meta-Llama-3.2-3B-Instruct:
         aliases: ["llama3.2-3b-sambanova"]
@@ -332,19 +335,19 @@ apis:
         aliases: ["llama-guard-sambanova"]
         max-input-chars: 24500 # 8k tokens
       Llama-3.2-90B-Vision-Instruct:
-        aliases: ["llama3.2-vision-90b", "llama3.2-90b-vision-sambanova"]
+        aliases: ["llama3.2-90b-vision-sambanova", "llama3.2-vision-90b"]
         max-input-chars: 12250 # 4k tokens
       Llama-3.2-11B-Vision-Instruct:
-        aliases: ["llama3.2-vision-11b", "llama3.2-11b-vision-sambanova"]
+        aliases: ["llama3.2-11b-vision-sambanova", "llama3.2-vision-11b"]
         max-input-chars: 12250 # 4k tokens
       Qwen2.5-72B-Instruct:
-        aliases: ["qwen2.5-sambanova", "qwen2.5-72b"]
+        aliases: ["qwen2.5-72b", "qwen2.5-sambanova"]
         max-input-chars: 49000 # 16k tokens
       Qwen2.5-Coder-32B-Instruct:
-        aliases: ["qwen2.5-coder-sambanova", "qwen-coder-sambanova"]
+        aliases: ["qwen-coder-sambanova", "qwen2.5-coder-sambanova"]
         max-input-chars: 49000 # 16k tokens
       QwQ-32B-Preview:
-        aliases: ["qwq-sambanova", "qwq-32b"]
+        aliases: ["qwq-32b", "qwq-sambanova"]
         max-input-chars: 49000 # 16k tokens
 
   localai:
@@ -352,7 +355,7 @@ apis:
     base-url: http://localhost:8080
     models:
       ggml-gpt4all-j:
-        aliases: ["local", "4all"]
+        aliases: ["4all", "local"]
         max-input-chars: 12250
         fallback:
   azure:
