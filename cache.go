@@ -36,7 +36,7 @@ type Cache[T any] struct {
 // NewCache creates a new cache instance with the specified base directory and cache type.
 func NewCache[T any](baseDir string, cacheType CacheType) (*Cache[T], error) {
 	dir := filepath.Join(baseDir, string(cacheType))
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil { //nolint:gosec
 		return nil, fmt.Errorf("create cache directory: %w", err)
 	}
 	return &Cache[T]{

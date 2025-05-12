@@ -73,7 +73,7 @@ type OllamaClient struct {
 	requestBuilder OllamaRequestBuilder
 }
 
-// NewOllamaClient creates a new OllamaClient with the given configuration.
+// NewOllamaClientWithConfig creates a new OllamaClient with the given configuration.
 func NewOllamaClientWithConfig(config OllamaClientConfig) *OllamaClient {
 	return &OllamaClient{
 		config:         config,
@@ -148,7 +148,7 @@ type OllamaMessageTextDelta struct {
 	Text string `json:"text,omitempty"`
 }
 
-// OllamaMessageCompletionRequest represents the response body for the generate completion API.
+// OllamaCompletionMessageResponse represents the response body for the generate completion API.
 type OllamaCompletionMessageResponse struct {
 	Model              string                       `json:"model"`
 	CreatedAt          string                       `json:"created_at"`
@@ -162,7 +162,7 @@ type OllamaCompletionMessageResponse struct {
 	EvalDuration       int                          `json:"eval_duration"`
 }
 
-// ChatCompletionStream represents a stream for chat completion.
+// OllamaChatCompletionStream represents a stream for chat completion.
 type OllamaChatCompletionStream struct {
 	*ollamaStreamReader
 }

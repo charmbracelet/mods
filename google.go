@@ -12,7 +12,10 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-var googleHeaderData = []byte("data: ")
+var (
+	googleHeaderData = []byte("data: ")
+	errorPrefix      = []byte(`event: error`)
+)
 
 // GoogleClientConfig represents the configuration for the Google API client.
 type GoogleClientConfig struct {
@@ -52,7 +55,7 @@ type GoogleGenerationConfig struct {
 	TopK             int      `json:"topK,omitempty"`
 }
 
-// GoogleMessageCompletionRequestOptions represents the valid parameters and value options for the request.
+// GoogleMessageCompletionRequest represents the valid parameters and value options for the request.
 type GoogleMessageCompletionRequest struct {
 	Contents         []GoogleContent        `json:"contents,omitempty"`
 	GenerationConfig GoogleGenerationConfig `json:"generationConfig,omitempty"`
@@ -77,7 +80,7 @@ type GoogleClient struct {
 	requestBuilder GoogleRequestBuilder
 }
 
-// NewGoogleClient creates a new AnthropicClient with the given configuration.
+// NewGoogleClientWithConfig creates a new AnthropicClient with the given configuration.
 func NewGoogleClientWithConfig(config GoogleClientConfig) *GoogleClient {
 	return &GoogleClient{
 		config:         config,
@@ -120,7 +123,7 @@ func (c *GoogleClient) handleErrorResp(resp *http.Response) error {
 	return errRes.Error
 }
 
-// GoogleCandidates represents a response candidate generated from the model.
+// GoogleCandidate represents a response candidate generated from the model.
 type GoogleCandidate struct {
 	Content      GoogleContent `json:"content,omitempty"`
 	FinishReason string        `json:"finishReason,omitempty"`

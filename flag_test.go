@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -47,7 +47,7 @@ var flagParseErrorTests = []struct {
 func TestFlagParseError(t *testing.T) {
 	for _, tf := range flagParseErrorTests {
 		t.Run(tf.in, func(t *testing.T) {
-			err := newFlagParseError(fmt.Errorf(tf.in))
+			err := newFlagParseError(errors.New(tf.in))
 			require.Equal(t, tf.flag, err.Flag())
 			require.Equal(t, tf.reason, err.ReasonFormat())
 			require.Equal(t, tf.in, err.Error())

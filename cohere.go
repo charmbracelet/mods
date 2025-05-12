@@ -37,7 +37,7 @@ type CohereClient struct {
 	*client.Client
 }
 
-// NewCohereClient creates a new [client.Client] with the given configuration.
+// NewCohereClientWithConfig creates a new [client.Client] with the given configuration.
 func NewCohereClientWithConfig(config CohereClientConfig) *CohereClient {
 	opts := []option.RequestOption{
 		client.WithToken(config.AuthToken),
@@ -64,18 +64,6 @@ type cohereStreamReader struct {
 
 // Recv reads the next response from the stream.
 func (stream *cohereStreamReader) Recv() (response openai.ChatCompletionStreamResponse, err error) {
-	return stream.processMessages()
-}
-
-// Close closes the stream.
-func (stream *cohereStreamReader) Close() error {
-	if err := stream.Stream.Close(); err != nil {
-		return fmt.Errorf("cohere: %w", err)
-	}
-	return nil
-}
-
-func (stream *cohereStreamReader) processMessages() (openai.ChatCompletionStreamResponse, error) {
 	for {
 		message, err := stream.Stream.Recv()
 		if err != nil {
@@ -105,6 +93,14 @@ func (stream *cohereStreamReader) processMessages() (openai.ChatCompletionStream
 
 		return response, nil
 	}
+}
+
+// Close closes the stream.
+func (stream *cohereStreamReader) Close() error {
+	if err := stream.Stream.Close(); err != nil {
+		return fmt.Errorf("cohere: %w", err)
+	}
+	return nil
 }
 
 // CreateChatCompletionStream — API call to create a chat completion w/ streaming
