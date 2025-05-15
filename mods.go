@@ -445,7 +445,7 @@ func (m Mods) ensureKey(api API, defaultEnv, docsURL string) (string, error) {
 			m.Styles.InlineCode.Render("mods --settings"),
 		),
 		err: newUserErrorf(
-			"You can grab one at %s.",
+			"You can grab one at %s",
 			m.Styles.Link.Render(docsURL),
 		),
 	}
