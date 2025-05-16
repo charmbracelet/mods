@@ -213,7 +213,7 @@ func (stream *ollamaStreamReader) processLines() (openai.ChatCompletionStreamRes
 		}
 
 		if chunk.Done {
-			return openai.ChatCompletionStreamResponse{}, nil
+			return openai.ChatCompletionStreamResponse{}, io.EOF
 		}
 
 		if chunk.Message.Content == "" {
