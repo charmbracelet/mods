@@ -79,7 +79,7 @@ func TestCachedCompletionStream(t *testing.T) {
 			Role:    proto.RoleAssistant,
 			Content: "1, 2, 3, 4",
 		},
-
+		// TODO: Tool call
 		{
 			Role:    proto.RoleUser,
 			Content: "as a json array",
