@@ -16,6 +16,10 @@ import (
 
 var _ stream.Client = &Client{}
 
+type HTTPClient interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
 // Client is the openai client.
 type Client struct {
 	*openai.Client
@@ -25,15 +29,14 @@ type Client struct {
 type Config struct {
 	AuthToken  string
 	BaseURL    string
-	HTTPClient *http.Client
+	HTTPClient HTTPClient
 	APIType    string
 }
 
 // DefaultConfig returns the default configuration for the OpenAI API client.
 func DefaultConfig(authToken string) Config {
 	return Config{
-		AuthToken:  authToken,
-		HTTPClient: &http.Client{},
+		AuthToken: authToken,
 	}
 }
 

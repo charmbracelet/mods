@@ -17,6 +17,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	glamour "github.com/charmbracelet/glamour/styles"
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/mods/internal/cache"
 	"github.com/charmbracelet/x/editor"
 	mcobra "github.com/muesli/mango-cobra"
 	"github.com/muesli/roff"
@@ -68,7 +69,6 @@ func init() {
 var (
 	config = defaultConfig()
 	db     *convoDB
-	cache  *convoCache
 
 	rootCmd = &cobra.Command{
 		Use:           "mods",
@@ -115,6 +115,7 @@ var (
 				}
 			}
 
+			cache := cache.NewConversations(config.CachePath)
 			mods := newMods(stderrRenderer(), &config, db, cache)
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
@@ -333,7 +334,6 @@ func main() {
 		}
 	}
 
-	cache = newCache(config.CachePath)
 	db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
 	if err != nil {
 		handleError(modsError{err, "Could not open database."})
@@ -544,12 +544,13 @@ func deleteConversationOlderThan() error {
 		}
 	}
 
+	cache := cache.NewConversations(config.CachePath)
 	for _, c := range conversations {
 		if err := db.Delete(c.ID); err != nil {
 			return modsError{err, "Couldn't delete conversation."}
 		}
 
-		if err := cache.delete(c.ID); err != nil {
+		if err := cache.Delete(c.ID); err != nil {
 			return modsError{err, "Couldn't delete conversation."}
 		}
 
@@ -579,7 +580,8 @@ func deleteConversation(convo *Conversation) error {
 		return modsError{err, "Couldn't delete conversation."}
 	}
 
-	if err := cache.delete(convo.ID); err != nil {
+	cache := cache.NewConversations(config.CachePath)
+	if err := cache.Delete(convo.ID); err != nil {
 		return modsError{err, "Couldn't delete conversation."}
 	}
 
@@ -711,7 +713,8 @@ func saveConversation(mods *Mods) error {
 		title = firstLine(lastPrompt(mods.messages))
 	}
 
-	if err := cache.write(id, &mods.messages); err != nil {
+	cache := cache.NewConversations(config.CachePath)
+	if err := cache.Write(id, &mods.messages); err != nil {
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
 			config.cacheWriteToID,
@@ -720,7 +723,7 @@ func saveConversation(mods *Mods) error {
 		)}
 	}
 	if err := db.Save(id, title, config.Model); err != nil {
-		_ = cache.delete(id) // remove leftovers
+		_ = cache.Delete(id) // remove leftovers
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
 			config.cacheWriteToID,

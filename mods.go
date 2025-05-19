@@ -24,6 +24,8 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/mods/internal/anthropic"
+	"github.com/charmbracelet/mods/internal/cache"
+	"github.com/charmbracelet/mods/internal/copilot"
 	"github.com/charmbracelet/mods/internal/openai"
 	"github.com/charmbracelet/mods/proto"
 	"github.com/charmbracelet/mods/stream"
@@ -63,14 +65,14 @@ type Mods struct {
 	height        int
 
 	db     *convoDB
-	cache  *convoCache
+	cache  *cache.Conversations
 	Config *Config
 
 	content      []string
 	contentMutex *sync.Mutex
 }
 
-func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *convoCache) *Mods {
+func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *cache.Conversations) *Mods {
 	gr, _ := glamour.NewTermRenderer(
 		glamour.WithEnvironmentConfig(),
 		glamour.WithWordWrap(cfg.WordWrap),
@@ -360,20 +362,18 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				cfg.User = api.User
 			}
 		case "copilot":
-			ghCopilotHTTPClient := newCopilotHTTPClient()
-			accessToken, err := getCopilotAccessToken(ghCopilotHTTPClient.client)
+			cli := copilot.NewClient(config.CachePath)
+			token, err := cli.Auth()
 			if err != nil {
 				return modsError{err, "Copilot authentication failed"}
 			}
 
 			ccfg = openai.Config{
-				AuthToken: accessToken.Token,
+				AuthToken: token.Token,
 				BaseURL:   api.BaseURL,
 			}
-			// TODO: port this
-			// ccfg.HTTPClient = ghCopilotHTTPClient
-			// ccfg.HTTPClient.(*copilotHTTPClient).AccessToken = &accessToken
-			ccfg.BaseURL = ordered.First(api.BaseURL, accessToken.Endpoints.API)
+			ccfg.HTTPClient = cli
+			ccfg.BaseURL = ordered.First(api.BaseURL, token.Endpoints.API)
 
 		default:
 			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
@@ -501,7 +501,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 	return func() tea.Msg {
 		if msg.stream.Next() {
 			chunk, err := msg.stream.Current()
-			if err != nil {
+			if err != nil && !errors.Is(err, stream.ErrNoContent) {
 				_ = msg.stream.Close()
 				return modsError{err, "There was an error when streaming the API response."}
 			}
@@ -633,7 +633,7 @@ func noOmitFloat(f float64) float64 {
 func (m *Mods) readFromCache() tea.Cmd {
 	return func() tea.Msg {
 		var messages []proto.Message
-		if err := m.cache.read(m.Config.cacheReadFromID, &messages); err != nil {
+		if err := m.cache.Read(m.Config.cacheReadFromID, &messages); err != nil {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 

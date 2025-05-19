@@ -140,7 +140,7 @@ func (s *Stream) Current() (proto.Chunk, error) {
 			}, nil
 		}
 	}
-	return proto.Chunk{}, nil
+	return proto.Chunk{}, stream.ErrNoContent
 }
 
 // Err implements stream.Stream.

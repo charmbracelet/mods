@@ -1,4 +1,4 @@
-package main
+package cache
 
 import (
 	"bytes"
@@ -17,13 +17,13 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func TestCache(t *testing.T) {
 	t.Run("read non-existent", func(t *testing.T) {
-		cache := newCache(t.TempDir())
+		cache := Conversations(t.TempDir())
 		err := cache.read("super-fake", &[]proto.Message{})
 		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("write", func(t *testing.T) {
-		cache := newCache(t.TempDir())
+		cache := Conversations(t.TempDir())
 		messages := []proto.Message{
 			{
 				Role:    proto.RoleUser,
@@ -43,7 +43,7 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		cache := newCache(t.TempDir())
+		cache := Conversations(t.TempDir())
 		cache.write("fake", &[]proto.Message{})
 		require.NoError(t, cache.delete("fake"))
 		require.ErrorIs(t, cache.read("fake", nil), os.ErrNotExist)
@@ -51,15 +51,15 @@ func TestCache(t *testing.T) {
 
 	t.Run("invalid id", func(t *testing.T) {
 		t.Run("write", func(t *testing.T) {
-			cache := newCache(t.TempDir())
+			cache := Conversations(t.TempDir())
 			require.ErrorIs(t, cache.write("", nil), errInvalidID)
 		})
 		t.Run("delete", func(t *testing.T) {
-			cache := newCache(t.TempDir())
+			cache := Conversations(t.TempDir())
 			require.ErrorIs(t, cache.delete(""), errInvalidID)
 		})
 		t.Run("read", func(t *testing.T) {
-			cache := newCache(t.TempDir())
+			cache := Conversations(t.TempDir())
 			require.ErrorIs(t, cache.read("", nil), errInvalidID)
 		})
 	})
