@@ -9,7 +9,10 @@ import (
 func lastPrompt(messages []proto.Message) string {
 	var result string
 	for _, msg := range messages {
-		if msg.Role != "user" {
+		if msg.Role != proto.RoleUser {
+			continue
+		}
+		if msg.Content == "" {
 			continue
 		}
 		result = msg.Content

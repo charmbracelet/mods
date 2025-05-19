@@ -1,12 +1,17 @@
 package stream
 
 import (
+	"context"
 	"errors"
 
 	"github.com/charmbracelet/mods/proto"
 )
 
 var ErrNoContent = errors.New("no content")
+
+type Client interface {
+	Request(context.Context, proto.Request) Stream
+}
 
 type Stream interface {
 	// returns false when no more messages, caller should run [Stream.CallTolls()]

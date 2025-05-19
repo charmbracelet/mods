@@ -14,6 +14,8 @@ import (
 	"github.com/openai/openai-go/shared"
 )
 
+var _ stream.Client = &Client{}
+
 // Client is the openai client.
 type Client struct {
 	*openai.Client
@@ -61,7 +63,7 @@ func New(config Config) *Client {
 }
 
 // Request makes a new request and returns a stream.
-func (c *Client) Request(ctx context.Context, request proto.Request) *Stream {
+func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stream {
 	body := openai.ChatCompletionNewParams{
 		Model:    request.Model,
 		User:     openai.String(request.User),

@@ -23,6 +23,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/mods/internal/anthropic"
 	"github.com/charmbracelet/mods/internal/openai"
 	"github.com/charmbracelet/mods/proto"
 	"github.com/charmbracelet/mods/stream"
@@ -265,7 +266,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var mod Model
 		var api API
 		var ccfg openai.Config
-		var accfg AnthropicClientConfig
+		var accfg anthropic.Config
 		var cccfg CohereClientConfig
 		var occfg OllamaClientConfig
 		var gccfg GoogleClientConfig
@@ -324,7 +325,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "Anthropic authentication failed"}
 			}
-			accfg = DefaultAnthropicConfig(key)
+			accfg = anthropic.DefaultConfig(key)
 			if api.BaseURL != "" {
 				accfg.BaseURL = api.BaseURL
 			}
@@ -409,9 +410,39 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			cfg.MaxTokens = 0
 		}
 
+		ctx, cancel := context.WithCancel(context.Background())
+		m.cancelRequest = cancel
+
+		tools, err := mcpTools(ctx)
+		if err != nil {
+			return modsError{err, "Could not setup MCP"}
+		}
+
+		if err := m.setupStreamContext(content, mod); err != nil {
+			return err
+		}
+
+		request := proto.Request{
+			Messages:    m.messages,
+			API:         mod.API,
+			Model:       mod.Name,
+			User:        cfg.User,
+			Temperature: &cfg.Temperature,
+			TopP:        &cfg.TopP,
+			TopK:        &cfg.TopK,
+			Stop:        cfg.Stop,
+			Tools:       tools,
+			ToolCaller:  toolCall,
+		}
+		if cfg.MaxTokens > 0 {
+			request.MaxTokens = &cfg.MaxTokens
+		}
+
+		var client stream.Client
+
 		switch mod.API {
 		case "anthropic":
-			return m.createAnthropicStream(content, accfg, mod)
+			client = anthropic.New(accfg)
 		case "google":
 			return m.createGoogleStream(content, gccfg, mod)
 		case "cohere":
@@ -419,40 +450,14 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		case "ollama":
 			return m.createOllamaStream(content, occfg, mod)
 		default:
-			client := openai.New(ccfg)
-			ctx, cancel := context.WithCancel(context.Background())
-			m.cancelRequest = cancel
-
-			tools, err := mcpTools(ctx)
-			if err != nil {
-				return modsError{err, "Could not setup MCP"}
-			}
-
-			if err := m.setupStreamContext(content, mod); err != nil {
-				return err
-			}
-
-			request := proto.Request{
-				Messages:    m.messages,
-				API:         mod.API,
-				Model:       mod.Name,
-				User:        cfg.User,
-				Temperature: &cfg.Temperature,
-				TopP:        &cfg.TopP,
-				TopK:        &cfg.TopK,
-				Stop:        cfg.Stop,
-				Tools:       tools,
-				ToolCaller:  toolCall,
-			}
-			if cfg.MaxTokens > 0 {
-				request.MaxTokens = &cfg.MaxTokens
-			}
+			client = openai.New(ccfg)
 			if cfg.Format && config.FormatAs == "json" {
 				request.ResponseFormat = &config.FormatAs
 			}
-			stream := client.Request(ctx, request)
-			return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 		}
+
+		stream := client.Request(ctx, request)
+		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 	}
 }
 
@@ -514,9 +519,9 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		results := msg.stream.CallTools()
 		toolMsg := completionOutput{stream: msg.stream}
 		for _, call := range results {
-			toolMsg.content += fmt.Sprintf("> Ran tool: `%s`", call.Name)
+			toolMsg.content += fmt.Sprintf("\n> Ran tool: `%s`", call.Name)
 			if call.Err != nil {
-				toolMsg.content += fmt.Sprintf(" - failed: `%s`", call.Err.Error())
+				toolMsg.content += fmt.Sprintf("**Tool failed**: ```\n%s\n```", call.Err.Error())
 			}
 			toolMsg.content += "\n\n"
 		}
