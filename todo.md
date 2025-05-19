@@ -12,7 +12,7 @@ Create a stream package with the implementations for each provider:
 
 ```go
 type Stream interface {
-  // returns false when no more messages, caller should run [Stream.CallTolls()]
+  // returns false when no more messages, caller should run [Stream.CallTools()]
   // once that happens, and then check for this again
   Next() bool
 
