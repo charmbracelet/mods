@@ -2,12 +2,10 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"flag"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -68,50 +66,36 @@ func TestCache(t *testing.T) {
 }
 
 func TestCachedCompletionStream(t *testing.T) {
-	stream := cachedCompletionStream{
-		messages: []proto.Message{
-			{
-				Role:    proto.RoleSystem,
-				Content: "you are a medieval king",
-			},
-			{
-				Role:    proto.RoleUser,
-				Content: "first 4 natural numbers",
-			},
-			{
-				Role:    proto.RoleAssistant,
-				Content: "1, 2, 3, 4",
-			},
-
-			{
-				Role:    proto.RoleUser,
-				Content: "as a json array",
-			},
-			{
-				Role:    proto.RoleAssistant,
-				Content: "[ 1, 2, 3, 4 ]",
-			},
-			{
-				Role:    proto.RoleAssistant,
-				Content: "something from an assistant",
-			},
+	messages := []proto.Message{
+		{
+			Role:    proto.RoleSystem,
+			Content: "you are a medieval king",
 		},
-	}
-	t.Cleanup(func() { require.NoError(t, stream.Close()) })
+		{
+			Role:    proto.RoleUser,
+			Content: "first 4 natural numbers",
+		},
+		{
+			Role:    proto.RoleAssistant,
+			Content: "1, 2, 3, 4",
+		},
 
-	var output []string
-
-	for stream.Next() {
-		resp, err := stream.Current()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		require.NoError(t, err)
-		output = append(output, resp.Content)
+		{
+			Role:    proto.RoleUser,
+			Content: "as a json array",
+		},
+		{
+			Role:    proto.RoleAssistant,
+			Content: "[ 1, 2, 3, 4 ]",
+		},
+		{
+			Role:    proto.RoleAssistant,
+			Content: "something from an assistant",
+		},
 	}
 
 	golden := filepath.Join("testdata", t.Name()+".md.golden")
-	content := strings.Join(output, "\n")
+	content := proto.Messages(messages).String()
 	if *update {
 		require.NoError(t, os.WriteFile(golden, []byte(content), 0o644))
 	}
