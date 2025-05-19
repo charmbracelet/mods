@@ -17,13 +17,13 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func TestCache(t *testing.T) {
 	t.Run("read non-existent", func(t *testing.T) {
-		cache := Conversations(t.TempDir())
-		err := cache.read("super-fake", &[]proto.Message{})
+		cache := NewConversations(t.TempDir())
+		err := cache.Read("super-fake", &[]proto.Message{})
 		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("write", func(t *testing.T) {
-		cache := Conversations(t.TempDir())
+		cache := NewConversations(t.TempDir())
 		messages := []proto.Message{
 			{
 				Role:    proto.RoleUser,
@@ -34,33 +34,33 @@ func TestCache(t *testing.T) {
 				Content: "1, 2, 3, 4",
 			},
 		}
-		require.NoError(t, cache.write("fake", &messages))
+		require.NoError(t, cache.Write("fake", &messages))
 
 		result := []proto.Message{}
-		require.NoError(t, cache.read("fake", &result))
+		require.NoError(t, cache.Read("fake", &result))
 
 		require.ElementsMatch(t, messages, result)
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		cache := Conversations(t.TempDir())
-		cache.write("fake", &[]proto.Message{})
-		require.NoError(t, cache.delete("fake"))
-		require.ErrorIs(t, cache.read("fake", nil), os.ErrNotExist)
+		cache := NewConversations(t.TempDir())
+		cache.Write("fake", &[]proto.Message{})
+		require.NoError(t, cache.Delete("fake"))
+		require.ErrorIs(t, cache.Read("fake", nil), os.ErrNotExist)
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
 		t.Run("write", func(t *testing.T) {
-			cache := Conversations(t.TempDir())
-			require.ErrorIs(t, cache.write("", nil), errInvalidID)
+			cache := NewConversations(t.TempDir())
+			require.ErrorIs(t, cache.Write("", nil), errInvalidID)
 		})
 		t.Run("delete", func(t *testing.T) {
-			cache := Conversations(t.TempDir())
-			require.ErrorIs(t, cache.delete(""), errInvalidID)
+			cache := NewConversations(t.TempDir())
+			require.ErrorIs(t, cache.Delete(""), errInvalidID)
 		})
 		t.Run("read", func(t *testing.T) {
-			cache := Conversations(t.TempDir())
-			require.ErrorIs(t, cache.read("", nil), errInvalidID)
+			cache := NewConversations(t.TempDir())
+			require.ErrorIs(t, cache.Read("", nil), errInvalidID)
 		})
 	})
 }
@@ -108,8 +108,7 @@ func TestCachedCompletionStream(t *testing.T) {
 
 func TestExpiringCache(t *testing.T) {
 	t.Run("write and read", func(t *testing.T) {
-		config.CachePath = t.TempDir()
-		cache, err := NewExpiringCache[string]()
+		cache, err := NewExpiring[string](t.TempDir())
 		require.NoError(t, err)
 
 		// Write a value with expiry
@@ -136,8 +135,7 @@ func TestExpiringCache(t *testing.T) {
 	})
 
 	t.Run("expired token", func(t *testing.T) {
-		config.CachePath = t.TempDir()
-		cache, err := NewExpiringCache[string]()
+		cache, err := NewExpiring[string](t.TempDir())
 		require.NoError(t, err)
 
 		// Write a value that's already expired
@@ -158,8 +156,7 @@ func TestExpiringCache(t *testing.T) {
 	})
 
 	t.Run("overwrite token", func(t *testing.T) {
-		config.CachePath = t.TempDir()
-		cache, err := NewExpiringCache[string]()
+		cache, err := NewExpiring[string](t.TempDir())
 		require.NoError(t, err)
 
 		// Write initial value
