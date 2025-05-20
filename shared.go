@@ -12,10 +12,6 @@ import (
 
 type httpHeader http.Header
 
-const (
-	defaultEmptyMessagesLimit uint = 300
-)
-
 // ErrTooManyEmptyStreamMessages represents an error when a stream has sent too many empty messages.
 var ErrTooManyEmptyStreamMessages = errors.New("stream has sent too many empty messages")
 

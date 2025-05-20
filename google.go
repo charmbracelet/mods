@@ -13,6 +13,8 @@ import (
 	"github.com/openai/openai-go"
 )
 
+const defaultEmptyMessagesLimit uint = 300
+
 var (
 	googleHeaderData = []byte("data: ")
 	errorPrefix      = []byte(`event: error`)

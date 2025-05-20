@@ -26,6 +26,7 @@ import (
 	"github.com/charmbracelet/mods/internal/anthropic"
 	"github.com/charmbracelet/mods/internal/cache"
 	"github.com/charmbracelet/mods/internal/copilot"
+	"github.com/charmbracelet/mods/internal/ollama"
 	"github.com/charmbracelet/mods/internal/openai"
 	"github.com/charmbracelet/mods/proto"
 	"github.com/charmbracelet/mods/stream"
@@ -270,7 +271,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var ccfg openai.Config
 		var accfg anthropic.Config
 		var cccfg CohereClientConfig
-		var occfg OllamaClientConfig
+		var occfg ollama.Config
 		var gccfg GoogleClientConfig
 
 		cfg := m.Config
@@ -318,7 +319,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		switch mod.API {
 		case "ollama":
-			occfg = DefaultOllamaConfig()
+			occfg = ollama.DefaultConfig()
 			if api.BaseURL != "" {
 				occfg.BaseURL = api.BaseURL
 			}
@@ -448,12 +449,16 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		case "cohere":
 			return m.createCohereStream(content, cccfg, mod)
 		case "ollama":
-			return m.createOllamaStream(content, occfg, mod)
+			client, err = ollama.New(occfg)
 		default:
 			client = openai.New(ccfg)
 			if cfg.Format && config.FormatAs == "json" {
 				request.ResponseFormat = &config.FormatAs
 			}
+		}
+
+		if err != nil {
+			return modsError{err, "Could not setup client"}
 		}
 
 		stream := client.Request(ctx, request)

@@ -8,44 +8,6 @@ import (
 	"github.com/charmbracelet/mods/proto"
 )
 
-func (m *Mods) createOllamaStream(content string, occfg OllamaClientConfig, mod Model) tea.Msg {
-	panic("todo")
-	// cfg := m.Config
-	//
-	// client := NewOllamaClientWithConfig(occfg)
-	// ctx, cancel := context.WithCancel(context.Background())
-	// m.cancelRequest = cancel
-	//
-	// if err := m.setupStreamContext(content, mod); err != nil {
-	// 	return err
-	// }
-	//
-	// req := OllamaMessageCompletionRequest{
-	// 	Model:    mod.Name,
-	// 	Messages: m.messages,
-	// 	Stream:   true,
-	// 	Options: OllamaMessageCompletionRequestOptions{
-	// 		Temperature: noOmitFloat(cfg.Temperature),
-	// 		TopP:        noOmitFloat(cfg.TopP),
-	// 	},
-	// }
-	//
-	// if len(cfg.Stop) > 0 {
-	// 	req.Options.Stop = cfg.Stop[0]
-	// }
-	//
-	// if cfg.MaxTokens > 0 {
-	// 	req.Options.NumCtx = cfg.MaxTokens
-	// }
-	//
-	// stream, err := client.CreateChatCompletionStream(ctx, req)
-	// if err != nil {
-	// 	return m.handleRequestError(err, mod, content)
-	// }
-	//
-	// return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
-}
-
 func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod Model) tea.Msg {
 	panic("todo")
 	// cfg := m.Config
