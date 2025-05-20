@@ -47,7 +47,7 @@ func fromProtoMessages(input []proto.Message) []openai.ChatCompletionMessagePara
 }
 
 func toProtoMessages(input []openai.ChatCompletionMessageParamUnion) []proto.Message {
-	var messages []proto.Message
+	messages := make([]proto.Message, 0, len(input))
 	for _, in := range input {
 		msg := proto.Message{
 			Role: msgRole(in),

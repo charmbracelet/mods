@@ -55,7 +55,6 @@ type Mods struct {
 	Error         *modsError
 	state         state
 	retries       int
-	system        string
 	renderer      *lipgloss.Renderer
 	glam          *glamour.TermRenderer
 	glamViewport  viewport.Model
@@ -349,7 +348,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
-		case "azure", "azure-ad":
+		case "azure", "azure-ad": //nolint:goconst
 			key, err := m.ensureKey(api, "AZURE_OPENAI_KEY", "https://aka.ms/oai/access")
 			if err != nil {
 				return modsError{err, "Azure authentication failed"}
@@ -365,7 +364,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				cfg.User = api.User
 			}
 		case "copilot":
-			cli := copilot.NewClient(config.CachePath)
+			cli := copilot.New(config.CachePath)
 			token, err := cli.Auth()
 			if err != nil {
 				return modsError{err, "Copilot authentication failed"}
@@ -620,19 +619,6 @@ func (m *Mods) readStdinCmd() tea.Msg {
 		return completionInput{increaseIndent(string(stdinBytes))}
 	}
 	return completionInput{""}
-}
-
-// noOmitFloat converts a 0.0 value to a float usable by the OpenAI client
-// library, which currently uses Float32 fields in the request struct with the
-// omitempty tag. This means we need to use math.SmallestNonzeroFloat32 instead
-// of 0.0 so it doesn't get stripped from the request and replaced server side
-// with the default values.
-// Issue: https://github.com/sashabaranov/go-openai/issues/9
-func noOmitFloat(f float64) float64 {
-	if f == 0.0 {
-		return math.SmallestNonzeroFloat64
-	}
-	return f
 }
 
 func (m *Mods) readFromCache() tea.Cmd {

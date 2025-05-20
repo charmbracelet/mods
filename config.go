@@ -194,7 +194,7 @@ type Config struct {
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
 }
 
-// MCPServerConfig holds configuration for an MCP server
+// MCPServerConfig holds configuration for an MCP server.
 type MCPServerConfig struct {
 	Command string   `yaml:"command"`
 	Env     []string `yaml:"env"`

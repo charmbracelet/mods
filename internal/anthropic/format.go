@@ -51,7 +51,7 @@ func fromProtoMessages(input []proto.Message) (system []anthropic.TextBlockParam
 }
 
 func toProtoMessages(input []anthropic.MessageParam) []proto.Message {
-	var messages []proto.Message
+	messages := make([]proto.Message, 0, len(input))
 	for _, in := range input {
 		msg := proto.Message{
 			Role: string(in.Role),

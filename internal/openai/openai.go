@@ -1,3 +1,4 @@
+// Package openai implements [stream.Stream] for OpenAI.
 package openai
 
 import (
@@ -16,10 +17,6 @@ import (
 
 var _ stream.Client = &Client{}
 
-type HTTPClient interface {
-	Do(*http.Request) (*http.Response, error)
-}
-
 // Client is the openai client.
 type Client struct {
 	*openai.Client
@@ -29,8 +26,10 @@ type Client struct {
 type Config struct {
 	AuthToken  string
 	BaseURL    string
-	HTTPClient HTTPClient
-	APIType    string
+	HTTPClient interface {
+		Do(*http.Request) (*http.Response, error)
+	}
+	APIType string
 }
 
 // DefaultConfig returns the default configuration for the OpenAI API client.
@@ -105,6 +104,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 	return s
 }
 
+// Stream openai stream.
 type Stream struct {
 	done     bool
 	request  openai.ChatCompletionNewParams
@@ -116,8 +116,9 @@ type Stream struct {
 
 // CallTools implements stream.Stream.
 func (s *Stream) CallTools() []proto.ToolCallStatus {
-	var result []proto.ToolCallStatus
-	for _, call := range s.message.Choices[0].Message.ToolCalls {
+	calls := s.message.Choices[0].Message.ToolCalls
+	result := make([]proto.ToolCallStatus, 0, len(calls))
+	for _, call := range calls {
 		content, err := s.toolCall(call.Function.Name, []byte(call.Function.Arguments))
 		s.request.Messages = append(s.request.Messages, openai.ToolMessage(content, call.ID))
 		result = append(result, proto.ToolCallStatus{

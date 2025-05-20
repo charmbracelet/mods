@@ -1,3 +1,4 @@
+// Package copilot provides a client for GitHub Copilot's API.
 package copilot
 
 import (
@@ -39,19 +40,22 @@ type AccessToken struct {
 	} `json:"error_details,omitempty"`
 }
 
+// Client copilot client.
 type Client struct {
 	client      *http.Client
 	cache       string
 	AccessToken *AccessToken
 }
 
-func NewClient(cacheDir string) *Client {
+// New new copilot client.
+func New(cacheDir string) *Client {
 	return &Client{
 		client: &http.Client{},
 		cache:  cacheDir,
 	}
 }
 
+// Do implements http.RoundTripper.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Editor-Version", copilotEditorVersion)
@@ -128,6 +132,7 @@ func extractCopilotTokenFromFile(path string) (string, error) {
 	return "", fmt.Errorf("no token found in %s", path)
 }
 
+// Auth authenticates the user and retrieves an access token.
 func (c *Client) Auth() (AccessToken, error) {
 	cache, err := cache.NewExpiring[AccessToken](c.cache)
 	if err == nil {

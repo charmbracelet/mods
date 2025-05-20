@@ -1,3 +1,4 @@
+// Package anthropic implements [stream.Stream] for Anthropic.
 package anthropic
 
 import (
@@ -31,9 +32,9 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 	}
 
 	if request.MaxTokens != nil {
-		body.MaxTokens = int64(*request.MaxTokens)
+		body.MaxTokens = *request.MaxTokens
 	} else {
-		body.MaxTokens = 4096 // TODO: double check this
+		body.MaxTokens = 4096
 	}
 
 	if request.Temperature != nil {
@@ -72,6 +73,7 @@ func DefaultConfig(authToken string) Config {
 	}
 }
 
+// New anthropic client with the given configuration.
 func New(config Config) *Client {
 	opts := []option.RequestOption{
 		option.WithAPIKey(config.AuthToken),

@@ -36,7 +36,7 @@ func fromProtoMessages(input []proto.Message) (history []*cohere.Message, messag
 		history = messages[:len(messages)-1]
 	}
 	message = messages[len(messages)-1].User.Message
-	return
+	return history, message
 }
 
 func toProtoMessages(input []*cohere.Message) []proto.Message {

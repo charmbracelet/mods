@@ -1,3 +1,4 @@
+// Package google implements [stream.Stream] for Google.
 package google
 
 import (
@@ -107,7 +108,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 	}
 
 	if request.MaxTokens != nil {
-		body.GenerationConfig.MaxOutputTokens = uint(*request.MaxTokens)
+		body.GenerationConfig.MaxOutputTokens = uint(*request.MaxTokens) //nolint:gosec
 	}
 
 	req, err := c.newRequest(ctx, http.MethodPost, c.config.BaseURL, withBody(body))
@@ -160,19 +161,20 @@ func (c *Client) handleErrorResp(resp *http.Response) error {
 	return &errRes
 }
 
-// GoogleCandidate represents a response candidate generated from the model.
-type GoogleCandidate struct {
+// Candidate represents a response candidate generated from the model.
+type Candidate struct {
 	Content      Content `json:"content,omitempty"`
 	FinishReason string  `json:"finishReason,omitempty"`
 	TokenCount   uint    `json:"tokenCount,omitempty"`
 	Index        uint    `json:"index,omitempty"`
 }
 
-// GoogleCompletionMessageResponse represents a response to an Google completion message.
-type GoogleCompletionMessageResponse struct {
-	Candidates []GoogleCandidate `json:"candidates,omitempty"`
+// CompletionMessageResponse represents a response to an Google completion message.
+type CompletionMessageResponse struct {
+	Candidates []Candidate `json:"candidates,omitempty"`
 }
 
+// Stream struct represents a stream of messages from the Google API.
 type Stream struct {
 	isFinished bool
 
@@ -244,7 +246,7 @@ func (s *Stream) Current() (proto.Chunk, error) {
 
 		noPrefixLine := bytes.TrimPrefix(noSpaceLine, googleHeaderData)
 
-		var chunk GoogleCompletionMessageResponse
+		var chunk CompletionMessageResponse
 		unmarshalErr := s.unmarshaler.Unmarshal(noPrefixLine, &chunk)
 		if unmarshalErr != nil {
 			return proto.Chunk{}, fmt.Errorf("googleStreamReader.processLines: %w", unmarshalErr)

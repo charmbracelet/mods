@@ -1,3 +1,4 @@
+// Package cohere implements [stream.Stream] for Cohere.
 package cohere
 
 import (
@@ -33,6 +34,7 @@ func DefaultConfig(authToken string) Config {
 	}
 }
 
+// Client cohere client.
 type Client struct {
 	*client.Client
 }
@@ -80,12 +82,12 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 	return s
 }
 
+// Stream is a cohere stream.
 type Stream struct {
 	stream  *core.Stream[cohere.StreamedChatResponse]
 	request *cohere.ChatStreamRequest
 	err     error
 	done    bool
-	factory func()
 	message *cohere.Message
 }
 

@@ -8,10 +8,12 @@ import (
 	"github.com/charmbracelet/mods/proto"
 )
 
+// Conversations is the conversation cache.
 type Conversations struct {
 	cache *Cache[[]proto.Message]
 }
 
+// NewConversations creates a new conversation cache.
 func NewConversations(dir string) *Conversations {
 	cache, err := New[[]proto.Message](dir, ConversationCache)
 	if err != nil {
@@ -34,6 +36,7 @@ func (c *Conversations) Write(id string, messages *[]proto.Message) error {
 	})
 }
 
+// Delete a conversation.
 func (c *Conversations) Delete(id string) error {
 	return c.cache.Delete(id)
 }

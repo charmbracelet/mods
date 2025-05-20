@@ -29,7 +29,7 @@ func fromMCPTools(mcps map[string][]mcp.Tool) []api.Tool {
 }
 
 func fromProtoMessages(input []proto.Message) []api.Message {
-	var messages []api.Message
+	messages := make([]api.Message, 0, len(input))
 	for _, msg := range input {
 		messages = append(messages, api.Message{
 			Content: msg.Content,
@@ -40,7 +40,7 @@ func fromProtoMessages(input []proto.Message) []api.Message {
 }
 
 func toProtoMessages(input []api.Message) []proto.Message {
-	var messages []proto.Message
+	messages := make([]proto.Message, 0, len(input))
 	for _, in := range input {
 		msg := proto.Message{
 			Role:    in.Role,

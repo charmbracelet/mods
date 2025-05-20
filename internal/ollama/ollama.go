@@ -1,3 +1,4 @@
+// Package ollama implements [stream.Stream] for Ollama.
 package ollama
 
 import (
@@ -27,6 +28,7 @@ func DefaultConfig() Config {
 	}
 }
 
+// Client ollama client.
 type Client struct {
 	*api.Client
 }
@@ -84,6 +86,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 	return s
 }
 
+// Stream ollama stream.
 type Stream struct {
 	request  api.ChatRequest
 	err      error

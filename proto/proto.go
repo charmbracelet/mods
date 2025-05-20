@@ -1,3 +1,4 @@
+// Package proto shared protocol.
 package proto
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+// Roles.
 const (
 	RoleSystem    = "system"
 	RoleUser      = "user"
