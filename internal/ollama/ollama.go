@@ -71,6 +71,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 	}
 	s.factory = func() {
 		s.done = false
+		s.err = nil
 		s.respCh = make(chan api.ChatResponse)
 		go func() {
 			if err := c.Chat(ctx, &body, s.fn); err != nil {
@@ -147,6 +148,9 @@ func (s *Stream) Messages() []proto.Message { return toProtoMessages(s.request.M
 
 // Next implements stream.Stream.
 func (s *Stream) Next() bool {
+	if s.err != nil {
+		return false
+	}
 	if s.done {
 		s.done = false
 		s.factory()
