@@ -1,4 +1,4 @@
-package main
+package google
 
 import (
 	"bytes"
@@ -69,13 +69,13 @@ func (b *HTTPRequestBuilder) Build(
 }
 
 type requestOptions struct {
-	body   any
+	body   MessageCompletionRequest
 	header http.Header
 }
 
 type requestOption func(*requestOptions)
 
-func withBody(body any) requestOption {
+func withBody(body MessageCompletionRequest) requestOption {
 	return func(args *requestOptions) {
 		args.body = body
 	}
@@ -90,42 +90,6 @@ type ErrorAccumulator interface {
 // Unmarshaler is an interface for unmarshalling bytes.
 type Unmarshaler interface {
 	Unmarshal(data []byte, v any) error
-}
-
-type errorBuffer interface {
-	io.Writer
-	Len() int
-	Bytes() []byte
-}
-
-// DefaultErrorAccumulator is a default implementation of ErrorAccumulator.
-type DefaultErrorAccumulator struct {
-	Buffer errorBuffer
-}
-
-// NewErrorAccumulator creates a new ErrorAccumulator.
-func NewErrorAccumulator() ErrorAccumulator {
-	return &DefaultErrorAccumulator{
-		Buffer: &bytes.Buffer{},
-	}
-}
-
-// Write writes data to the error accumulator.
-func (e *DefaultErrorAccumulator) Write(p []byte) error {
-	_, err := e.Buffer.Write(p)
-	if err != nil {
-		return fmt.Errorf("error accumulator write error, %w", err)
-	}
-	return nil
-}
-
-// Bytes returns the accumulated error bytes.
-func (e *DefaultErrorAccumulator) Bytes() (errBytes []byte) {
-	if e.Buffer.Len() == 0 {
-		return
-	}
-	errBytes = e.Buffer.Bytes()
-	return
 }
 
 func isFailureStatusCode(resp *http.Response) bool {

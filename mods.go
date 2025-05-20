@@ -27,6 +27,7 @@ import (
 	"github.com/charmbracelet/mods/internal/cache"
 	"github.com/charmbracelet/mods/internal/cohere"
 	"github.com/charmbracelet/mods/internal/copilot"
+	"github.com/charmbracelet/mods/internal/google"
 	"github.com/charmbracelet/mods/internal/ollama"
 	"github.com/charmbracelet/mods/internal/openai"
 	"github.com/charmbracelet/mods/proto"
@@ -273,7 +274,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var accfg anthropic.Config
 		var cccfg cohere.Config
 		var occfg ollama.Config
-		var gccfg GoogleClientConfig
+		var gccfg google.Config
 
 		cfg := m.Config
 		mod, ok = cfg.Models[cfg.Model]
@@ -338,7 +339,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "Google authentication failed"}
 			}
-			gccfg = DefaultGoogleConfig(mod.Name, key)
+			gccfg = google.DefaultConfig(mod.Name, key)
 		case "cohere":
 			key, err := m.ensureKey(api, "COHERE_API_KEY", "https://dashboard.cohere.com/api-keys")
 			if err != nil {
@@ -445,7 +446,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		case "anthropic":
 			client = anthropic.New(accfg)
 		case "google":
-			return m.createGoogleStream(content, gccfg, mod)
+			client = google.New(gccfg)
 		case "cohere":
 			client = cohere.New(cccfg)
 		case "ollama":
