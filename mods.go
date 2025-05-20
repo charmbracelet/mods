@@ -25,6 +25,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/mods/internal/anthropic"
 	"github.com/charmbracelet/mods/internal/cache"
+	"github.com/charmbracelet/mods/internal/cohere"
 	"github.com/charmbracelet/mods/internal/copilot"
 	"github.com/charmbracelet/mods/internal/ollama"
 	"github.com/charmbracelet/mods/internal/openai"
@@ -270,7 +271,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var api API
 		var ccfg openai.Config
 		var accfg anthropic.Config
-		var cccfg CohereClientConfig
+		var cccfg cohere.Config
 		var occfg ollama.Config
 		var gccfg GoogleClientConfig
 
@@ -343,7 +344,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if err != nil {
 				return modsError{err, "Cohere authentication failed"}
 			}
-			cccfg = DefaultCohereConfig(key)
+			cccfg = cohere.DefaultConfig(key)
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
@@ -440,14 +441,13 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		var client stream.Client
-
 		switch mod.API {
 		case "anthropic":
 			client = anthropic.New(accfg)
 		case "google":
 			return m.createGoogleStream(content, gccfg, mod)
 		case "cohere":
-			return m.createCohereStream(content, cccfg, mod)
+			client = cohere.New(cccfg)
 		case "ollama":
 			client, err = ollama.New(occfg)
 		default:
@@ -456,7 +456,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				request.ResponseFormat = &config.FormatAs
 			}
 		}
-
 		if err != nil {
 			return modsError{err, "Could not setup client"}
 		}

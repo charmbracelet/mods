@@ -78,69 +78,6 @@ func (m *Mods) createGoogleStream(content string, gccfg GoogleClientConfig, mod 
 	// return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
 }
 
-func (m *Mods) createCohereStream(content string, cccfg CohereClientConfig, mod Model) tea.Msg {
-	panic("todo")
-	// cfg := m.Config
-	//
-	// client := NewCohereClientWithConfig(cccfg)
-	// ctx, cancel := context.WithCancel(context.Background())
-	// m.cancelRequest = cancel
-	//
-	// if err := m.setupStreamContext(content, mod); err != nil {
-	// 	return err
-	// }
-	//
-	// var messages []*cohere.Message
-	// for _, message := range m.messages {
-	// 	switch message.Role {
-	// 	case "system":
-	// 		// For system, it is recommended to use the `preamble` field
-	// 		// rather than a "SYSTEM" role message
-	// 		m.system += message.Content + "\n"
-	// 	case "assistant":
-	// 		messages = append(messages, &cohere.Message{
-	// 			Role: "CHATBOT",
-	// 			Chatbot: &cohere.ChatMessage{
-	// 				Message: message.Content,
-	// 			},
-	// 		})
-	// 	case "user":
-	// 		messages = append(messages, &cohere.Message{
-	// 			Role: "USER",
-	// 			User: &cohere.ChatMessage{
-	// 				Message: message.Content,
-	// 			},
-	// 		})
-	// 	}
-	// }
-	//
-	// var history []*cohere.Message
-	// if len(messages) > 1 {
-	// 	history = messages[:len(messages)-1]
-	// }
-	//
-	// req := &cohere.ChatStreamRequest{
-	// 	Model:         cohere.String(mod.Name),
-	// 	ChatHistory:   history,
-	// 	Message:       messages[len(messages)-1].User.Message,
-	// 	Preamble:      cohere.String(m.system),
-	// 	Temperature:   cohere.Float64(cfg.Temperature),
-	// 	P:             cohere.Float64(cfg.TopP),
-	// 	StopSequences: cfg.Stop,
-	// }
-	//
-	// if cfg.MaxTokens > 0 {
-	// 	req.MaxTokens = cohere.Int(int(cfg.MaxTokens))
-	// }
-	//
-	// stream, err := client.CreateChatCompletionStream(ctx, req)
-	// if err != nil {
-	// 	return m.handleRequestError(CohereToOpenAIAPIError(err), mod, content)
-	// }
-	//
-	// return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
-}
-
 func (m *Mods) setupStreamContext(content string, mod Model) error {
 	cfg := m.Config
 	m.messages = []proto.Message{}
