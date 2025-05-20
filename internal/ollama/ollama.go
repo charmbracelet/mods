@@ -69,12 +69,13 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 	if request.TopP != nil {
 		body.Options["top_p"] = *request.TopP
 	}
+	s.request = body
 	s.factory = func() {
 		s.done = false
 		s.err = nil
 		s.respCh = make(chan api.ChatResponse)
 		go func() {
-			if err := c.Chat(ctx, &body, s.fn); err != nil {
+			if err := c.Chat(ctx, &s.request, s.fn); err != nil {
 				s.err = err
 			}
 		}()
