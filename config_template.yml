@@ -4,6 +4,20 @@ default-model: gpt-4o
 format-text:
   markdown: '{{ index .Config.FormatText "markdown" }}'
   json: '{{ index .Config.FormatText "json" }}'
+# {{ index .Help "mcp-servers" }}
+mcp-servers:
+  # Example: GitHub MCP via Docker:
+  # github:
+  #   command: docker
+  #   env:
+  #     - FOO=bar
+  #   args:
+  #     - run
+  #     - "-i"
+  #     - "--rm"
+  #     - "-e"
+  #     - GITHUB_PERSONAL_ACCESS_TOKEN
+  #     - "ghcr.io/github/github-mcp-server"
 # {{ index .Help "roles" }}
 roles:
   "default": []
@@ -216,7 +230,7 @@ apis:
     api-key:
     api-key-env: GROQ_API_KEY
     models: # https://console.groq.com/docs/models
-    # Production models
+      # Production models
       gemma2-9b-it:
         aliases: ["gemma2", "gemma"]
         max-input-chars: 24500 # 8,192
@@ -244,7 +258,7 @@ apis:
       meta-llama/llama-4-scout-17b-16e-instruct:
         aliases: ["llama4"]
         max-input-chars: 392000 # 128K
-    # Preview models
+      # Preview models
       mistral-saba-24b:
         aliases: ["saba", "mistral-saba", "saba-24b"]
         max-input-chars: 98000 # 32K
@@ -299,11 +313,11 @@ apis:
     api-key:
     api-key-env: SAMBANOVA_API_KEY
     models: # https://docs.sambanova.ai/cloud/docs/get-started/supported-models
-    # Preview models
+      # Preview models
       DeepSeek-R1:
         aliases: ["deepseek-r1-sambanova", "deepseek-r1-preview"]
         max-input-chars: 24500 # 8k tokens
-    # Production models
+      # Production models
       DeepSeek-R1-Distill-Llama-70B:
         aliases: ["deepseek-r1-llama-sambanova", "deepseek-r1-distill"]
         max-input-chars: 98000 # 32k tokens
