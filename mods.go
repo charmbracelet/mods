@@ -103,6 +103,7 @@ type completionInput struct {
 type completionOutput struct {
 	content string
 	stream  stream.Stream
+	errh    func(error) tea.Msg
 }
 
 // Init implements tea.Model.
@@ -169,6 +170,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmds = append(cmds, m.receiveCompletionStreamCmd(completionOutput{
 			stream: msg.stream,
+			errh:   msg.errh,
 		}))
 	case modsError:
 		m.Error = &msg
@@ -461,7 +463,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		}
 
 		stream := client.Request(ctx, request)
-		return m.receiveCompletionStreamCmd(completionOutput{stream: stream})()
+		return m.receiveCompletionStreamCmd(completionOutput{
+			stream: stream,
+			errh: func(err error) tea.Msg {
+				return m.handleRequestError(err, mod, m.Input)
+			},
+		})()
 	}
 }
 
@@ -507,21 +514,25 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 			chunk, err := msg.stream.Current()
 			if err != nil && !errors.Is(err, stream.ErrNoContent) {
 				_ = msg.stream.Close()
-				return modsError{err, "There was an error when streaming the API response."}
+				return msg.errh(err)
 			}
 			return completionOutput{
 				content: chunk.Content,
 				stream:  msg.stream,
+				errh:    msg.errh,
 			}
 		}
 
 		// stream is done, check for errors
 		if err := msg.stream.Err(); err != nil {
-			return modsError{err, "There was an error when streaming the API response."}
+			return msg.errh(err)
 		}
 
 		results := msg.stream.CallTools()
-		toolMsg := completionOutput{stream: msg.stream}
+		toolMsg := completionOutput{
+			stream: msg.stream,
+			errh:   msg.errh,
+		}
 		for _, call := range results {
 			toolMsg.content += fmt.Sprintf("\n> Ran tool: `%s`", call.Name)
 			if call.Err != nil {
@@ -531,7 +542,9 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		}
 		if len(results) == 0 {
 			m.messages = msg.stream.Messages()
-			return completionOutput{}
+			return completionOutput{
+				errh: msg.errh,
+			}
 		}
 		return toolMsg
 	}
@@ -629,7 +642,11 @@ func (m *Mods) readFromCache() tea.Cmd {
 		}
 
 		m.appendToOutput(proto.Messages(messages).String())
-		return completionOutput{}
+		return completionOutput{
+			errh: func(err error) tea.Msg {
+				return modsError{err: err}
+			},
+		}
 	}
 }
 
