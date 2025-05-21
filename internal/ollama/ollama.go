@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/charmbracelet/mods/proto"
 	"github.com/charmbracelet/mods/stream"
@@ -72,6 +73,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 		body.Options["top_p"] = *request.TopP
 	}
 	s.request = body
+	s.messages = request.Messages
 	s.factory = func() {
 		s.done = false
 		s.err = nil
@@ -95,6 +97,7 @@ type Stream struct {
 	respCh   chan api.ChatResponse
 	message  api.Message
 	toolCall func(name string, data []byte) (string, error)
+	messages []proto.Message
 }
 
 func (s *Stream) fn(resp api.ChatResponse) error {
@@ -107,6 +110,22 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 	result := make([]proto.ToolCallStatus, 0, len(s.message.ToolCalls))
 	for _, call := range s.message.ToolCalls {
 		content, err := s.toolCall(call.Function.Name, []byte(call.Function.Arguments.String()))
+		if content == "" && err != nil {
+			content = err.Error()
+		}
+		s.messages = append(s.messages, proto.Message{
+			Role:    proto.RoleTool,
+			Content: content,
+			ToolCalls: []proto.ToolCall{
+				{
+					ID: strconv.Itoa(call.Function.Index),
+					Function: proto.Function{
+						Name:      call.Function.Name,
+						Arguments: []byte(call.Function.Arguments.String()),
+					},
+				},
+			},
+		})
 		s.request.Messages = append(s.request.Messages, api.Message{
 			Content: content,
 			Role:    proto.RoleTool,
@@ -148,7 +167,7 @@ func (s *Stream) Current() (proto.Chunk, error) {
 func (s *Stream) Err() error { return s.err }
 
 // Messages implements stream.Stream.
-func (s *Stream) Messages() []proto.Message { return toProtoMessages(s.request.Messages) }
+func (s *Stream) Messages() []proto.Message { return s.messages }
 
 // Next implements stream.Stream.
 func (s *Stream) Next() bool {
@@ -158,6 +177,7 @@ func (s *Stream) Next() bool {
 	if s.done {
 		s.done = false
 		s.factory()
+		s.messages = append(s.messages, toProtoMessage(s.message))
 		s.request.Messages = append(s.request.Messages, s.message)
 		s.message = api.Message{}
 	}

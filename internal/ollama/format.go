@@ -3,6 +3,7 @@ package ollama
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/charmbracelet/mods/proto"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -31,31 +32,40 @@ func fromMCPTools(mcps map[string][]mcp.Tool) []api.Tool {
 func fromProtoMessages(input []proto.Message) []api.Message {
 	messages := make([]api.Message, 0, len(input))
 	for _, msg := range input {
-		messages = append(messages, api.Message{
+		m := api.Message{
 			Content: msg.Content,
 			Role:    msg.Role,
-		})
+		}
+		for _, call := range msg.ToolCalls {
+			var args api.ToolCallFunctionArguments
+			_ = json.Unmarshal(call.Function.Arguments, &args)
+			idx, _ := strconv.Atoi(call.ID)
+			m.ToolCalls = append(m.ToolCalls, api.ToolCall{
+				Function: api.ToolCallFunction{
+					Index:     idx,
+					Name:      call.Function.Name,
+					Arguments: args,
+				},
+			})
+		}
+		messages = append(messages, m)
 	}
 	return messages
 }
 
-func toProtoMessages(input []api.Message) []proto.Message {
-	messages := make([]proto.Message, 0, len(input))
-	for _, in := range input {
-		msg := proto.Message{
-			Role:    in.Role,
-			Content: in.Content,
-		}
-		// for _, call := range in.ToolCalls {
-		// 	msg.ToolCalls = append(msg.ToolCalls, proto.MessageToolCall{
-		// 		// ID:       call.Function.Index, XXX: ?
-		// 		Function: proto.Function{
-		// 			Arguments: call.Function.Arguments.String(),
-		// 			Name:      call.Function.Name,
-		// 		},
-		// 	})
-		// }
-		messages = append(messages, msg)
+func toProtoMessage(in api.Message) proto.Message {
+	msg := proto.Message{
+		Role:    in.Role,
+		Content: in.Content,
 	}
-	return messages
+	for _, call := range in.ToolCalls {
+		msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
+			ID: strconv.Itoa(call.Function.Index),
+			Function: proto.Function{
+				Arguments: []byte(call.Function.Arguments.String()),
+				Name:      call.Function.Name,
+			},
+		})
+	}
+	return msg
 }
