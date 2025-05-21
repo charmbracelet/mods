@@ -14,14 +14,14 @@ type Conversations struct {
 }
 
 // NewConversations creates a new conversation cache.
-func NewConversations(dir string) *Conversations {
+func NewConversations(dir string) (*Conversations, error) {
 	cache, err := New[[]proto.Message](dir, ConversationCache)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &Conversations{
 		cache: cache,
-	}
+	}, nil
 }
 
 func (c *Conversations) Read(id string, messages *[]proto.Message) error {
