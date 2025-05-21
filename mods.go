@@ -417,7 +417,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		ctx, cancel := context.WithCancel(context.Background())
 		m.cancelRequest = cancel
 
-		tools, err := mcpTools(ctx)
+		tctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		tools, err := mcpTools(tctx)
 		if err != nil {
 			return modsError{err, "Could not setup MCP"}
 		}
