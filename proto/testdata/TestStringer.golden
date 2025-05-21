@@ -4,6 +4,8 @@
 
 **Assistant**: 1, 2, 3, 4
 
+> Ran tool: `myfunc`
+
 **User**: as a json array
 
 **Assistant**: [ 1, 2, 3, 4 ]

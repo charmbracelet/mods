@@ -1,19 +1,14 @@
 package cache
 
 import (
-	"bytes"
-	"flag"
 	"io"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/charmbracelet/mods/proto"
 	"github.com/stretchr/testify/require"
 )
-
-var update = flag.Bool("update", false, "update .golden files")
 
 func TestCache(t *testing.T) {
 	t.Run("read non-existent", func(t *testing.T) {
@@ -69,47 +64,6 @@ func TestCache(t *testing.T) {
 			require.ErrorIs(t, cache.Read("", nil), errInvalidID)
 		})
 	})
-}
-
-func TestCachedCompletionStream(t *testing.T) {
-	messages := []proto.Message{
-		{
-			Role:    proto.RoleSystem,
-			Content: "you are a medieval king",
-		},
-		{
-			Role:    proto.RoleUser,
-			Content: "first 4 natural numbers",
-		},
-		{
-			Role:    proto.RoleAssistant,
-			Content: "1, 2, 3, 4",
-		},
-		// TODO: Tool call
-		{
-			Role:    proto.RoleUser,
-			Content: "as a json array",
-		},
-		{
-			Role:    proto.RoleAssistant,
-			Content: "[ 1, 2, 3, 4 ]",
-		},
-		{
-			Role:    proto.RoleAssistant,
-			Content: "something from an assistant",
-		},
-	}
-
-	golden := filepath.Join("testdata", t.Name()+".md.golden")
-	content := proto.Conversation(messages).String()
-	if *update {
-		require.NoError(t, os.WriteFile(golden, []byte(content), 0o644))
-	}
-
-	bts, err := os.ReadFile(golden)
-	require.NoError(t, err)
-
-	require.Equal(t, string(bytes.ReplaceAll(bts, []byte("\r\n"), []byte("\n"))), content)
 }
 
 func TestExpiringCache(t *testing.T) {
