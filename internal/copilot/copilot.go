@@ -55,7 +55,7 @@ func New(cacheDir string) *Client {
 	}
 }
 
-// Do implements http.RoundTripper.
+// Do does the request.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Editor-Version", copilotEditorVersion)
