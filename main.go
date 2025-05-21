@@ -337,15 +337,17 @@ func main() {
 		}
 	}
 
-	db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
-	if err != nil {
-		handleError(modsError{err, "Could not open database."})
-		os.Exit(1)
-	}
-	defer db.Close() //nolint:errcheck
-
 	// XXX: this must come after creating the config.
 	initFlags()
+
+	if !isCompletionCmd(os.Args) && !isManCmd(os.Args) {
+		db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
+		if err != nil {
+			handleError(modsError{err, "Could not open database."})
+			os.Exit(1)
+		}
+		defer db.Close() //nolint:errcheck
+	}
 
 	if isCompletionCmd(os.Args) {
 		// XXX: since mods doesn't have any sub-commands, Cobra won't create
