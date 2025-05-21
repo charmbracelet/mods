@@ -15,15 +15,18 @@ const (
 	RoleTool      = "tool"
 )
 
+// Chunk is a streaming chunk of text.
 type Chunk struct {
 	Content string
 }
 
+// ToolCallStatus is the status of a tool call.
 type ToolCallStatus struct {
 	Name string
 	Err  error
 }
 
+// Message is a message in the conversation.
 type Message struct {
 	Role       string
 	Content    string
@@ -31,16 +34,19 @@ type Message struct {
 	ToolCalls  []MessageToolCall
 }
 
+// MessageToolCall is a tool call in a message.
 type MessageToolCall struct {
 	ID       string
 	Function Function
 }
 
+// Function is the function signature of a tool call.
 type Function struct {
 	Arguments string
 	Name      string
 }
 
+// Request is a chat request.
 type Request struct {
 	Messages       []Message
 	API            string
@@ -56,11 +62,12 @@ type Request struct {
 	ToolCaller     func(name string, data []byte) (string, error)
 }
 
-type Messages []Message
+// Conversation is a conversation.
+type Conversation []Message
 
-func (messages Messages) String() string {
+func (cc Conversation) String() string {
 	var sb strings.Builder
-	for _, msg := range messages {
+	for _, msg := range cc {
 		if msg.Content == "" {
 			continue
 		}

@@ -125,13 +125,13 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 }
 
 // Close implements stream.Stream.
-func (s *Stream) Close() error { return s.stream.Close() }
+func (s *Stream) Close() error { return s.stream.Close() } //nolint:wrapcheck
 
 // Current implements stream.Stream.
 func (s *Stream) Current() (proto.Chunk, error) {
 	event := s.stream.Current()
 	if err := s.message.Accumulate(event); err != nil {
-		return proto.Chunk{}, err
+		return proto.Chunk{}, err //nolint:wrapcheck
 	}
 	switch eventVariant := event.AsAny().(type) {
 	case anthropic.ContentBlockDeltaEvent:
@@ -146,7 +146,7 @@ func (s *Stream) Current() (proto.Chunk, error) {
 }
 
 // Err implements stream.Stream.
-func (s *Stream) Err() error { return s.stream.Err() }
+func (s *Stream) Err() error { return s.stream.Err() } //nolint:wrapcheck
 
 // Messages implements stream.Stream.
 func (s *Stream) Messages() []proto.Message {

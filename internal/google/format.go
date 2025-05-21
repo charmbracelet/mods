@@ -16,7 +16,6 @@ func fromProtoMessages(input []proto.Message) []Content {
 				Role:  proto.RoleUser,
 				Parts: []Part{{Text: in.Content}},
 			})
-
 		}
 	}
 	return result

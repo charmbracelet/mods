@@ -95,7 +95,7 @@ func TestCachedCompletionStream(t *testing.T) {
 	}
 
 	golden := filepath.Join("testdata", t.Name()+".md.golden")
-	content := proto.Messages(messages).String()
+	content := proto.Conversation(messages).String()
 	if *update {
 		require.NoError(t, os.WriteFile(golden, []byte(content), 0o644))
 	}

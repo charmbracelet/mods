@@ -641,7 +641,7 @@ func (m *Mods) readFromCache() tea.Cmd {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 
-		m.appendToOutput(proto.Messages(messages).String())
+		m.appendToOutput(proto.Conversation(messages).String())
 		return completionOutput{
 			errh: func(err error) tea.Msg {
 				return modsError{err: err}

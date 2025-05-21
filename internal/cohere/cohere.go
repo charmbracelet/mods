@@ -100,7 +100,7 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 // Close implements stream.Stream.
 func (s *Stream) Close() error {
 	s.done = true
-	return s.stream.Close()
+	return s.stream.Close() //nolint:wrapcheck
 }
 
 // Current implements stream.Stream.

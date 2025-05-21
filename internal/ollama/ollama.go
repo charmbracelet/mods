@@ -37,7 +37,7 @@ type Client struct {
 func New(config Config) (*Client, error) {
 	u, err := url.Parse(config.BaseURL)
 	if err != nil {
-		return nil, err
+		return nil, err //nolint:wrapcheck
 	}
 	client := api.NewClient(u, config.HTTPClient)
 	return &Client{
