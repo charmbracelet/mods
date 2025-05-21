@@ -49,6 +49,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 		stream:   c.Messages.NewStreaming(ctx, body),
 		request:  body,
 		toolCall: request.ToolCaller,
+		messages: request.Messages,
 	}
 
 	s.factory = func() *ssestream.Stream[anthropic.MessageStreamEventUnion] {
@@ -96,6 +97,7 @@ type Stream struct {
 	factory  func() *ssestream.Stream[anthropic.MessageStreamEventUnion]
 	message  anthropic.Message
 	toolCall func(name string, data []byte) (string, error)
+	messages []proto.Message
 }
 
 // CallTools implements stream.Stream.
@@ -115,6 +117,12 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 					),
 				),
 			)
+			s.messages = append(s.messages, proto.Message{
+				Role:         proto.RoleTool,
+				Content:      content,
+				ToolCallID:   call.ID,
+				FunctionName: call.Name,
+			})
 			result = append(result, proto.ToolCallStatus{
 				Name: call.Name,
 				Err:  err,
@@ -149,9 +157,7 @@ func (s *Stream) Current() (proto.Chunk, error) {
 func (s *Stream) Err() error { return s.stream.Err() } //nolint:wrapcheck
 
 // Messages implements stream.Stream.
-func (s *Stream) Messages() []proto.Message {
-	return toProtoMessages(s.request.Messages)
-}
+func (s *Stream) Messages() []proto.Message { return s.messages }
 
 // Next implements stream.Stream.
 func (s *Stream) Next() bool {
@@ -167,6 +173,7 @@ func (s *Stream) Next() bool {
 
 	s.done = true
 	s.request.Messages = append(s.request.Messages, s.message.ToParam())
+	s.messages = append(s.messages, toProtoMessage(s.message.ToParam()))
 
 	return false
 }

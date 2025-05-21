@@ -46,15 +46,15 @@ func toProtoMessages(input []api.Message) []proto.Message {
 			Role:    in.Role,
 			Content: in.Content,
 		}
-		for _, call := range in.ToolCalls {
-			msg.ToolCalls = append(msg.ToolCalls, proto.MessageToolCall{
-				// ID:       call.Function.Index, XXX: ?
-				Function: proto.Function{
-					Arguments: call.Function.Arguments.String(),
-					Name:      call.Function.Name,
-				},
-			})
-		}
+		// for _, call := range in.ToolCalls {
+		// 	msg.ToolCalls = append(msg.ToolCalls, proto.MessageToolCall{
+		// 		// ID:       call.Function.Index, XXX: ?
+		// 		Function: proto.Function{
+		// 			Arguments: call.Function.Arguments.String(),
+		// 			Name:      call.Function.Name,
+		// 		},
+		// 	})
+		// }
 		messages = append(messages, msg)
 	}
 	return messages

@@ -97,6 +97,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 		stream:   c.Chat.Completions.NewStreaming(ctx, body),
 		request:  body,
 		toolCall: request.ToolCaller,
+		messages: request.Messages,
 	}
 	s.factory = func() *ssestream.Stream[openai.ChatCompletionChunk] {
 		return c.Chat.Completions.NewStreaming(ctx, s.request)
@@ -111,6 +112,7 @@ type Stream struct {
 	stream   *ssestream.Stream[openai.ChatCompletionChunk]
 	factory  func() *ssestream.Stream[openai.ChatCompletionChunk]
 	message  openai.ChatCompletionAccumulator
+	messages []proto.Message
 	toolCall func(name string, data []byte) (string, error)
 }
 
@@ -120,7 +122,16 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 	result := make([]proto.ToolCallStatus, 0, len(calls))
 	for _, call := range calls {
 		content, err := s.toolCall(call.Function.Name, []byte(call.Function.Arguments))
-		s.request.Messages = append(s.request.Messages, openai.ToolMessage(content, call.ID))
+		s.request.Messages = append(
+			s.request.Messages,
+			openai.ToolMessage(content, call.ID),
+		)
+		s.messages = append(s.messages, proto.Message{
+			Role:         proto.RoleTool,
+			Content:      content,
+			ToolCallID:   call.ID,
+			FunctionName: call.Function.Name,
+		})
 		result = append(result, proto.ToolCallStatus{
 			Name: call.Function.Name,
 			Err:  err,
@@ -148,9 +159,7 @@ func (s *Stream) Current() (proto.Chunk, error) {
 func (s *Stream) Err() error { return s.stream.Err() } //nolint:wrapcheck
 
 // Messages implements stream.Stream.
-func (s *Stream) Messages() []proto.Message {
-	return toProtoMessages(s.request.Messages)
-}
+func (s *Stream) Messages() []proto.Message { return s.messages }
 
 // Next implements stream.Stream.
 func (s *Stream) Next() bool {
@@ -166,7 +175,9 @@ func (s *Stream) Next() bool {
 
 	s.done = true
 	if len(s.message.Choices) > 0 {
-		s.request.Messages = append(s.request.Messages, s.message.Choices[0].Message.ToParam())
+		msg := s.message.Choices[0].Message.ToParam()
+		s.request.Messages = append(s.request.Messages, msg)
+		s.messages = append(s.messages, toProtoMessage(msg))
 	}
 
 	return false

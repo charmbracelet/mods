@@ -46,30 +46,29 @@ func fromProtoMessages(input []proto.Message) []openai.ChatCompletionMessagePara
 	return messages
 }
 
-func toProtoMessages(input []openai.ChatCompletionMessageParamUnion) []proto.Message {
-	messages := make([]proto.Message, 0, len(input))
-	for _, in := range input {
-		msg := proto.Message{
-			Role: msgRole(in),
-		}
-		// for _, call:= range in.OfAssistant.ToolCalls {}  TODO: ??
-		switch content := in.GetContent().AsAny().(type) {
-		case *string:
-			if content == nil {
-				continue
-			}
-			msg.Content = *content
-		case *[]openai.ChatCompletionContentPartTextParam:
-			if content == nil || len(*content) == 0 {
-				continue
-			}
-			for _, c := range *content {
-				msg.Content += c.Text
-			}
-		}
-		messages = append(messages, msg)
+func toProtoMessage(in openai.ChatCompletionMessageParamUnion) proto.Message {
+	msg := proto.Message{
+		Role: msgRole(in),
 	}
-	return messages
+	// for _, call:= range in.OfAssistant.ToolCalls {}  TODO: ??
+	switch content := in.GetContent().AsAny().(type) {
+	case *string:
+		if content == nil {
+			break
+		}
+		msg.Content = *content
+	case *[]openai.ChatCompletionContentPartTextParam:
+		if content == nil || len(*content) == 0 {
+			break
+		}
+		for _, c := range *content {
+			msg.Content += c.Text
+		}
+	}
+	if id := in.GetToolCallID(); id != nil {
+		msg.ToolCallID = *id
+	}
+	return msg
 }
 
 func msgRole(in openai.ChatCompletionMessageParamUnion) string {

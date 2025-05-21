@@ -536,7 +536,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 		for _, call := range results {
 			toolMsg.content += fmt.Sprintf("\n> Ran tool: `%s`", call.Name)
 			if call.Err != nil {
-				toolMsg.content += fmt.Sprintf("**Tool failed**: ```\n%s\n```", call.Err.Error())
+				toolMsg.content += fmt.Sprintf("\n\n**Tool failed**:\n```\n%s\n```", call.Err.Error())
 			}
 			toolMsg.content += "\n\n"
 		}

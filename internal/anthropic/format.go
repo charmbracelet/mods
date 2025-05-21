@@ -50,20 +50,21 @@ func fromProtoMessages(input []proto.Message) (system []anthropic.TextBlockParam
 	return system, messages
 }
 
-func toProtoMessages(input []anthropic.MessageParam) []proto.Message {
-	messages := make([]proto.Message, 0, len(input))
-	for _, in := range input {
-		msg := proto.Message{
-			Role: string(in.Role),
-		}
-
-		for _, c := range in.Content {
-			if block := c.OfRequestTextBlock; block != nil {
-				msg.Content += block.Text
-			}
-		}
-
-		messages = append(messages, msg)
+func toProtoMessage(in anthropic.MessageParam) proto.Message {
+	msg := proto.Message{
+		Role: string(in.Role),
 	}
-	return messages
+
+	for _, c := range in.Content {
+		if block := c.OfRequestTextBlock; block != nil {
+			msg.Content += block.Text
+		}
+
+		if block := c.OfRequestToolUseBlock; block != nil {
+			msg.ToolCallID = block.ID
+			msg.FunctionName = block.Name
+		}
+	}
+
+	return msg
 }

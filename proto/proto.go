@@ -2,6 +2,7 @@
 package proto
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -28,10 +29,10 @@ type ToolCallStatus struct {
 
 // Message is a message in the conversation.
 type Message struct {
-	Role       string
-	Content    string
-	ToolCallID string
-	ToolCalls  []MessageToolCall
+	Role         string
+	Content      string
+	ToolCallID   string
+	FunctionName string
 }
 
 // MessageToolCall is a tool call in a message.
@@ -77,7 +78,7 @@ func (cc Conversation) String() string {
 		case RoleUser:
 			sb.WriteString("**User**: ")
 		case RoleTool:
-			sb.WriteString("> Ran tool\n\n")
+			sb.WriteString(fmt.Sprintf("> Ran tool: `%s`\n\n", msg.FunctionName))
 			continue
 		case RoleAssistant:
 			sb.WriteString("**Assistant**: ")
