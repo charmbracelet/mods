@@ -122,18 +122,21 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 	result := make([]proto.ToolCallStatus, 0, len(calls))
 	for _, call := range calls {
 		content, err := s.toolCall(call.Function.Name, []byte(call.Function.Arguments))
-		s.request.Messages = append(
-			s.request.Messages,
-			openai.ToolMessage(content, call.ID),
-		)
+		if err != nil && content == "" {
+			content = err.Error()
+		}
+		msg := openai.ToolMessage(content, call.ID)
+		s.request.Messages = append(s.request.Messages, msg)
 		s.messages = append(s.messages, proto.Message{
 			Role:    proto.RoleTool,
 			Content: content,
-			ToolCall: proto.MessageToolCall{
-				ID: call.ID,
-				Function: proto.Function{
-					Name:      call.Function.Name,
-					Arguments: []byte(call.Function.Arguments),
+			ToolCalls: []proto.ToolCall{
+				{
+					ID: call.ID,
+					Function: proto.Function{
+						Name:      call.Function.Name,
+						Arguments: []byte(call.Function.Arguments),
+					},
 				},
 			},
 		})

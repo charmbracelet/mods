@@ -29,13 +29,13 @@ type ToolCallStatus struct {
 
 // Message is a message in the conversation.
 type Message struct {
-	Role     string
-	Content  string
-	ToolCall MessageToolCall
+	Role      string
+	Content   string
+	ToolCalls []ToolCall
 }
 
-// MessageToolCall is a tool call in a message.
-type MessageToolCall struct {
+// ToolCall is a tool call in a message.
+type ToolCall struct {
 	ID       string
 	Function Function
 }
@@ -77,7 +77,9 @@ func (cc Conversation) String() string {
 		case RoleUser:
 			sb.WriteString("**User**: ")
 		case RoleTool:
-			sb.WriteString(fmt.Sprintf("> Ran tool: `%s`\n\n", msg.ToolCall.Function.Name))
+			for _, tool := range msg.ToolCalls {
+				sb.WriteString(fmt.Sprintf("> Ran tool: `%s`\n\n", tool.Function.Name))
+			}
 			continue
 		case RoleAssistant:
 			sb.WriteString("**Assistant**: ")

@@ -36,21 +36,22 @@ func fromProtoMessages(input []proto.Message) []openai.ChatCompletionMessagePara
 		case proto.RoleSystem:
 			messages = append(messages, openai.SystemMessage(msg.Content))
 		case proto.RoleTool:
-			messages = append(messages, openai.ToolMessage(msg.Content, msg.ToolCall.ID))
+			for _, call := range msg.ToolCalls {
+				messages = append(messages, openai.ToolMessage(msg.Content, call.ID))
+				break
+			}
 		case proto.RoleUser:
 			messages = append(messages, openai.UserMessage(msg.Content))
 		case proto.RoleAssistant:
 			m := openai.AssistantMessage(msg.Content)
-			if msg.ToolCall.ID != "" {
-				m.OfAssistant.ToolCalls = []openai.ChatCompletionMessageToolCallParam{
-					{
-						ID: msg.ToolCall.ID,
-						Function: openai.ChatCompletionMessageToolCallFunctionParam{
-							Arguments: string(msg.ToolCall.Function.Arguments),
-							Name:      msg.ToolCall.Function.Name,
-						},
+			for _, tool := range msg.ToolCalls {
+				m.OfAssistant.ToolCalls = append(m.OfAssistant.ToolCalls, openai.ChatCompletionMessageToolCallParam{
+					ID: tool.ID,
+					Function: openai.ChatCompletionMessageToolCallFunctionParam{
+						Arguments: string(tool.Function.Arguments),
+						Name:      tool.Function.Name,
 					},
-				}
+				})
 			}
 			messages = append(messages, m)
 		}
@@ -64,7 +65,7 @@ func toProtoMessage(in openai.ChatCompletionMessageParamUnion) proto.Message {
 	}
 	switch content := in.GetContent().AsAny().(type) {
 	case *string:
-		if content == nil {
+		if content == nil || *content == "" {
 			break
 		}
 		msg.Content = *content
@@ -76,13 +77,15 @@ func toProtoMessage(in openai.ChatCompletionMessageParamUnion) proto.Message {
 			msg.Content += c.Text
 		}
 	}
-	if id := in.GetToolCallID(); id != nil {
-		msg.ToolCall.ID = *id
-	}
-	if fn := in.GetFunctionCall(); fn != nil {
-		msg.ToolCall.Function = proto.Function{
-			Name:      fn.Name,
-			Arguments: []byte(fn.Arguments),
+	if msg.Role == proto.RoleAssistant {
+		for _, tool := range in.OfAssistant.ToolCalls {
+			msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
+				ID: tool.ID,
+				Function: proto.Function{
+					Name:      tool.Function.Name,
+					Arguments: []byte(tool.Function.Arguments),
+				},
+			})
 		}
 	}
 	return msg

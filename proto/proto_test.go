@@ -23,11 +23,13 @@ func TestStringer(t *testing.T) {
 		{
 			Role:    RoleTool,
 			Content: `{"the":"result"}`,
-			ToolCall: MessageToolCall{
-				ID: "aaa",
-				Function: Function{
-					Name:      "myfunc",
-					Arguments: []byte(`{"a":"b"}`),
+			ToolCalls: []ToolCall{
+				{
+					ID: "aaa",
+					Function: Function{
+						Name:      "myfunc",
+						Arguments: []byte(`{"a":"b"}`),
+					},
 				},
 			},
 		},

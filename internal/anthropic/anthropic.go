@@ -120,11 +120,13 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 			s.messages = append(s.messages, proto.Message{
 				Role:    proto.RoleTool,
 				Content: content,
-				ToolCall: proto.MessageToolCall{
-					ID: call.ID,
-					Function: proto.Function{
-						Name:      call.Name,
-						Arguments: []byte(call.JSON.Input.Raw()),
+				ToolCalls: []proto.ToolCall{
+					{
+						ID: call.ID,
+						Function: proto.Function{
+							Name:      call.Name,
+							Arguments: []byte(call.JSON.Input.Raw()),
+						},
 					},
 				},
 			})
