@@ -715,7 +715,7 @@ func cutPrompt(msg, prompt string) string {
 
 func increaseIndent(s string) string {
 	lines := strings.Split(s, "\n")
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		lines[i] = "\t" + lines[i]
 	}
 	return strings.Join(lines, "\n")

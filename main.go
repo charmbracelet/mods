@@ -115,7 +115,10 @@ var (
 				}
 			}
 
-			cache := cache.NewConversations(config.CachePath)
+			cache, err := cache.NewConversations(config.CachePath)
+			if err != nil {
+				return modsError{err, "Couldn't start Bubble Tea program."}
+			}
 			mods := newMods(stderrRenderer(), &config, db, cache)
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
@@ -544,7 +547,10 @@ func deleteConversationOlderThan() error {
 		}
 	}
 
-	cache := cache.NewConversations(config.CachePath)
+	cache, err := cache.NewConversations(config.CachePath)
+	if err != nil {
+		return modsError{err, "Couldn't delete conversation."}
+	}
 	for _, c := range conversations {
 		if err := db.Delete(c.ID); err != nil {
 			return modsError{err, "Couldn't delete conversation."}
@@ -580,7 +586,10 @@ func deleteConversation(convo *Conversation) error {
 		return modsError{err, "Couldn't delete conversation."}
 	}
 
-	cache := cache.NewConversations(config.CachePath)
+	cache, err := cache.NewConversations(config.CachePath)
+	if err != nil {
+		return modsError{err, "Couldn't delete conversation."}
+	}
 	if err := cache.Delete(convo.ID); err != nil {
 		return modsError{err, "Couldn't delete conversation."}
 	}
@@ -713,23 +722,22 @@ func saveConversation(mods *Mods) error {
 		title = firstLine(lastPrompt(mods.messages))
 	}
 
-	cache := cache.NewConversations(config.CachePath)
+	errReason := fmt.Sprintf(
+		"There was a problem writing %s to the cache. Use %s / %s to disable it.",
+		config.cacheWriteToID,
+		stderrStyles().InlineCode.Render("--no-cache"),
+		stderrStyles().InlineCode.Render("NO_CACHE"),
+	)
+	cache, err := cache.NewConversations(config.CachePath)
+	if err != nil {
+		return modsError{err, errReason}
+	}
 	if err := cache.Write(id, &mods.messages); err != nil {
-		return modsError{err, fmt.Sprintf(
-			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
-			config.cacheWriteToID,
-			stderrStyles().InlineCode.Render("--no-cache"),
-			stderrStyles().InlineCode.Render("NO_CACHE"),
-		)}
+		return modsError{err, errReason}
 	}
 	if err := db.Save(id, title, config.Model); err != nil {
 		_ = cache.Delete(id) // remove leftovers
-		return modsError{err, fmt.Sprintf(
-			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
-			config.cacheWriteToID,
-			stderrStyles().InlineCode.Render("--no-cache"),
-			stderrStyles().InlineCode.Render("NO_CACHE"),
-		)}
+		return modsError{err, errReason}
 	}
 
 	if !config.Quiet {
