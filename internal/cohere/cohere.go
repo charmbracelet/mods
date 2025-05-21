@@ -92,10 +92,8 @@ type Stream struct {
 }
 
 // CallTools implements stream.Stream.
-func (s *Stream) CallTools() []proto.ToolCallStatus {
-	// TODO: ...
-	return nil
-}
+// Not supported.
+func (s *Stream) CallTools() []proto.ToolCallStatus { return nil }
 
 // Close implements stream.Stream.
 func (s *Stream) Close() error {

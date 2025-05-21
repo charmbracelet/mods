@@ -59,7 +59,7 @@ func toProtoMessages(input []*cohere.Message) []proto.Message {
 				Content: in.Chatbot.Message,
 			})
 		case "TOOL":
-			// TODO: ...
+			// not supported yet
 		}
 	}
 	return messages

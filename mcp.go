@@ -140,7 +140,6 @@ func toolCall(name string, data []byte) (string, error) {
 		case mcp.TextContent:
 			sb.WriteString(content.Text)
 		default:
-			// TODO: can we make this better somehow?
 			sb.WriteString("[Non-text content]")
 		}
 	}
