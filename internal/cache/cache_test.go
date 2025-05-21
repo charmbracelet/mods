@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/mods/proto"
+	"github.com/charmbracelet/mods/internal/proto"
 	"github.com/stretchr/testify/require"
 )
 

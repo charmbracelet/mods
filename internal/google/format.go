@@ -1,6 +1,6 @@
 package google
 
-import "github.com/charmbracelet/mods/proto"
+import "github.com/charmbracelet/mods/internal/proto"
 
 func fromProtoMessages(input []proto.Message) []Content {
 	result := make([]Content, 0, len(input))

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/charmbracelet/mods/proto"
-	"github.com/charmbracelet/mods/stream"
+	"github.com/charmbracelet/mods/internal/proto"
+	"github.com/charmbracelet/mods/internal/stream"
 	"github.com/openai/openai-go"
 )
 

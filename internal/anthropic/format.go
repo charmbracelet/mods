@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/charmbracelet/mods/proto"
+	"github.com/charmbracelet/mods/internal/proto"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 

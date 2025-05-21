@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/charmbracelet/mods/proto"
+	"github.com/charmbracelet/mods/internal/proto"
 )
 
 func lastPrompt(messages []proto.Message) string {

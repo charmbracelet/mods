@@ -30,8 +30,8 @@ import (
 	"github.com/charmbracelet/mods/internal/google"
 	"github.com/charmbracelet/mods/internal/ollama"
 	"github.com/charmbracelet/mods/internal/openai"
-	"github.com/charmbracelet/mods/proto"
-	"github.com/charmbracelet/mods/stream"
+	"github.com/charmbracelet/mods/internal/proto"
+	"github.com/charmbracelet/mods/internal/stream"
 	"github.com/charmbracelet/x/exp/ordered"
 )
 

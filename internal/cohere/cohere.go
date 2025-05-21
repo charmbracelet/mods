@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/charmbracelet/mods/proto"
-	"github.com/charmbracelet/mods/stream"
+	"github.com/charmbracelet/mods/internal/proto"
+	"github.com/charmbracelet/mods/internal/stream"
 	cohere "github.com/cohere-ai/cohere-go/v2"
 	"github.com/cohere-ai/cohere-go/v2/client"
 	"github.com/cohere-ai/cohere-go/v2/core"
