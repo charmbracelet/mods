@@ -76,7 +76,7 @@ func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mc
 	if err != nil {
 		return nil, fmt.Errorf("could not setup %s: %w", name, err)
 	}
-	defer cli.Close()
+	defer cli.Close() //nolint:errcheck
 	if _, err := cli.Initialize(ctx, mcp.InitializeRequest{}); err != nil {
 		return nil, fmt.Errorf("could not setup %s: %w", name, err)
 	}
@@ -104,7 +104,7 @@ func toolCall(name string, data []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("mcp: %w", err)
 	}
-	defer client.Close()
+	defer client.Close() //nolint:errcheck
 
 	// Initialize the client
 	if _, err = client.Initialize(context.Background(), mcp.InitializeRequest{}); err != nil {

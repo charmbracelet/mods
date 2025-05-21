@@ -1,17 +1,15 @@
-package main
+package cache
 
 import (
 	"bytes"
-	"errors"
 	"flag"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/openai/openai-go"
+	"github.com/charmbracelet/mods/proto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,103 +17,85 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func TestCache(t *testing.T) {
 	t.Run("read non-existent", func(t *testing.T) {
-		cache := newCache(t.TempDir())
-		err := cache.read("super-fake", &[]modsMessage{})
+		cache := NewConversations(t.TempDir())
+		err := cache.Read("super-fake", &[]proto.Message{})
 		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("write", func(t *testing.T) {
-		cache := newCache(t.TempDir())
-		messages := []modsMessage{
+		cache := NewConversations(t.TempDir())
+		messages := []proto.Message{
 			{
-				Role:    roleUser,
+				Role:    proto.RoleUser,
 				Content: "first 4 natural numbers",
 			},
 			{
-				Role:    roleAssistant,
+				Role:    proto.RoleAssistant,
 				Content: "1, 2, 3, 4",
 			},
 		}
-		require.NoError(t, cache.write("fake", &messages))
+		require.NoError(t, cache.Write("fake", &messages))
 
-		result := []modsMessage{}
-		require.NoError(t, cache.read("fake", &result))
+		result := []proto.Message{}
+		require.NoError(t, cache.Read("fake", &result))
 
 		require.ElementsMatch(t, messages, result)
 	})
 
 	t.Run("delete", func(t *testing.T) {
-		cache := newCache(t.TempDir())
-		cache.write("fake", &[]modsMessage{})
-		require.NoError(t, cache.delete("fake"))
-		require.ErrorIs(t, cache.read("fake", nil), os.ErrNotExist)
+		cache := NewConversations(t.TempDir())
+		cache.Write("fake", &[]proto.Message{})
+		require.NoError(t, cache.Delete("fake"))
+		require.ErrorIs(t, cache.Read("fake", nil), os.ErrNotExist)
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
 		t.Run("write", func(t *testing.T) {
-			cache := newCache(t.TempDir())
-			require.ErrorIs(t, cache.write("", nil), errInvalidID)
+			cache := NewConversations(t.TempDir())
+			require.ErrorIs(t, cache.Write("", nil), errInvalidID)
 		})
 		t.Run("delete", func(t *testing.T) {
-			cache := newCache(t.TempDir())
-			require.ErrorIs(t, cache.delete(""), errInvalidID)
+			cache := NewConversations(t.TempDir())
+			require.ErrorIs(t, cache.Delete(""), errInvalidID)
 		})
 		t.Run("read", func(t *testing.T) {
-			cache := newCache(t.TempDir())
-			require.ErrorIs(t, cache.read("", nil), errInvalidID)
+			cache := NewConversations(t.TempDir())
+			require.ErrorIs(t, cache.Read("", nil), errInvalidID)
 		})
 	})
 }
 
 func TestCachedCompletionStream(t *testing.T) {
-	stream := cachedCompletionStream{
-		messages: []openai.ChatCompletionMessage{
-			{
-				Role:    roleSystem,
-				Content: "you are a medieval king",
-			},
-			{
-				Role:    roleUser,
-				Content: "first 4 natural numbers",
-			},
-			{
-				Role:    roleAssistant,
-				Content: "1, 2, 3, 4",
-			},
-
-			{
-				Role:    roleUser,
-				Content: "as a json array",
-			},
-			{
-				Role:    roleAssistant,
-				Content: "[ 1, 2, 3, 4 ]",
-			},
-			{
-				Role:    roleAssistant,
-				Content: "something from an assistant",
-			},
-			{
-				Role:    roleFunction,
-				Content: "something from a function",
-			},
+	messages := []proto.Message{
+		{
+			Role:    proto.RoleSystem,
+			Content: "you are a medieval king",
 		},
-	}
-	t.Cleanup(func() { require.NoError(t, stream.Close()) })
-
-	var output []string
-
-	for {
-		resp, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		require.NoError(t, err)
-		output = append(output, resp.Choices[0].Delta.Content)
+		{
+			Role:    proto.RoleUser,
+			Content: "first 4 natural numbers",
+		},
+		{
+			Role:    proto.RoleAssistant,
+			Content: "1, 2, 3, 4",
+		},
+		// TODO: Tool call
+		{
+			Role:    proto.RoleUser,
+			Content: "as a json array",
+		},
+		{
+			Role:    proto.RoleAssistant,
+			Content: "[ 1, 2, 3, 4 ]",
+		},
+		{
+			Role:    proto.RoleAssistant,
+			Content: "something from an assistant",
+		},
 	}
 
 	golden := filepath.Join("testdata", t.Name()+".md.golden")
-	content := strings.Join(output, "\n")
+	content := proto.Conversation(messages).String()
 	if *update {
 		require.NoError(t, os.WriteFile(golden, []byte(content), 0o644))
 	}
@@ -128,8 +108,7 @@ func TestCachedCompletionStream(t *testing.T) {
 
 func TestExpiringCache(t *testing.T) {
 	t.Run("write and read", func(t *testing.T) {
-		config.CachePath = t.TempDir()
-		cache, err := NewExpiringCache[string]()
+		cache, err := NewExpiring[string](t.TempDir())
 		require.NoError(t, err)
 
 		// Write a value with expiry
@@ -156,8 +135,7 @@ func TestExpiringCache(t *testing.T) {
 	})
 
 	t.Run("expired token", func(t *testing.T) {
-		config.CachePath = t.TempDir()
-		cache, err := NewExpiringCache[string]()
+		cache, err := NewExpiring[string](t.TempDir())
 		require.NoError(t, err)
 
 		// Write a value that's already expired
@@ -178,8 +156,7 @@ func TestExpiringCache(t *testing.T) {
 	})
 
 	t.Run("overwrite token", func(t *testing.T) {
-		config.CachePath = t.TempDir()
-		cache, err := NewExpiringCache[string]()
+		cache, err := NewExpiring[string](t.TempDir())
 		require.NoError(t, err)
 
 		// Write initial value
