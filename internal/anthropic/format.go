@@ -1,6 +1,7 @@
 package anthropic
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -27,24 +28,32 @@ func fromMCPTools(mcps map[string][]mcp.Tool) []anthropic.ToolUnionParam {
 }
 
 func fromProtoMessages(input []proto.Message) (system []anthropic.TextBlockParam, messages []anthropic.MessageParam) {
-	var toolBlocks []anthropic.ContentBlockParamUnion
 	for _, msg := range input {
 		switch msg.Role {
 		case proto.RoleSystem:
 			system = append(system, *anthropic.NewTextBlock(msg.Content).OfRequestTextBlock)
 		case proto.RoleTool:
-			toolBlocks = append(toolBlocks, anthropic.NewToolResultBlock(msg.ToolCallID, msg.Content, false))
+			block := anthropic.NewToolResultBlock(msg.ToolCall.ID, msg.Content, false)
+			//	tool is not a role in anthropic, must be a user message.
+			messages = append(messages, anthropic.NewUserMessage(block))
 		case proto.RoleUser:
-			if len(toolBlocks) > 0 {
-				messages = append(
-					messages,
-					anthropic.NewUserMessage(toolBlocks...),
-				)
-				toolBlocks = nil
-			}
-			messages = append(messages, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Content)))
+			block := anthropic.NewTextBlock(msg.Content)
+			messages = append(messages, anthropic.NewUserMessage(block))
 		case proto.RoleAssistant:
-			messages = append(messages, anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Content)))
+			blocks := []anthropic.ContentBlockParamUnion{
+				anthropic.NewTextBlock(msg.Content),
+			}
+			if msg.ToolCall.ID != "" {
+				block := anthropic.ContentBlockParamUnion{
+					OfRequestToolUseBlock: &anthropic.ToolUseBlockParam{
+						ID:    msg.ToolCall.ID,
+						Name:  msg.ToolCall.Function.Name,
+						Input: json.RawMessage(msg.ToolCall.Function.Arguments),
+					},
+				}
+				blocks = append(blocks, block)
+			}
+			messages = append(messages, anthropic.NewAssistantMessage(blocks...))
 		}
 	}
 	return system, messages
@@ -55,14 +64,15 @@ func toProtoMessage(in anthropic.MessageParam) proto.Message {
 		Role: string(in.Role),
 	}
 
-	for _, c := range in.Content {
-		if block := c.OfRequestTextBlock; block != nil {
-			msg.Content += block.Text
+	for _, block := range in.Content {
+		if txt := block.OfRequestTextBlock; txt != nil {
+			msg.Content += txt.Text
 		}
 
-		if block := c.OfRequestToolUseBlock; block != nil {
-			msg.ToolCallID = block.ID
-			msg.FunctionName = block.Name
+		if call := block.OfRequestToolUseBlock; call != nil {
+			msg.ToolCall.ID = call.ID
+			msg.ToolCall.Function.Name = call.Name
+			msg.ToolCall.Function.Arguments = call.Input.(json.RawMessage)
 		}
 	}
 

@@ -127,10 +127,15 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 			openai.ToolMessage(content, call.ID),
 		)
 		s.messages = append(s.messages, proto.Message{
-			Role:         proto.RoleTool,
-			Content:      content,
-			ToolCallID:   call.ID,
-			FunctionName: call.Function.Name,
+			Role:    proto.RoleTool,
+			Content: content,
+			ToolCall: proto.MessageToolCall{
+				ID: call.ID,
+				Function: proto.Function{
+					Name:      call.Function.Name,
+					Arguments: []byte(call.Function.Arguments),
+				},
+			},
 		})
 		result = append(result, proto.ToolCallStatus{
 			Name: call.Function.Name,

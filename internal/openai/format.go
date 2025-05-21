@@ -36,11 +36,23 @@ func fromProtoMessages(input []proto.Message) []openai.ChatCompletionMessagePara
 		case proto.RoleSystem:
 			messages = append(messages, openai.SystemMessage(msg.Content))
 		case proto.RoleTool:
-			messages = append(messages, openai.ToolMessage(msg.Content, msg.ToolCallID))
+			messages = append(messages, openai.ToolMessage(msg.Content, msg.ToolCall.ID))
 		case proto.RoleUser:
 			messages = append(messages, openai.UserMessage(msg.Content))
 		case proto.RoleAssistant:
-			messages = append(messages, openai.AssistantMessage(msg.Content))
+			m := openai.AssistantMessage(msg.Content)
+			if msg.ToolCall.ID != "" {
+				m.OfAssistant.ToolCalls = []openai.ChatCompletionMessageToolCallParam{
+					{
+						ID: msg.ToolCall.ID,
+						Function: openai.ChatCompletionMessageToolCallFunctionParam{
+							Arguments: string(msg.ToolCall.Function.Arguments),
+							Name:      msg.ToolCall.Function.Name,
+						},
+					},
+				}
+			}
+			messages = append(messages, m)
 		}
 	}
 	return messages
@@ -65,7 +77,13 @@ func toProtoMessage(in openai.ChatCompletionMessageParamUnion) proto.Message {
 		}
 	}
 	if id := in.GetToolCallID(); id != nil {
-		msg.ToolCallID = *id
+		msg.ToolCall.ID = *id
+	}
+	if fn := in.GetFunctionCall(); fn != nil {
+		msg.ToolCall.Function = proto.Function{
+			Name:      fn.Name,
+			Arguments: []byte(fn.Arguments),
+		}
 	}
 	return msg
 }
