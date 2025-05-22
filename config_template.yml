@@ -147,6 +147,9 @@ apis:
     api-key:
     api-key-env: ANTHROPIC_API_KEY
     models: # https://docs.anthropic.com/en/docs/about-claude/models
+      claude-sonnet-4-20250514:
+        aliases: ["claude-sonnet-4", "sonnet-4"]
+        max-input-chars: 680000
       claude-3-7-sonnet-latest:
         aliases: ["claude3.7-sonnet", "claude-3-7-sonnet", "sonnet-3.7"]
         max-input-chars: 680000
@@ -216,7 +219,7 @@ apis:
     api-key:
     api-key-env: GROQ_API_KEY
     models: # https://console.groq.com/docs/models
-    # Production models
+      # Production models
       gemma2-9b-it:
         aliases: ["gemma2", "gemma"]
         max-input-chars: 24500 # 8,192
@@ -244,7 +247,7 @@ apis:
       meta-llama/llama-4-scout-17b-16e-instruct:
         aliases: ["llama4"]
         max-input-chars: 392000 # 128K
-    # Preview models
+      # Preview models
       mistral-saba-24b:
         aliases: ["saba", "mistral-saba", "saba-24b"]
         max-input-chars: 98000 # 32K
@@ -299,11 +302,11 @@ apis:
     api-key:
     api-key-env: SAMBANOVA_API_KEY
     models: # https://docs.sambanova.ai/cloud/docs/get-started/supported-models
-    # Preview models
+      # Preview models
       DeepSeek-R1:
         aliases: ["deepseek-r1-sambanova", "deepseek-r1-preview"]
         max-input-chars: 24500 # 8k tokens
-    # Production models
+      # Production models
       DeepSeek-R1-Distill-Llama-70B:
         aliases: ["deepseek-r1-llama-sambanova", "deepseek-r1-distill"]
         max-input-chars: 98000 # 32k tokens
