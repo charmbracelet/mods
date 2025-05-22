@@ -414,13 +414,11 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			cfg.MaxTokens = 0
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
+		// 1min should be enough - user might not have mcp downloaded yet...
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		m.cancelRequest = cancel
 
-		// 1min should be enough - user might not have mcp downloaded yet...
-		tctx, cancel := context.WithTimeout(ctx, time.Minute)
-		defer cancel()
-		tools, err := mcpTools(tctx)
+		tools, err := mcpTools(ctx)
 		if err != nil {
 			return modsError{err, "Could not setup MCP"}
 		}
@@ -441,7 +439,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			Tools:       tools,
 			ToolCaller: func(name string, data []byte) (string, error) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-				defer cancel()
+				m.cancelRequest = cancel
 				return toolCall(ctx, name, data)
 			},
 		}
@@ -541,11 +539,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 			errh:   msg.errh,
 		}
 		for _, call := range results {
-			toolMsg.content += fmt.Sprintf("\n> Ran tool: `%s`", call.Name)
-			if call.Err != nil {
-				toolMsg.content += fmt.Sprintf("\n\n**Tool failed**:\n```\n%s\n```", call.Err.Error())
-			}
-			toolMsg.content += "\n\n"
+			toolMsg.content += call.String()
 		}
 		if len(results) == 0 {
 			m.messages = msg.stream.Messages()

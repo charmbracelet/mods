@@ -7,30 +7,13 @@ import (
 
 func fromProtoMessages(input []proto.Message) (history []*cohere.Message, message string) {
 	var messages []*cohere.Message
-	for _, message := range input {
-		switch message.Role {
-		case "system":
-			messages = append(messages, &cohere.Message{
-				Role: "SYSTEM",
-				Chatbot: &cohere.ChatMessage{
-					Message: message.Content,
-				},
-			})
-		case "assistant":
-			messages = append(messages, &cohere.Message{
-				Role: "CHATBOT",
-				Chatbot: &cohere.ChatMessage{
-					Message: message.Content,
-				},
-			})
-		case "user":
-			messages = append(messages, &cohere.Message{
-				Role: "USER",
-				User: &cohere.ChatMessage{
-					Message: message.Content,
-				},
-			})
-		}
+	for _, msg := range input {
+		messages = append(messages, &cohere.Message{
+			Role: fromProtoRole(msg.Role),
+			Chatbot: &cohere.ChatMessage{
+				Message: msg.Content,
+			},
+		})
 	}
 	if len(messages) > 1 {
 		history = messages[:len(messages)-1]
@@ -63,4 +46,15 @@ func toProtoMessages(input []*cohere.Message) []proto.Message {
 		}
 	}
 	return messages
+}
+
+func fromProtoRole(role string) string {
+	switch role {
+	case proto.RoleSystem:
+		return "SYSTEM"
+	case proto.RoleAssistant:
+		return "CHATBOT"
+	default:
+		return "USER"
+	}
 }

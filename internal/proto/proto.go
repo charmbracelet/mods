@@ -2,6 +2,7 @@
 package proto
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -25,6 +26,20 @@ type Chunk struct {
 type ToolCallStatus struct {
 	Name string
 	Err  error
+}
+
+func (c ToolCallStatus) String() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("\n> Ran tool: `%s`\n", c.Name))
+	if c.Err != nil {
+		sb.WriteString(">\n> *Failed*:\n> ```\n")
+		for line := range strings.SplitSeq(c.Err.Error(), "\n") {
+			sb.WriteString("> " + line)
+		}
+		sb.WriteString("\n> ```\n")
+	}
+	sb.WriteByte('\n')
+	return sb.String()
 }
 
 // Message is a message in the conversation.
@@ -79,7 +94,13 @@ func (cc Conversation) String() string {
 			sb.WriteString("**User**: ")
 		case RoleTool:
 			for _, tool := range msg.ToolCalls {
-				sb.WriteString(fmt.Sprintf("> Ran tool: `%s`\n\n", tool.Function.Name))
+				s := ToolCallStatus{
+					Name: tool.Function.Name,
+				}
+				if tool.IsError {
+					s.Err = errors.New(msg.Content)
+				}
+				sb.WriteString(s.String())
 			}
 			continue
 		case RoleAssistant:

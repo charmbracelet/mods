@@ -6,12 +6,7 @@ func fromProtoMessages(input []proto.Message) []Content {
 	result := make([]Content, 0, len(input))
 	for _, in := range input {
 		switch in.Role {
-		case proto.RoleSystem:
-			result = append(result, Content{
-				Role:  proto.RoleUser,
-				Parts: []Part{{Text: in.Content}},
-			})
-		case proto.RoleUser:
+		case proto.RoleSystem, proto.RoleUser:
 			result = append(result, Content{
 				Role:  proto.RoleUser,
 				Parts: []Part{{Text: in.Content}},

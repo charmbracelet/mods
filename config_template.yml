@@ -161,6 +161,9 @@ apis:
     api-key:
     api-key-env: ANTHROPIC_API_KEY
     models: # https://docs.anthropic.com/en/docs/about-claude/models
+      claude-sonnet-4-20250514:
+        aliases: ["claude-sonnet-4", "sonnet-4"]
+        max-input-chars: 680000
       claude-3-7-sonnet-latest:
         aliases: ["claude3.7-sonnet", "claude-3-7-sonnet", "sonnet-3.7"]
         max-input-chars: 680000

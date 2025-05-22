@@ -136,7 +136,7 @@ func toolCall(ctx context.Context, name string, data []byte) (string, error) {
 	}
 
 	if result.IsError {
-		return sb.String(), errors.New("mcp: tool failed")
+		return "", errors.New(sb.String())
 	}
 	return sb.String(), nil
 }

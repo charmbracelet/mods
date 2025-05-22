@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"io"
 
@@ -39,6 +40,10 @@ func (c *Conversations) Write(id string, messages *[]proto.Message) error {
 // Delete a conversation.
 func (c *Conversations) Delete(id string) error {
 	return c.cache.Delete(id)
+}
+
+func init() {
+	gob.Register(errors.New(""))
 }
 
 func encode(w io.Writer, messages *[]proto.Message) error {

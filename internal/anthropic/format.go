@@ -73,6 +73,13 @@ func toProtoMessage(in anthropic.MessageParam) proto.Message {
 			msg.Content += txt.Text
 		}
 
+		if call := block.OfRequestToolResultBlock; call != nil {
+			msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
+				ID:      call.ToolUseID,
+				IsError: call.IsError.Value,
+			})
+		}
+
 		if call := block.OfRequestToolUseBlock; call != nil {
 			msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
 				ID: call.ID,
