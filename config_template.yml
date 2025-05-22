@@ -10,7 +10,7 @@ mcp-servers:
   # github:
   #   command: docker
   #   env:
-  #     - FOO=bar
+  #     - GITHUB_PERSONAL_ACCESS_TOKEN=xxxyyy
   #   args:
   #     - run
   #     - "-i"
