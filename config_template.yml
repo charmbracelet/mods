@@ -245,7 +245,10 @@ apis:
         aliases: ["mixtral"]
         max-input-chars: 98000 # 32,768
       meta-llama/llama-4-scout-17b-16e-instruct:
-        aliases: ["llama4"]
+        aliases: ["llama4-scout"]
+        max-input-chars: 392000 # 128K
+      meta-llama/llama-4-maverick-17b-128e-instruct:
+        aliases: ["llama4", "llama4-maverick"]
         max-input-chars: 392000 # 128K
       # Preview models
       mistral-saba-24b:
