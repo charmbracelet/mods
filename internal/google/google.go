@@ -235,7 +235,7 @@ func (s *Stream) Current() (proto.Chunk, error) {
 		if !bytes.HasPrefix(noSpaceLine, googleHeaderData) || hasError {
 			if hasError {
 				noSpaceLine = bytes.TrimPrefix(noSpaceLine, googleHeaderData)
-				return proto.Chunk{}, fmt.Errorf("ollamaStreamReader.processLines: %s", noSpaceLine)
+				return proto.Chunk{}, fmt.Errorf("googleStreamReader.processLines: %s", noSpaceLine)
 			}
 			emptyMessagesCount++
 			if emptyMessagesCount > emptyMessagesLimit {
