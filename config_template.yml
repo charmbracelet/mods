@@ -418,7 +418,7 @@ apis:
   github-models:
     base-url: https://models.github.ai/inference
     api-key:
-    api-key-env: GITHUB_PAT
+    api-key-env: GITHUB_PERSONAL_ACCESS_TOKEN
     models:
       openai/gpt-4.1:
         max-input-chars: 392000
