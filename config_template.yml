@@ -216,7 +216,7 @@ apis:
     api-key:
     api-key-env: GROQ_API_KEY
     models: # https://console.groq.com/docs/models
-    # Production models
+      # Production models
       gemma2-9b-it:
         aliases: ["gemma2", "gemma"]
         max-input-chars: 24500 # 8,192
@@ -244,7 +244,7 @@ apis:
       meta-llama/llama-4-scout-17b-16e-instruct:
         aliases: ["llama4"]
         max-input-chars: 392000 # 128K
-    # Preview models
+      # Preview models
       mistral-saba-24b:
         aliases: ["saba", "mistral-saba", "saba-24b"]
         max-input-chars: 98000 # 32K
@@ -299,11 +299,11 @@ apis:
     api-key:
     api-key-env: SAMBANOVA_API_KEY
     models: # https://docs.sambanova.ai/cloud/docs/get-started/supported-models
-    # Preview models
+      # Preview models
       DeepSeek-R1:
         aliases: ["deepseek-r1-sambanova", "deepseek-r1-preview"]
         max-input-chars: 24500 # 8k tokens
-    # Production models
+      # Production models
       DeepSeek-R1-Distill-Llama-70B:
         aliases: ["deepseek-r1-llama-sambanova", "deepseek-r1-distill"]
         max-input-chars: 98000 # 32k tokens
@@ -413,3 +413,110 @@ apis:
       deepseek-reasoner:
         aliases: ["r1"]
         max-input-chars: 384000
+  # GitHub Models
+  # https://github.com/marketplace/models
+  github-models:
+    base-url: https://models.github.ai/inference
+    api-key:
+    api-key-env: GITHUB_PAT
+    models:
+      openai/gpt-4.1:
+        max-input-chars: 392000
+      openai/o3-mini:
+        max-input-chars: 392000
+      openai/o4-mini:
+        max-input-chars: 392000
+      openai/text-embedding-3-large:
+        max-input-chars: 392000
+      openai/text-embedding-3-small:
+        max-input-chars: 392000
+      ai21-labs/AI21-Jamba-1.5-Large:
+        max-input-chars: 392000
+      ai21-labs/AI21-Jamba-1.5-Mini:
+        max-input-chars: 392000
+      cohere/cohere-command-a:
+        max-input-chars: 392000
+      cohere/Cohere-command-r:
+        max-input-chars: 392000
+      cohere/Cohere-command-r-08-2024:
+        max-input-chars: 392000
+      cohere/Cohere-command-r-plus:
+        max-input-chars: 392000
+      cohere/Cohere-command-r-plus-08-2024:
+        max-input-chars: 392000
+      cohere/Cohere-embed-v3-english:
+        max-input-chars: 392000
+      cohere/Cohere-embed-v3-multilingual:
+        max-input-chars: 392000
+      core42/jais-30b-chat:
+        max-input-chars: 392000
+      deepseek/DeepSeek-R1:
+        max-input-chars: 392000
+      deepseek/DeepSeek-V3-0324:
+        max-input-chars: 392000
+      meta/Llama-3.2-11B-Vision-Instruct:
+        max-input-chars: 392000
+      meta/Llama-3.2-90B-Vision-Instruct:
+        max-input-chars: 392000
+      meta/Llama-3.3-70B-Instruct:
+        max-input-chars: 392000
+      meta/Llama-4-Maverick-17B-128E-Instruct-FP8:
+        max-input-chars: 392000
+      meta/Llama-4-Scout-17B-16E-Instruct:
+        max-input-chars: 392000
+      meta/Meta-Llama-3.1-405B-Instruct:
+        max-input-chars: 392000
+      meta/Meta-Llama-3.1-70B-Instruct:
+        max-input-chars: 392000
+      meta/Meta-Llama-3.1-8B-Instruct:
+        max-input-chars: 392000
+      meta/Meta-Llama-3-70B-Instruct:
+        max-input-chars: 392000
+      meta/Meta-Llama-3-8B-Instruct:
+        max-input-chars: 392000
+      mistral-ai/Codestral-2501:
+        max-input-chars: 392000
+      mistral-ai/Ministral-3B:
+        max-input-chars: 392000
+      mistral-ai/Mistral-Large-2411:
+        max-input-chars: 392000
+      mistral-ai/mistral-medium-2505:
+        max-input-chars: 392000
+      mistral-ai/Mistral-Nemo:
+        max-input-chars: 392000
+      mistral-ai/mistral-small-2503:
+        max-input-chars: 392000
+      xai/grok-3:
+        max-input-chars: 392000
+      xai/grok-3-mini:
+        max-input-chars: 392000
+      microsoft/MAI-DS-R1:
+        max-input-chars: 392000
+      microsoft/Phi-3.5-mini-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-3.5-MoE-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-3.5-vision-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-3-medium-128k-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-3-medium-4k-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-3-mini-128k-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-3-mini-4k-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-3-small-128k-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-3-small-8k-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-4:
+        max-input-chars: 392000
+      microsoft/Phi-4-mini-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-4-mini-reasoning:
+        max-input-chars: 392000
+      microsoft/Phi-4-multimodal-instruct:
+        max-input-chars: 392000
+      microsoft/Phi-4-reasoning:
+        max-input-chars: 392000
