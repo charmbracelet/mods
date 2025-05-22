@@ -627,6 +627,9 @@ func makeOptions(conversations []Conversation) []huh.Option[string] {
 		if c.Model != nil {
 			right += stdoutStyles().Comment.Render(*c.Model)
 		}
+		if c.API != nil {
+			right += stdoutStyles().Comment.Render(" (" + *c.API + ")")
+		}
 		opts = append(opts, huh.NewOption(left+" "+right, c.ID))
 	}
 	return opts
@@ -706,7 +709,7 @@ func saveConversation(mods *Mods) error {
 			stderrStyles().InlineCode.Render("NO_CACHE"),
 		)}
 	}
-	if err := db.Save(id, title, config.Model); err != nil {
+	if err := db.Save(id, title, config.API, config.Model); err != nil {
 		_ = cache.delete(id) // remove leftovers
 		return modsError{err, fmt.Sprintf(
 			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
@@ -753,8 +756,9 @@ func askInfo() error {
 
 	if config.ContinueLast {
 		found, err := db.FindHEAD()
-		if err == nil && found != nil && found.Model != nil {
+		if err == nil && found != nil && found.Model != nil && found.API != nil {
 			config.Model = *found.Model
+			config.API = *found.API
 		}
 	}
 

@@ -1,3 +1,5 @@
+# {{ index .Help "api" }}
+default-api: openai
 # {{ index .Help "model" }}
 default-model: gpt-4o
 # {{ index .Help "format-text" }}
