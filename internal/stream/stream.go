@@ -39,3 +39,34 @@ type Stream interface {
 	// handles any pending tool calls
 	CallTools() []proto.ToolCallStatus
 }
+
+// CallTool calls a tool using the provided data and caller, and returns the
+// resulting [proto.Message] and [proto.ToolCallStatus].
+func CallTool(
+	id, name string,
+	data []byte,
+	caller func(name string, data []byte) (string, error),
+) (proto.Message, proto.ToolCallStatus) {
+	content, err := caller(name, data)
+	if content == "" && err != nil {
+		content = err.Error()
+	}
+	return proto.Message{
+			Role:    proto.RoleTool,
+			Content: content,
+			ToolCalls: []proto.ToolCall{
+				{
+					ID:      id,
+					IsError: err != nil,
+					Function: proto.Function{
+						Name:      name,
+						Arguments: data,
+					},
+				},
+			},
+		},
+		proto.ToolCallStatus{
+			Name: name,
+			Err:  err,
+		}
+}

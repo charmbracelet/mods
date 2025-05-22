@@ -32,25 +32,29 @@ func fromMCPTools(mcps map[string][]mcp.Tool) []api.Tool {
 func fromProtoMessages(input []proto.Message) []api.Message {
 	messages := make([]api.Message, 0, len(input))
 	for _, msg := range input {
-		m := api.Message{
-			Content: msg.Content,
-			Role:    msg.Role,
-		}
-		for _, call := range msg.ToolCalls {
-			var args api.ToolCallFunctionArguments
-			_ = json.Unmarshal(call.Function.Arguments, &args)
-			idx, _ := strconv.Atoi(call.ID)
-			m.ToolCalls = append(m.ToolCalls, api.ToolCall{
-				Function: api.ToolCallFunction{
-					Index:     idx,
-					Name:      call.Function.Name,
-					Arguments: args,
-				},
-			})
-		}
-		messages = append(messages, m)
+		messages = append(messages, fromProtoMessage(msg))
 	}
 	return messages
+}
+
+func fromProtoMessage(input proto.Message) api.Message {
+	m := api.Message{
+		Content: input.Content,
+		Role:    input.Role,
+	}
+	for _, call := range input.ToolCalls {
+		var args api.ToolCallFunctionArguments
+		_ = json.Unmarshal(call.Function.Arguments, &args)
+		idx, _ := strconv.Atoi(call.ID)
+		m.ToolCalls = append(m.ToolCalls, api.ToolCall{
+			Function: api.ToolCallFunction{
+				Index:     idx,
+				Name:      call.Function.Name,
+				Arguments: args,
+			},
+		})
+	}
+	return m
 }
 
 func toProtoMessage(in api.Message) proto.Message {

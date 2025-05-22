@@ -107,35 +107,19 @@ func (s *Stream) fn(resp api.ChatResponse) error {
 
 // CallTools implements stream.Stream.
 func (s *Stream) CallTools() []proto.ToolCallStatus {
-	result := make([]proto.ToolCallStatus, 0, len(s.message.ToolCalls))
+	statuses := make([]proto.ToolCallStatus, 0, len(s.message.ToolCalls))
 	for _, call := range s.message.ToolCalls {
-		content, err := s.toolCall(call.Function.Name, []byte(call.Function.Arguments.String()))
-		if content == "" && err != nil {
-			content = err.Error()
-		}
-		s.messages = append(s.messages, proto.Message{
-			Role:    proto.RoleTool,
-			Content: content,
-			ToolCalls: []proto.ToolCall{
-				{
-					ID: strconv.Itoa(call.Function.Index),
-					Function: proto.Function{
-						Name:      call.Function.Name,
-						Arguments: []byte(call.Function.Arguments.String()),
-					},
-				},
-			},
-		})
-		s.request.Messages = append(s.request.Messages, api.Message{
-			Content: content,
-			Role:    proto.RoleTool,
-		})
-		result = append(result, proto.ToolCallStatus{
-			Name: call.Function.Name,
-			Err:  err,
-		})
+		msg, status := stream.CallTool(
+			strconv.Itoa(call.Function.Index),
+			call.Function.Name,
+			[]byte(call.Function.Arguments.String()),
+			s.toolCall,
+		)
+		s.request.Messages = append(s.request.Messages, fromProtoMessage(msg))
+		s.messages = append(s.messages, msg)
+		statuses = append(statuses, status)
 	}
-	return result
+	return statuses
 }
 
 // Close implements stream.Stream.

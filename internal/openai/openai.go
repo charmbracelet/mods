@@ -119,33 +119,23 @@ type Stream struct {
 // CallTools implements stream.Stream.
 func (s *Stream) CallTools() []proto.ToolCallStatus {
 	calls := s.message.Choices[0].Message.ToolCalls
-	result := make([]proto.ToolCallStatus, 0, len(calls))
+	statuses := make([]proto.ToolCallStatus, 0, len(calls))
 	for _, call := range calls {
-		content, err := s.toolCall(call.Function.Name, []byte(call.Function.Arguments))
-		if err != nil && content == "" {
-			content = err.Error()
-		}
-		msg := openai.ToolMessage(content, call.ID)
-		s.request.Messages = append(s.request.Messages, msg)
-		s.messages = append(s.messages, proto.Message{
-			Role:    proto.RoleTool,
-			Content: content,
-			ToolCalls: []proto.ToolCall{
-				{
-					ID: call.ID,
-					Function: proto.Function{
-						Name:      call.Function.Name,
-						Arguments: []byte(call.Function.Arguments),
-					},
-				},
-			},
-		})
-		result = append(result, proto.ToolCallStatus{
-			Name: call.Function.Name,
-			Err:  err,
-		})
+		msg, status := stream.CallTool(
+			call.ID,
+			call.Function.Name,
+			[]byte(call.Function.Arguments),
+			s.toolCall,
+		)
+		resp := openai.ToolMessage(
+			msg.Content,
+			call.ID,
+		)
+		s.request.Messages = append(s.request.Messages, resp)
+		s.messages = append(s.messages, msg)
+		statuses = append(statuses, status)
 	}
-	return result
+	return statuses
 }
 
 // Close implements stream.Stream.

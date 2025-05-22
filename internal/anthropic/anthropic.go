@@ -102,41 +102,29 @@ type Stream struct {
 
 // CallTools implements stream.Stream.
 func (s *Stream) CallTools() []proto.ToolCallStatus {
-	var result []proto.ToolCallStatus
+	var statuses []proto.ToolCallStatus
 	for _, block := range s.message.Content {
 		switch call := block.AsAny().(type) {
 		case anthropic.ToolUseBlock:
-			content, err := s.toolCall(call.Name, []byte(call.JSON.Input.Raw()))
-			s.request.Messages = append(
-				s.request.Messages,
-				anthropic.NewUserMessage(
-					anthropic.NewToolResultBlock(
-						call.ID,
-						content,
-						err != nil,
-					),
+			msg, status := stream.CallTool(
+				call.ID,
+				call.Name,
+				[]byte(call.JSON.Input.Raw()),
+				s.toolCall,
+			)
+			resp := anthropic.NewUserMessage(
+				anthropic.NewToolResultBlock(
+					call.ID,
+					msg.Content,
+					status.Err != nil,
 				),
 			)
-			s.messages = append(s.messages, proto.Message{
-				Role:    proto.RoleTool,
-				Content: content,
-				ToolCalls: []proto.ToolCall{
-					{
-						ID: call.ID,
-						Function: proto.Function{
-							Name:      call.Name,
-							Arguments: []byte(call.JSON.Input.Raw()),
-						},
-					},
-				},
-			})
-			result = append(result, proto.ToolCallStatus{
-				Name: call.Name,
-				Err:  err,
-			})
+			s.request.Messages = append(s.request.Messages, resp)
+			s.messages = append(s.messages, msg)
+			statuses = append(statuses, status)
 		}
 	}
-	return result
+	return statuses
 }
 
 // Close implements stream.Stream.

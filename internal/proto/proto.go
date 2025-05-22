@@ -38,6 +38,7 @@ type Message struct {
 type ToolCall struct {
 	ID       string
 	Function Function
+	IsError  bool
 }
 
 // Function is the function signature of a tool call.

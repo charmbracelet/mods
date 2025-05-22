@@ -31,10 +31,11 @@ func fromProtoMessages(input []proto.Message) (system []anthropic.TextBlockParam
 	for _, msg := range input {
 		switch msg.Role {
 		case proto.RoleSystem:
+			// system is not a role in anthropic, must set it as the system part of the request.
 			system = append(system, *anthropic.NewTextBlock(msg.Content).OfRequestTextBlock)
 		case proto.RoleTool:
 			for _, call := range msg.ToolCalls {
-				block := anthropic.NewToolResultBlock(call.ID, msg.Content, false)
+				block := anthropic.NewToolResultBlock(call.ID, msg.Content, call.IsError)
 				//	tool is not a role in anthropic, must be a user message.
 				messages = append(messages, anthropic.NewUserMessage(block))
 				break

@@ -440,7 +440,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			Stop:        cfg.Stop,
 			Tools:       tools,
 			ToolCaller: func(name string, data []byte) (string, error) {
-				fmt.Println("calling", name)
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
 				return toolCall(ctx, name, data)
