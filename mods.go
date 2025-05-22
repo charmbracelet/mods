@@ -417,7 +417,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		ctx, cancel := context.WithCancel(context.Background())
 		m.cancelRequest = cancel
 
-		tctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		// 1min should be enough - user might not have mcp downloaded yet...
+		tctx, cancel := context.WithTimeout(ctx, time.Minute)
 		defer cancel()
 		tools, err := mcpTools(tctx)
 		if err != nil {
@@ -438,7 +439,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			TopK:        &cfg.TopK,
 			Stop:        cfg.Stop,
 			Tools:       tools,
-			ToolCaller:  toolCall,
+			ToolCaller: func(name string, data []byte) (string, error) {
+				fmt.Println("calling", name)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
+				return toolCall(ctx, name, data)
+			},
 		}
 		if cfg.MaxTokens > 0 {
 			request.MaxTokens = &cfg.MaxTokens

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"runtime/pprof"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/atotto/clipboard"
 	timeago "github.com/caarlos0/timea.go"
@@ -202,7 +204,9 @@ var (
 			}
 
 			if config.MCPListTools {
-				return mcpListTools()
+				ctx, cancel := context.WithTimeout(cmd.Context(), time.Minute)
+				defer cancel()
+				return mcpListTools(ctx)
 			}
 
 			if len(config.Delete) > 0 {

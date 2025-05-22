@@ -40,8 +40,7 @@ func mcpList() error {
 	return nil
 }
 
-func mcpListTools() error {
-	ctx := context.Background()
+func mcpListTools(ctx context.Context) error {
 	for sname, server := range enabledMCPs() {
 		tools, err := mcpToolsFor(ctx, sname, server)
 		if err != nil {
@@ -87,7 +86,7 @@ func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mc
 	return tools.Tools, nil
 }
 
-func toolCall(name string, data []byte) (string, error) {
+func toolCall(ctx context.Context, name string, data []byte) (string, error) {
 	sname, tool, ok := strings.Cut(name, "_")
 	if !ok {
 		return "", fmt.Errorf("mcp: invalid tool name: %q", name)
@@ -107,7 +106,7 @@ func toolCall(name string, data []byte) (string, error) {
 	defer client.Close() //nolint:errcheck
 
 	// Initialize the client
-	if _, err = client.Initialize(context.Background(), mcp.InitializeRequest{}); err != nil {
+	if _, err = client.Initialize(ctx, mcp.InitializeRequest{}); err != nil {
 		return "", fmt.Errorf("mcp: %w", err)
 	}
 
@@ -118,18 +117,10 @@ func toolCall(name string, data []byte) (string, error) {
 		}
 	}
 
-	result, err := client.CallTool(context.Background(), mcp.CallToolRequest{
-		Params: struct {
-			Name      string         `json:"name"`
-			Arguments map[string]any `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
-			Name:      tool,
-			Arguments: args,
-		},
-	})
+	request := mcp.CallToolRequest{}
+	request.Params.Name = tool
+	request.Params.Arguments = args
+	result, err := client.CallTool(context.Background(), request)
 	if err != nil {
 		return "", fmt.Errorf("mcp: %w", err)
 	}
