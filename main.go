@@ -193,14 +193,16 @@ var (
 			}
 
 			if config.ListRoles {
-				return listRoles()
+				listRoles()
+				return nil
 			}
 			if config.List {
 				return listConversations(config.Raw)
 			}
 
 			if config.MCPList {
-				return mcpList()
+				mcpList()
+				return nil
 			}
 
 			if config.MCPListTools {
@@ -637,7 +639,7 @@ func roleNames(prefix string) []string {
 	return roles
 }
 
-func listRoles() error {
+func listRoles() {
 	for _, role := range roleNames("") {
 		s := role
 		if role == config.Role {
@@ -645,7 +647,6 @@ func listRoles() error {
 		}
 		fmt.Println(s)
 	}
-	return nil
 }
 
 func makeOptions(conversations []Conversation) []huh.Option[string] {

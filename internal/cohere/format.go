@@ -6,7 +6,7 @@ import (
 )
 
 func fromProtoMessages(input []proto.Message) (history []*cohere.Message, message string) {
-	var messages []*cohere.Message
+	var messages []*cohere.Message //nolint:prealloc
 	for _, msg := range input {
 		messages = append(messages, &cohere.Message{
 			Role: fromProtoRole(msg.Role),

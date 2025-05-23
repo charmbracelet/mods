@@ -29,7 +29,7 @@ func isMCPEnabled(name string) bool {
 		!slices.Contains(config.MCPDisable, name)
 }
 
-func mcpList() error {
+func mcpList() {
 	for name := range config.MCPServers {
 		s := name
 		if isMCPEnabled(name) {
@@ -37,7 +37,6 @@ func mcpList() error {
 		}
 		fmt.Println(s)
 	}
-	return nil
 }
 
 func mcpListTools(ctx context.Context) error {
