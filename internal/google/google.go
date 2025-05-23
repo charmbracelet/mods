@@ -77,7 +77,7 @@ func NewRequestBuilder() *HTTPRequestBuilder {
 	}
 }
 
-// Client is a client for the Anthropic API.
+// Client is a client for the Google API.
 type Client struct {
 	config Config
 
@@ -124,7 +124,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 	return stream
 }
 
-// New creates a new AnthropicClient with the given configuration.
+// New creates a new Client with the given configuration.
 func New(config Config) *Client {
 	return &Client{
 		config:         config,
