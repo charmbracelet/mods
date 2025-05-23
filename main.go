@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,12 +12,14 @@ import (
 	"runtime/pprof"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/atotto/clipboard"
 	timeago "github.com/caarlos0/timea.go"
 	tea "github.com/charmbracelet/bubbletea"
 	glamour "github.com/charmbracelet/glamour/styles"
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/mods/internal/cache"
 	"github.com/charmbracelet/x/editor"
 	mcobra "github.com/muesli/mango-cobra"
 	"github.com/muesli/roff"
@@ -68,7 +71,6 @@ func init() {
 var (
 	config = defaultConfig()
 	db     *convoDB
-	cache  *convoCache
 
 	rootCmd = &cobra.Command{
 		Use:           "mods",
@@ -115,6 +117,10 @@ var (
 				}
 			}
 
+			cache, err := cache.NewConversations(config.CachePath)
+			if err != nil {
+				return modsError{err, "Couldn't start Bubble Tea program."}
+			}
 			mods := newMods(stderrRenderer(), &config, db, cache)
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
@@ -187,10 +193,22 @@ var (
 			}
 
 			if config.ListRoles {
-				return listRoles()
+				listRoles()
+				return nil
 			}
 			if config.List {
 				return listConversations(config.Raw)
+			}
+
+			if config.MCPList {
+				mcpList()
+				return nil
+			}
+
+			if config.MCPListTools {
+				ctx, cancel := context.WithTimeout(cmd.Context(), time.Minute)
+				defer cancel()
+				return mcpListTools(ctx)
 			}
 
 			if len(config.Delete) > 0 {
@@ -250,12 +268,12 @@ func initFlags() {
 	flags.BoolVarP(&config.Version, "version", "v", false, stdoutStyles().FlagDesc.Render(help["version"]))
 	flags.IntVar(&config.MaxRetries, "max-retries", config.MaxRetries, stdoutStyles().FlagDesc.Render(help["max-retries"]))
 	flags.BoolVar(&config.NoLimit, "no-limit", config.NoLimit, stdoutStyles().FlagDesc.Render(help["no-limit"]))
-	flags.IntVar(&config.MaxTokens, "max-tokens", config.MaxTokens, stdoutStyles().FlagDesc.Render(help["max-tokens"]))
+	flags.Int64Var(&config.MaxTokens, "max-tokens", config.MaxTokens, stdoutStyles().FlagDesc.Render(help["max-tokens"]))
 	flags.IntVar(&config.WordWrap, "word-wrap", config.WordWrap, stdoutStyles().FlagDesc.Render(help["word-wrap"]))
-	flags.Float32Var(&config.Temperature, "temp", config.Temperature, stdoutStyles().FlagDesc.Render(help["temp"]))
+	flags.Float64Var(&config.Temperature, "temp", config.Temperature, stdoutStyles().FlagDesc.Render(help["temp"]))
 	flags.StringArrayVar(&config.Stop, "stop", config.Stop, stdoutStyles().FlagDesc.Render(help["stop"]))
-	flags.Float32Var(&config.TopP, "topp", config.TopP, stdoutStyles().FlagDesc.Render(help["topp"]))
-	flags.IntVar(&config.TopK, "topk", config.TopK, stdoutStyles().FlagDesc.Render(help["topk"]))
+	flags.Float64Var(&config.TopP, "topp", config.TopP, stdoutStyles().FlagDesc.Render(help["topp"]))
+	flags.Int64Var(&config.TopK, "topk", config.TopK, stdoutStyles().FlagDesc.Render(help["topk"]))
 	flags.UintVar(&config.Fanciness, "fanciness", config.Fanciness, stdoutStyles().FlagDesc.Render(help["fanciness"]))
 	flags.StringVar(&config.StatusText, "status-text", config.StatusText, stdoutStyles().FlagDesc.Render(help["status-text"]))
 	flags.BoolVar(&config.NoCache, "no-cache", config.NoCache, stdoutStyles().FlagDesc.Render(help["no-cache"]))
@@ -266,6 +284,9 @@ func initFlags() {
 	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
 	flags.StringVar(&config.Theme, "theme", "charm", stdoutStyles().FlagDesc.Render(help["theme"]))
 	flags.BoolVarP(&config.openEditor, "editor", "e", false, stdoutStyles().FlagDesc.Render(help["editor"]))
+	flags.BoolVar(&config.MCPList, "mcp-list", false, stdoutStyles().FlagDesc.Render(help["mcp-list"]))
+	flags.BoolVar(&config.MCPListTools, "mcp-list-tools", false, stdoutStyles().FlagDesc.Render(help["mcp-list-tools"]))
+	flags.StringArrayVar(&config.MCPDisable, "mcp-disable", nil, stdoutStyles().FlagDesc.Render(help["mcp-disable"]))
 	flags.Lookup("prompt").NoOptDefVal = "-1"
 	flags.SortFlags = false
 
@@ -304,6 +325,8 @@ func initFlags() {
 		"continue",
 		"continue-last",
 		"reset-settings",
+		"mcp-list",
+		"mcp-list-tools",
 	)
 }
 
@@ -320,16 +343,17 @@ func main() {
 		}
 	}
 
-	cache = newCache(config.CachePath)
-	db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
-	if err != nil {
-		handleError(modsError{err, "Could not open database."})
-		os.Exit(1)
-	}
-	defer db.Close() //nolint:errcheck
-
 	// XXX: this must come after creating the config.
 	initFlags()
+
+	if !isCompletionCmd(os.Args) && !isManCmd(os.Args) {
+		db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
+		if err != nil {
+			handleError(modsError{err, "Could not open database."})
+			os.Exit(1)
+		}
+		defer db.Close() //nolint:errcheck
+	}
 
 	if isCompletionCmd(os.Args) {
 		// XXX: since mods doesn't have any sub-commands, Cobra won't create
@@ -531,12 +555,16 @@ func deleteConversationOlderThan() error {
 		}
 	}
 
+	cache, err := cache.NewConversations(config.CachePath)
+	if err != nil {
+		return modsError{err, "Couldn't delete conversation."}
+	}
 	for _, c := range conversations {
 		if err := db.Delete(c.ID); err != nil {
 			return modsError{err, "Couldn't delete conversation."}
 		}
 
-		if err := cache.delete(c.ID); err != nil {
+		if err := cache.Delete(c.ID); err != nil {
 			return modsError{err, "Couldn't delete conversation."}
 		}
 
@@ -566,7 +594,11 @@ func deleteConversation(convo *Conversation) error {
 		return modsError{err, "Couldn't delete conversation."}
 	}
 
-	if err := cache.delete(convo.ID); err != nil {
+	cache, err := cache.NewConversations(config.CachePath)
+	if err != nil {
+		return modsError{err, "Couldn't delete conversation."}
+	}
+	if err := cache.Delete(convo.ID); err != nil {
 		return modsError{err, "Couldn't delete conversation."}
 	}
 
@@ -607,7 +639,7 @@ func roleNames(prefix string) []string {
 	return roles
 }
 
-func listRoles() error {
+func listRoles() {
 	for _, role := range roleNames("") {
 		s := role
 		if role == config.Role {
@@ -615,7 +647,6 @@ func listRoles() error {
 		}
 		fmt.Println(s)
 	}
-	return nil
 }
 
 func makeOptions(conversations []Conversation) []huh.Option[string] {
@@ -698,22 +729,22 @@ func saveConversation(mods *Mods) error {
 		title = firstLine(lastPrompt(mods.messages))
 	}
 
-	if err := cache.write(id, &mods.messages); err != nil {
-		return modsError{err, fmt.Sprintf(
-			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
-			config.cacheWriteToID,
-			stderrStyles().InlineCode.Render("--no-cache"),
-			stderrStyles().InlineCode.Render("NO_CACHE"),
-		)}
+	errReason := fmt.Sprintf(
+		"There was a problem writing %s to the cache. Use %s / %s to disable it.",
+		config.cacheWriteToID,
+		stderrStyles().InlineCode.Render("--no-cache"),
+		stderrStyles().InlineCode.Render("NO_CACHE"),
+	)
+	cache, err := cache.NewConversations(config.CachePath)
+	if err != nil {
+		return modsError{err, errReason}
+	}
+	if err := cache.Write(id, &mods.messages); err != nil {
+		return modsError{err, errReason}
 	}
 	if err := db.Save(id, title, config.Model); err != nil {
-		_ = cache.delete(id) // remove leftovers
-		return modsError{err, fmt.Sprintf(
-			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
-			config.cacheWriteToID,
-			stderrStyles().InlineCode.Render("--no-cache"),
-			stderrStyles().InlineCode.Render("NO_CACHE"),
-		)}
+		_ = cache.Delete(id) // remove leftovers
+		return modsError{err, errReason}
 	}
 
 	if !config.Quiet {
@@ -736,6 +767,8 @@ func isNoArgs() bool {
 		!config.ShowHelp &&
 		!config.List &&
 		!config.ListRoles &&
+		!config.MCPList &&
+		!config.MCPListTools &&
 		!config.Dirs &&
 		!config.Settings &&
 		!config.ResetSettings
