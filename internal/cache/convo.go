@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"bytes"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -53,9 +54,29 @@ func encode(w io.Writer, messages *[]proto.Message) error {
 	return nil
 }
 
+// decode decodes the given reader using gob.
+// we use a teereader in case the user tries to read a message in the old
+// format (from before MCP), and if so convert between types to avoid encoding
+// errors.
 func decode(r io.Reader, messages *[]proto.Message) error {
-	if err := gob.NewDecoder(r).Decode(messages); err != nil {
-		return fmt.Errorf("decode: %w", err)
+	var tr bytes.Buffer
+	if err1 := gob.NewDecoder(io.TeeReader(r, &tr)).Decode(messages); err1 != nil {
+		var noCalls []noCallMessage
+		if err2 := gob.NewDecoder(&tr).Decode(&noCalls); err2 != nil {
+			return fmt.Errorf("decode: %w", err1)
+		}
+		for _, msg := range noCalls {
+			*messages = append(*messages, proto.Message{
+				Role:    msg.Role,
+				Content: msg.Content,
+			})
+		}
 	}
 	return nil
+}
+
+// noCallMessage compatibility with messages with no tool calls.
+type noCallMessage struct {
+	Content string
+	Role    string
 }
