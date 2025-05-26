@@ -1,7 +1,6 @@
 package openai
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/charmbracelet/mods/internal/proto"
@@ -14,8 +13,14 @@ func fromMCPTools(mcps map[string][]mcp.Tool) []openai.ChatCompletionToolParam {
 	var tools []openai.ChatCompletionToolParam
 	for name, serverTools := range mcps {
 		for _, tool := range serverTools {
-			var params map[string]any
-			_ = json.Unmarshal(tool.RawInputSchema, &params)
+			params := map[string]any{
+				"type":       "object",
+				"properties": tool.InputSchema.Properties,
+			}
+			if len(tool.InputSchema.Required) > 0 {
+				params["required"] = tool.InputSchema.Required
+			}
+
 			tools = append(tools, openai.ChatCompletionToolParam{
 				Type: constant.Function("function"),
 				Function: openai.FunctionDefinitionParam{
