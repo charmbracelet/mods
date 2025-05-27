@@ -747,12 +747,7 @@ func saveConversation(mods *Mods) error {
 	}
 	if err := db.Save(id, title, config.API, config.Model); err != nil {
 		_ = cache.Delete(id) // remove leftovers
-		return modsError{err, fmt.Sprintf(
-			"There was a problem writing %s to the cache. Use %s / %s to disable it.",
-			config.cacheWriteToID,
-			stderrStyles().InlineCode.Render("--no-cache"),
-			stderrStyles().InlineCode.Render("NO_CACHE"),
-		)}
+		return modsError{err, errReason}
 	}
 
 	if !config.Quiet {
