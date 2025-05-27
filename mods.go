@@ -281,6 +281,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 
 		cfg := m.Config
 		api, mod, err := m.resolveModel(cfg)
+		cfg.API = mod.API
 		if err != nil {
 			return err
 		}
@@ -720,7 +721,7 @@ func (m *Mods) resolveModel(cfg *Config) (API, Model, error) {
 		mod, ok := api.Models[cfg.Model]
 		if ok {
 			mod.Name = cfg.Model
-			mod.API = cfg.API
+			mod.API = api.Name
 			return api, mod, nil
 		}
 		if cfg.API != "" {
