@@ -29,7 +29,7 @@ const (
 )
 
 var help = map[string]string{
-	"api":               "OpenAI compatible REST API (openai, localai)",
+	"api":               "OpenAI compatible REST API (openai, localai, anthropic, ...)",
 	"apis":              "Aliases and endpoints for OpenAI compatible REST API",
 	"http-proxy":        "HTTP proxy to use for API requests",
 	"model":             "Default model (gpt-3.5-turbo, gpt-4, ggml-gpt4all-j...)",
@@ -136,6 +136,7 @@ func (ft *FormatText) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 // Config holds the main configuration and is mapped to the YAML settings file.
 type Config struct {
+	API                 string     `yaml:"default-api" env:"API"`
 	Model               string     `yaml:"default-model" env:"MODEL"`
 	Format              bool       `yaml:"format" env:"FORMAT"`
 	FormatText          FormatText `yaml:"format-text"`
@@ -163,8 +164,6 @@ type Config struct {
 	System              string     `yaml:"system"`
 	Role                string     `yaml:"role" env:"ROLE"`
 	AskModel            bool
-	API                 string
-	Models              map[string]Model
 	Roles               map[string][]string
 	ShowHelp            bool
 	ResetSettings       bool
@@ -224,25 +223,6 @@ func ensureConfig() (Config, error) {
 	if err := yaml.Unmarshal(content, &c); err != nil {
 		return c, modsError{err, "Could not parse settings file."}
 	}
-	ms := make(map[string]Model)
-	for _, api := range c.APIs {
-		for mk, mv := range api.Models {
-			mv.Name = mk
-			mv.API = api.Name
-			// only set the model key and aliases if they haven't already been used
-			_, ok := ms[mk]
-			if !ok {
-				ms[mk] = mv
-			}
-			for _, a := range mv.Aliases {
-				_, ok := ms[a]
-				if !ok {
-					ms[a] = mv
-				}
-			}
-		}
-	}
-	c.Models = ms
 
 	if err := env.ParseWithOptions(&c, env.Options{Prefix: "MODS_"}); err != nil {
 		return c, modsError{err, "Could not parse environment into settings file."}

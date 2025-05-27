@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -119,6 +121,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Config.cacheWriteToID = msg.WriteID
 		m.Config.cacheWriteToTitle = msg.Title
 		m.Config.cacheReadFromID = msg.ReadID
+		m.Config.API = msg.API
 		m.Config.Model = msg.Model
 
 		if !m.Config.Quiet {
@@ -268,7 +271,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 	}
 
 	return func() tea.Msg {
-		var ok bool
 		var mod Model
 		var api API
 		var ccfg openai.Config
@@ -278,30 +280,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var gccfg google.Config
 
 		cfg := m.Config
-		mod, ok = cfg.Models[cfg.Model]
-		if !ok {
-			if cfg.API == "" {
-				return modsError{
-					reason: fmt.Sprintf(
-						"Model %s is not in the settings file.",
-						m.Styles.InlineCode.Render(cfg.Model),
-					),
-					err: newUserErrorf(
-						"Please specify an API endpoint with %s or configure the model in the settings: %s",
-						m.Styles.InlineCode.Render("--api"),
-						m.Styles.InlineCode.Render("mods --settings"),
-					),
-				}
-			}
-			mod.Name = cfg.Model
-			mod.API = cfg.API
-			mod.MaxChars = cfg.MaxInputChars
-		}
-		for _, a := range cfg.APIs {
-			if mod.API == a.Name {
-				api = a
-				break
-			}
+		api, mod, err := m.resolveModel(cfg)
+		cfg.API = mod.API
+		if err != nil {
+			return err
 		}
 		if api.Name == "" {
 			eps := make([]string, 0)
@@ -552,7 +534,7 @@ func (m *Mods) receiveCompletionStreamCmd(msg completionOutput) tea.Cmd {
 }
 
 type cacheDetailsMsg struct {
-	WriteID, Title, ReadID, Model string
+	WriteID, Title, ReadID, API, Model string
 }
 
 func (m *Mods) findCacheOpsDetails() tea.Cmd {
@@ -562,6 +544,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		writeID := ordered.First(m.Config.Title, m.Config.Continue)
 		title := writeID
 		model := config.Model
+		api := config.API
 
 		if readID != "" || continueLast || m.Config.ShowLast {
 			found, err := m.findReadID(readID)
@@ -573,8 +556,9 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 			}
 			if found != nil {
 				readID = found.ID
-				if found.Model != nil {
+				if found.Model != nil && found.API != nil {
 					model = *found.Model
+					api = *found.API
 				}
 			}
 		}
@@ -602,6 +586,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 			WriteID: writeID,
 			Title:   title,
 			ReadID:  readID,
+			API:     api,
 			Model:   model,
 		}
 	}
@@ -720,4 +705,49 @@ func increaseIndent(s string) string {
 		lines[i] = "\t" + lines[i]
 	}
 	return strings.Join(lines, "\n")
+}
+
+func (m *Mods) resolveModel(cfg *Config) (API, Model, error) {
+	for _, api := range cfg.APIs {
+		if api.Name != cfg.API && cfg.API != "" {
+			continue
+		}
+		for name, mod := range api.Models {
+			if name == cfg.Model || slices.Contains(mod.Aliases, cfg.Model) {
+				cfg.Model = name
+				break
+			}
+		}
+		mod, ok := api.Models[cfg.Model]
+		if ok {
+			mod.Name = cfg.Model
+			mod.API = api.Name
+			return api, mod, nil
+		}
+		if cfg.API != "" {
+			return API{}, Model{}, modsError{
+				err: newUserErrorf(
+					"Available models are: %s",
+					strings.Join(slices.Collect(maps.Keys(api.Models)), ", "),
+				),
+				reason: fmt.Sprintf(
+					"The API endpoint %s does not contain the model %s",
+					m.Styles.InlineCode.Render(cfg.API),
+					m.Styles.InlineCode.Render(cfg.Model),
+				),
+			}
+		}
+	}
+
+	return API{}, Model{}, modsError{
+		reason: fmt.Sprintf(
+			"Model %s is not in the settings file.",
+			m.Styles.InlineCode.Render(cfg.Model),
+		),
+		err: newUserErrorf(
+			"Please specify an API endpoint with %s or configure the model in the settings: %s",
+			m.Styles.InlineCode.Render("--api"),
+			m.Styles.InlineCode.Render("mods --settings"),
+		),
+	}
 }
