@@ -6,6 +6,20 @@ default-model: gpt-4o
 format-text:
   markdown: '{{ index .Config.FormatText "markdown" }}'
   json: '{{ index .Config.FormatText "json" }}'
+# {{ index .Help "mcp-servers" }}
+mcp-servers:
+  # Example: GitHub MCP via Docker:
+  # github:
+  #   command: docker
+  #   env:
+  #     - GITHUB_PERSONAL_ACCESS_TOKEN=xxxyyy
+  #   args:
+  #     - run
+  #     - "-i"
+  #     - "--rm"
+  #     - "-e"
+  #     - GITHUB_PERSONAL_ACCESS_TOKEN
+  #     - "ghcr.io/github/github-mcp-server"
 # {{ index .Help "roles" }}
 roles:
   "default": []

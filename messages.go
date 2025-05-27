@@ -3,13 +3,16 @@ package main
 import (
 	"strings"
 
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/charmbracelet/mods/internal/proto"
 )
 
-func lastPrompt(messages []openai.ChatCompletionMessage) string {
+func lastPrompt(messages []proto.Message) string {
 	var result string
 	for _, msg := range messages {
-		if msg.Role != openai.ChatMessageRoleUser {
+		if msg.Role != proto.RoleUser {
+			continue
+		}
+		if msg.Content == "" {
 			continue
 		}
 		result = msg.Content

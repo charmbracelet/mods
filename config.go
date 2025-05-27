@@ -40,43 +40,47 @@ var help = map[string]string{
 	"role":              "System role to use.",
 	"roles":             "List of predefined system messages that can be used as roles.",
 	"list-roles":        "List the roles defined in your configuration file",
-	"prompt":            "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.",
-	"prompt-args":       "Include the prompt from the arguments in the response.",
-	"raw":               "Render output as raw text when connected to a TTY.",
-	"quiet":             "Quiet mode (hide the spinner while loading and stderr messages for success).",
-	"help":              "Show help and exit.",
-	"version":           "Show version and exit.",
-	"max-retries":       "Maximum number of times to retry API calls.",
-	"no-limit":          "Turn off the client-side limit on the size of the input into the model.",
+	"prompt":            "Include the prompt from the arguments and stdin, truncate stdin to specified number of lines",
+	"prompt-args":       "Include the prompt from the arguments in the response",
+	"raw":               "Render output as raw text when connected to a TTY",
+	"quiet":             "Quiet mode (hide the spinner while loading and stderr messages for success)",
+	"help":              "Show help and exit",
+	"version":           "Show version and exit",
+	"max-retries":       "Maximum number of times to retry API calls",
+	"no-limit":          "Turn off the client-side limit on the size of the input into the model",
 	"word-wrap":         "Wrap formatted output at specific width (default is 80)",
-	"max-tokens":        "Maximum number of tokens in response.",
-	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0.",
-	"stop":              "Up to 4 sequences where the API will stop generating further tokens.",
-	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0.",
-	"topk":              "TopK, only sample from the top K options for each subsequent token.",
-	"fanciness":         "Your desired level of fanciness.",
-	"status-text":       "Text to show while generating.",
-	"settings":          "Open settings in your $EDITOR.",
-	"dirs":              "Print the directories in which mods store its data.",
-	"reset-settings":    "Backup your old settings file and reset everything to the defaults.",
-	"continue":          "Continue from the last response or a given save title.",
-	"continue-last":     "Continue from the last response.",
-	"no-cache":          "Disables caching of the prompt/response.",
-	"title":             "Saves the current conversation with the given title.",
-	"list":              "Lists saved conversations.",
-	"delete":            "Deletes one or more saved conversations with the given titles or IDs.",
-	"delete-older-than": "Deletes all saved conversations older than the specified duration. Valid units are: " + strings.EnglishJoin(duration.ValidUnits(), true) + ".",
-	"show":              "Show a saved conversation with the given title or ID.",
-	"theme":             "Theme to use in the forms. Valid units are: 'charm', 'catppuccin', 'dracula', and 'base16'",
-	"show-last":         "Show the last saved conversation.",
-	"editor":            "Edit the prompt in your $EDITOR. Only taken into account if no other args and if STDIN is a TTY.",
+	"max-tokens":        "Maximum number of tokens in response",
+	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0",
+	"stop":              "Up to 4 sequences where the API will stop generating further tokens",
+	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0",
+	"topk":              "TopK, only sample from the top K options for each subsequent token",
+	"fanciness":         "Your desired level of fanciness",
+	"status-text":       "Text to show while generating",
+	"settings":          "Open settings in your $EDITOR",
+	"dirs":              "Print the directories in which mods store its data",
+	"reset-settings":    "Backup your old settings file and reset everything to the defaults",
+	"continue":          "Continue from the last response or a given save title",
+	"continue-last":     "Continue from the last response",
+	"no-cache":          "Disables caching of the prompt/response",
+	"title":             "Saves the current conversation with the given title",
+	"list":              "Lists saved conversations",
+	"delete":            "Deletes one or more saved conversations with the given titles or IDs",
+	"delete-older-than": "Deletes all saved conversations older than the specified duration; valid values are " + strings.EnglishJoin(duration.ValidUnits(), true),
+	"show":              "Show a saved conversation with the given title or ID",
+	"theme":             "Theme to use in the forms; valid choices are charm, catppuccin, dracula, and base16",
+	"show-last":         "Show the last saved conversation",
+	"editor":            "Edit the prompt in your $EDITOR; only taken into account if no other args and if STDIN is a TTY",
+	"mcp-servers":       "MCP Servers configurations",
+	"mcp-disable":       "Disable specific MCP servers",
+	"mcp-list":          "List all available MCP servers",
+	"mcp-list-tools":    "List all available tools from enabled MCP servers",
 }
 
 // Model represents the LLM model used in the API call.
 type Model struct {
 	Name     string
 	API      string
-	MaxChars int      `yaml:"max-input-chars"`
+	MaxChars int64    `yaml:"max-input-chars"`
 	Aliases  []string `yaml:"aliases"`
 	Fallback string   `yaml:"fallback"`
 }
@@ -139,13 +143,13 @@ type Config struct {
 	FormatAs            string     `yaml:"format-as" env:"FORMAT_AS"`
 	Raw                 bool       `yaml:"raw" env:"RAW"`
 	Quiet               bool       `yaml:"quiet" env:"QUIET"`
-	MaxTokens           int        `yaml:"max-tokens" env:"MAX_TOKENS"`
-	MaxCompletionTokens int        `yaml:"max-completion-tokens" env:"MAX_COMPLETION_TOKENS"`
-	MaxInputChars       int        `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
-	Temperature         float32    `yaml:"temp" env:"TEMP"`
+	MaxTokens           int64      `yaml:"max-tokens" env:"MAX_TOKENS"`
+	MaxCompletionTokens int64      `yaml:"max-completion-tokens" env:"MAX_COMPLETION_TOKENS"`
+	MaxInputChars       int64      `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
+	Temperature         float64    `yaml:"temp" env:"TEMP"`
 	Stop                []string   `yaml:"stop" env:"STOP"`
-	TopP                float32    `yaml:"topp" env:"TOPP"`
-	TopK                int        `yaml:"topk" env:"TOPK"`
+	TopP                float64    `yaml:"topp" env:"TOPP"`
+	TopK                int64      `yaml:"topk" env:"TOPK"`
 	NoLimit             bool       `yaml:"no-limit" env:"NO_LIMIT"`
 	CachePath           string     `yaml:"cache-path" env:"CACHE_PATH"`
 	NoCache             bool       `yaml:"no-cache" env:"NO_CACHE"`
@@ -180,8 +184,20 @@ type Config struct {
 	DeleteOlderThan     time.Duration
 	User                string
 
+	MCPServers   map[string]MCPServerConfig `yaml:"mcp-servers"`
+	MCPList      bool
+	MCPListTools bool
+	MCPDisable   []string
+
 	openEditor                                         bool
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
+}
+
+// MCPServerConfig holds configuration for an MCP server.
+type MCPServerConfig struct {
+	Command string   `yaml:"command"`
+	Env     []string `yaml:"env"`
+	Args    []string `yaml:"args"`
 }
 
 func ensureConfig() (Config, error) {
