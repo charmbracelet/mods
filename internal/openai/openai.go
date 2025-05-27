@@ -81,7 +81,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 			body.TopP = openai.Float(*request.TopP)
 		}
 		body.Stop = openai.ChatCompletionNewParamsStopUnion{
-			OfChatCompletionNewsStopArray: request.Stop,
+			OfStringArray: request.Stop,
 		}
 		if request.MaxTokens != nil {
 			body.MaxTokens = openai.Int(*request.MaxTokens)

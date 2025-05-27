@@ -32,7 +32,7 @@ func fromProtoMessages(input []proto.Message) (system []anthropic.TextBlockParam
 		switch msg.Role {
 		case proto.RoleSystem:
 			// system is not a role in anthropic, must set it as the system part of the request.
-			system = append(system, *anthropic.NewTextBlock(msg.Content).OfRequestTextBlock)
+			system = append(system, *anthropic.NewTextBlock(msg.Content).OfText)
 		case proto.RoleTool:
 			for _, call := range msg.ToolCalls {
 				block := anthropic.NewToolResultBlock(call.ID, msg.Content, call.IsError)
@@ -49,7 +49,7 @@ func fromProtoMessages(input []proto.Message) (system []anthropic.TextBlockParam
 			}
 			for _, tool := range msg.ToolCalls {
 				block := anthropic.ContentBlockParamUnion{
-					OfRequestToolUseBlock: &anthropic.ToolUseBlockParam{
+					OfToolUse: &anthropic.ToolUseBlockParam{
 						ID:    tool.ID,
 						Name:  tool.Function.Name,
 						Input: json.RawMessage(tool.Function.Arguments),
@@ -69,18 +69,18 @@ func toProtoMessage(in anthropic.MessageParam) proto.Message {
 	}
 
 	for _, block := range in.Content {
-		if txt := block.OfRequestTextBlock; txt != nil {
+		if txt := block.OfText; txt != nil {
 			msg.Content += txt.Text
 		}
 
-		if call := block.OfRequestToolResultBlock; call != nil {
+		if call := block.OfToolResult; call != nil {
 			msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
 				ID:      call.ToolUseID,
 				IsError: call.IsError.Value,
 			})
 		}
 
-		if call := block.OfRequestToolUseBlock; call != nil {
+		if call := block.OfToolUse; call != nil {
 			msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
 				ID: call.ID,
 				Function: proto.Function{

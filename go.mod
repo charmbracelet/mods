@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/adrg/xdg v0.5.3
-	github.com/anthropics/anthropic-sdk-go v0.2.0-beta.3
+	github.com/anthropics/anthropic-sdk-go v1.2.0
 	github.com/atotto/clipboard v0.1.4
 	github.com/caarlos0/duration v0.0.0-20240108180406-5d492514f3c7
 	github.com/caarlos0/env/v9 v9.0.0
@@ -28,7 +28,7 @@ require (
 	github.com/muesli/roff v0.1.0
 	github.com/muesli/termenv v0.16.0
 	github.com/ollama/ollama v0.7.1
-	github.com/openai/openai-go v0.1.0-beta.10
+	github.com/openai/openai-go v1.1.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0

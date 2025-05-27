@@ -24,7 +24,7 @@ type Client struct {
 func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stream {
 	system, messages := fromProtoMessages(request.Messages)
 	body := anthropic.MessageNewParams{
-		Model:         request.Model,
+		Model:         anthropic.Model(request.Model),
 		Messages:      messages,
 		System:        system,
 		Tools:         fromMCPTools(request.Tools),
