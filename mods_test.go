@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,7 +27,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("show id", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message", "openai", "gpt-4"))
 		mods.Config.Show = id[:8]
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
@@ -38,7 +37,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("show title", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message 1", "openai", "gpt-4"))
 		mods.Config.Show = "message 1"
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
@@ -48,7 +47,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue id", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message", "openai", "gpt-4"))
 		mods.Config.Continue = id[:5]
 		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
@@ -60,7 +59,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue with no prompt", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message 1", "openai", "gpt-4"))
 		mods.Config.ContinueLast = true
 		msg := mods.findCacheOpsDetails()()
 		dets := msg.(cacheDetailsMsg)
@@ -72,7 +71,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue title", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message 1", "openai", "gpt-4"))
 		mods.Config.Continue = "message 1"
 		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
@@ -84,7 +83,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue last", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message 1", "openai", "gpt-4"))
 		mods.Config.ContinueLast = true
 		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
@@ -97,7 +96,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue last with name", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message 1", "openai", "gpt-4"))
 		mods.Config.Continue = "message 2"
 		mods.Config.Prefix = "prompt"
 		msg := mods.findCacheOpsDetails()()
@@ -122,7 +121,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue id and write with title", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message 1", "openai", "gpt-4"))
 		mods.Config.Title = "some title"
 		mods.Config.Continue = id[:10]
 		msg := mods.findCacheOpsDetails()()
@@ -137,7 +136,7 @@ func TestFindCacheOpsDetails(t *testing.T) {
 	t.Run("continue title and write with title", func(t *testing.T) {
 		mods := newMods(t)
 		id := newConversationID()
-		require.NoError(t, mods.db.Save(id, "message 1", "gpt-4"))
+		require.NoError(t, mods.db.Save(id, "message 1", "openai", "gpt-4"))
 		mods.Config.Title = "some title"
 		mods.Config.Continue = "message 1"
 		msg := mods.findCacheOpsDetails()()
@@ -167,72 +166,6 @@ func TestRemoveWhitespace(t *testing.T) {
 	t.Run("regular text", func(t *testing.T) {
 		require.Equal(t, " regular\n ", removeWhitespace(" regular\n "))
 	})
-}
-
-var responseTypeCases = map[string]struct {
-	config Config
-	expect openai.ChatCompletionResponseFormatType
-}{
-	"no format": {
-		Config{},
-		openai.ChatCompletionResponseFormatTypeText,
-	},
-	"format markdown": {
-		Config{
-			Format:   true,
-			FormatAs: "markdown",
-			Model:    "gpt-4",
-		},
-		openai.ChatCompletionResponseFormatTypeText,
-	},
-	"format json with unsupported model": {
-		Config{
-			Format:   true,
-			FormatAs: "json",
-			Model:    "gpt-4",
-		},
-		openai.ChatCompletionResponseFormatTypeText,
-	},
-	"format markdown with gpt-4-1106-preview": {
-		Config{
-			Format:   true,
-			FormatAs: "markdown",
-			Model:    "gpt-4-1106-preview",
-		},
-		openai.ChatCompletionResponseFormatTypeText,
-	},
-	"format markdown with gpt-3.5-turbo-1106": {
-		Config{
-			Format:   true,
-			FormatAs: "markdown",
-			Model:    "gpt-3.5-turbo-1106",
-		},
-		openai.ChatCompletionResponseFormatTypeText,
-	},
-	"format json with gpt-4-1106-preview": {
-		Config{
-			Format:   true,
-			FormatAs: "json",
-			Model:    "gpt-4-1106-preview",
-		},
-		openai.ChatCompletionResponseFormatTypeJSONObject,
-	},
-	"format json with gpt-3.5-turbo-1106": {
-		Config{
-			Format:   true,
-			FormatAs: "json",
-			Model:    "gpt-3.5-turbo-1106",
-		},
-		openai.ChatCompletionResponseFormatTypeJSONObject,
-	},
-}
-
-func TestResponseType(t *testing.T) {
-	for k, tc := range responseTypeCases {
-		t.Run(k, func(t *testing.T) {
-			require.Equal(t, tc.expect, responseType(&tc.config))
-		})
-	}
 }
 
 var cutPromptTests = map[string]struct {

@@ -132,21 +132,24 @@ Check the [`./features.md`](./features.md) for more details.
 
 ## Usage
 
-- `-m`, `--model`: Specify Large Language Model to use.
-- `-f`, `--format`: Ask the LLM to format the response in a given format.
-- `--format-as`: Specify the format for the output (used with `--format`).
-- `-P`, `--prompt` Include the prompt from the arguments and stdin, truncate stdin to specified number of lines.
-- `-p`, `--prompt-args`: Include the prompt from the arguments in the response.
-- `-q`, `--quiet`: Only output errors to standard err.
-- `-r`, `--raw`: Print raw response without syntax highlighting.
-- `--settings`: Open settings.
-- `-x`, `--http-proxy`: Use HTTP proxy to connect to the API endpoints.
-- `--max-retries`: Maximum number of retries.
-- `--max-tokens`: Specify maximum tokens with which to respond.
-- `--no-limit`: Do not limit the response tokens.
-- `--role`: Specify the role to use (See [custom roles](#custom-roles)).
+- `-m`, `--model`: Specify Large Language Model to use
+- `-M`, `--ask-model`: Ask which model to use via interactive prompt
+- `-f`, `--format`: Ask the LLM to format the response in a given format
+- `--format-as`: Specify the format for the output (used with `--format`)
+- `-P`, `--prompt` Include the prompt from the arguments and stdin, truncate stdin to specified number of lines
+- `-p`, `--prompt-args`: Include the prompt from the arguments in the response
+- `-q`, `--quiet`: Only output errors to standard err
+- `-r`, `--raw`: Print raw response without syntax highlighting
+- `--settings`: Open settings
+- `-x`, `--http-proxy`: Use HTTP proxy to connect to the API endpoints
+- `--max-retries`: Maximum number of retries
+- `--max-tokens`: Specify maximum tokens with which to respond
+- `--no-limit`: Do not limit the response tokens
+- `--role`: Specify the role to use (See [custom roles](#custom-roles))
 - `--word-wrap`: Wrap output at width (defaults to 80)
-- `--reset-settings`: Restore settings to default.
+- `--reset-settings`: Restore settings to default
+- `--theme`: Theme to use in the forms; valid choices are: `charm`, `catppuccin`, `dracula`, and `base16`
+- `--status-text`: Text to show while generating
 
 #### Conversations
 
@@ -154,18 +157,24 @@ Check the [`./features.md`](./features.md) for more details.
 - `-l`, `--list`: List saved conversations.
 - `-c`, `--continue`: Continue from last response or specific title or SHA-1.
 - `-C`, `--continue-last`: Continue the last conversation.
-- `-s`, `--show`: Show saved conversation for the given title or SHA-1.
-- `-S`, `--show-last`: Show previous conversation.
+- `-s`, `--show`: Show saved conversation for the given title or SHA-1
+- `-S`, `--show-last`: Show previous conversation
 - `--delete-older-than=<duration>`: Deletes conversations older than given duration (`10d`, `1mo`).
-- `--delete`: Deletes the saved conversations for the given titles or SHA-1s.
-- `--no-cache`: Do not save conversations.
+- `--delete`: Deletes the saved conversations for the given titles or SHA-1s
+- `--no-cache`: Do not save conversations
+
+#### MCP
+
+- `--mcp-list`: List all available MCP servers
+- `--mcp-list-tools`: List all available tools from enabled MCP servers
+- `--mcp-disable`: Disable specific MCP servers
 
 #### Advanced
 
-- `--fanciness`: Level of fanciness.
-- `--temp`: Sampling temperature.
-- `--topp`: Top P value.
-- `--topk`: Top K value.
+- `--fanciness`: Level of fanciness
+- `--temp`: Sampling temperature
+- `--topp`: Top P value
+- `--topk`: Top K value
 
 ## Custom Roles
 
@@ -216,6 +225,13 @@ Groq provides models powered by their LPU inference engine.
 
 Set the `GROQ_API_KEY` environment variable. If you don't have one yet, you can
 get it from the [Groq console](https://console.groq.com/keys).
+
+### Gemini
+
+Mods supports using Gemini models from Google.
+
+Set the `GOOGLE_API_KEY` enviroment variable. If you don't have one yet,
+you can get it from the [Google AI Studio](https://aistudio.google.com/apikey).
 
 ## Whatcha Think?
 
