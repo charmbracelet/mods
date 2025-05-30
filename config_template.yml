@@ -204,7 +204,7 @@ apis:
         max-input-chars: 4194304
 
   ollama:
-    base-url: http://localhost:11434/api
+    base-url: http://localhost:11434
     models: # https://ollama.com/library
       "llama3.2:3b":
         aliases: ["llama3.2"]
