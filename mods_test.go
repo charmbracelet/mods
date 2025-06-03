@@ -156,6 +156,20 @@ func TestFindCacheOpsDetails(t *testing.T) {
 		require.Equal(t, "Could not find the conversation.", err.reason)
 		require.EqualError(t, err, "no conversations found: aaa")
 	})
+
+	t.Run("uses config model and api not global config", func(t *testing.T) {
+		mods := newMods(t)
+		mods.Config.Model = "claude-3.7-sonnet"
+		mods.Config.API = "anthropic"
+
+		msg := mods.findCacheOpsDetails()()
+		dets := msg.(cacheDetailsMsg)
+
+		require.Equal(t, "claude-3.7-sonnet", dets.Model)
+		require.Equal(t, "anthropic", dets.API)
+		require.Empty(t, dets.ReadID)
+		require.NotEmpty(t, dets.WriteID)
+	})
 }
 
 func TestRemoveWhitespace(t *testing.T) {

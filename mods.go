@@ -543,8 +543,8 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 		readID := ordered.First(m.Config.Continue, m.Config.Show)
 		writeID := ordered.First(m.Config.Title, m.Config.Continue)
 		title := writeID
-		model := config.Model
-		api := config.API
+		model := m.Config.Model
+		api := m.Config.API
 
 		if readID != "" || continueLast || m.Config.ShowLast {
 			found, err := m.findReadID(readID)
