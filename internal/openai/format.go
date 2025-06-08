@@ -83,12 +83,12 @@ func toProtoMessage(in openai.ChatCompletionMessageParamUnion) proto.Message {
 		}
 	}
 	if msg.Role == proto.RoleAssistant {
-		for _, tool := range in.OfAssistant.ToolCalls {
+		for _, call := range in.OfAssistant.ToolCalls {
 			msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
-				ID: tool.ID,
+				ID: call.ID,
 				Function: proto.Function{
-					Name:      tool.Function.Name,
-					Arguments: []byte(tool.Function.Arguments),
+					Name:      call.Function.Name,
+					Arguments: []byte(call.Function.Arguments),
 				},
 			})
 		}
