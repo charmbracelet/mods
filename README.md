@@ -233,6 +233,12 @@ Mods supports using Gemini models from Google.
 Set the `GOOGLE_API_KEY` enviroment variable. If you don't have one yet,
 you can get it from the [Google AI Studio](https://aistudio.google.com/apikey).
 
+## Contributing
+
+See [contributing][contribute].
+
+[contribute]: https://github.com/charmbracelet/mods/contribute
+
 ## Whatcha Think?
 
 We’d love to hear your thoughts on this project. Feel free to drop us a note.
