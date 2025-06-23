@@ -51,7 +51,7 @@ type Content struct {
 	Role  string `json:"role,omitempty"`
 }
 
-// Struct for the ThinkingConfig. For more details see https://ai.google.dev/gemini-api/docs/thinking#rest
+// ThinkingConfig - for more details see https://ai.google.dev/gemini-api/docs/thinking#rest .
 type ThinkingConfig struct {
 	ThinkingBudget int `json:"thinkingBudget,omitempty"`
 }
