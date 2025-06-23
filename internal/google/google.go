@@ -212,7 +212,8 @@ func (s *Stream) Err() error { return s.err }
 
 // Messages implements stream.Stream.
 func (s *Stream) Messages() []proto.Message {
-	panic("unimplemented")
+	// Gemini does not support returning streamed messages after the fact.
+	return nil
 }
 
 // Next implements stream.Stream.
