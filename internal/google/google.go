@@ -6,7 +6,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/charmbracelet/mods/internal/proto"
@@ -234,6 +236,10 @@ func (s *Stream) Current() (proto.Chunk, error) {
 	for {
 		rawLine, readErr := s.reader.ReadBytes('\n')
 		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				s.isFinished = true
+				return proto.Chunk{}, stream.ErrNoContent // signals end of stream, not a real error
+			}
 			return proto.Chunk{}, fmt.Errorf("googleStreamReader.processLines: %w", readErr)
 		}
 
