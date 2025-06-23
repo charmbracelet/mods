@@ -323,6 +323,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 				return modsError{err, "Google authentication failed"}
 			}
 			gccfg = google.DefaultConfig(mod.Name, key)
+			gccfg.ThinkingBudget = mod.ThinkingBudget
 		case "cohere":
 			key, err := m.ensureKey(api, "COHERE_API_KEY", "https://dashboard.cohere.com/api-keys")
 			if err != nil {

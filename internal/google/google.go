@@ -25,8 +25,9 @@ var (
 
 // Config represents the configuration for the Google API client.
 type Config struct {
-	BaseURL    string
-	HTTPClient *http.Client
+	BaseURL        string
+	HTTPClient     *http.Client
+	ThinkingBudget int
 }
 
 // DefaultConfig returns the default configuration for the Google API client.
@@ -48,15 +49,21 @@ type Content struct {
 	Role  string `json:"role,omitempty"`
 }
 
+// Struct for the ThinkingConfig. For more details see https://ai.google.dev/gemini-api/docs/thinking#rest
+type ThinkingConfig struct {
+	ThinkingBudget int `json:"thinkingBudget,omitempty"`
+}
+
 // GenerationConfig are the options for model generation and outputs. Not all parameters are configurable for every model.
 type GenerationConfig struct {
-	StopSequences    []string `json:"stopSequences,omitempty"`
-	ResponseMimeType string   `json:"responseMimeType,omitempty"`
-	CandidateCount   uint     `json:"candidateCount,omitempty"`
-	MaxOutputTokens  uint     `json:"maxOutputTokens,omitempty"`
-	Temperature      float64  `json:"temperature,omitempty"`
-	TopP             float64  `json:"topP,omitempty"`
-	TopK             int64    `json:"topK,omitempty"`
+	StopSequences    []string        `json:"stopSequences,omitempty"`
+	ResponseMimeType string          `json:"responseMimeType,omitempty"`
+	CandidateCount   uint            `json:"candidateCount,omitempty"`
+	MaxOutputTokens  uint            `json:"maxOutputTokens,omitempty"`
+	Temperature      float64         `json:"temperature,omitempty"`
+	TopP             float64         `json:"topP,omitempty"`
+	TopK             int64           `json:"topK,omitempty"`
+	ThinkingConfig   *ThinkingConfig `json:"thinkingConfig,omitempty"`
 }
 
 // MessageCompletionRequest represents the valid parameters and value options for the request.
@@ -109,6 +116,12 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 
 	if request.MaxTokens != nil {
 		body.GenerationConfig.MaxOutputTokens = uint(*request.MaxTokens) //nolint:gosec
+	}
+
+	if c.config.ThinkingBudget != 0 {
+		body.GenerationConfig.ThinkingConfig = &ThinkingConfig{
+			ThinkingBudget: c.config.ThinkingBudget,
+		}
 	}
 
 	req, err := c.newRequest(ctx, http.MethodPost, c.config.BaseURL, withBody(body))
