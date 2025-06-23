@@ -203,7 +203,8 @@ type Stream struct {
 
 // CallTools implements stream.Stream.
 func (s *Stream) CallTools() []proto.ToolCallStatus {
-	panic("unimplemented")
+	// No tool calls in Gemini/Google API yet.
+	return nil
 }
 
 // Err implements stream.Stream.
