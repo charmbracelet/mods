@@ -78,11 +78,12 @@ var help = map[string]string{
 
 // Model represents the LLM model used in the API call.
 type Model struct {
-	Name     string
-	API      string
-	MaxChars int64    `yaml:"max-input-chars"`
-	Aliases  []string `yaml:"aliases"`
-	Fallback string   `yaml:"fallback"`
+	Name           string
+	API            string
+	MaxChars       int64    `yaml:"max-input-chars"`
+	Aliases        []string `yaml:"aliases"`
+	Fallback       string   `yaml:"fallback"`
+	ThinkingBudget int      `yaml:"thinking-budget,omitempty"`
 }
 
 // API represents an API endpoint and its models.

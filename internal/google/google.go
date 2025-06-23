@@ -6,7 +6,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/charmbracelet/mods/internal/proto"
@@ -25,8 +27,9 @@ var (
 
 // Config represents the configuration for the Google API client.
 type Config struct {
-	BaseURL    string
-	HTTPClient *http.Client
+	BaseURL        string
+	HTTPClient     *http.Client
+	ThinkingBudget int
 }
 
 // DefaultConfig returns the default configuration for the Google API client.
@@ -48,15 +51,21 @@ type Content struct {
 	Role  string `json:"role,omitempty"`
 }
 
+// Struct for the ThinkingConfig. For more details see https://ai.google.dev/gemini-api/docs/thinking#rest
+type ThinkingConfig struct {
+	ThinkingBudget int `json:"thinkingBudget,omitempty"`
+}
+
 // GenerationConfig are the options for model generation and outputs. Not all parameters are configurable for every model.
 type GenerationConfig struct {
-	StopSequences    []string `json:"stopSequences,omitempty"`
-	ResponseMimeType string   `json:"responseMimeType,omitempty"`
-	CandidateCount   uint     `json:"candidateCount,omitempty"`
-	MaxOutputTokens  uint     `json:"maxOutputTokens,omitempty"`
-	Temperature      float64  `json:"temperature,omitempty"`
-	TopP             float64  `json:"topP,omitempty"`
-	TopK             int64    `json:"topK,omitempty"`
+	StopSequences    []string        `json:"stopSequences,omitempty"`
+	ResponseMimeType string          `json:"responseMimeType,omitempty"`
+	CandidateCount   uint            `json:"candidateCount,omitempty"`
+	MaxOutputTokens  uint            `json:"maxOutputTokens,omitempty"`
+	Temperature      float64         `json:"temperature,omitempty"`
+	TopP             float64         `json:"topP,omitempty"`
+	TopK             int64           `json:"topK,omitempty"`
+	ThinkingConfig   *ThinkingConfig `json:"thinkingConfig,omitempty"`
 }
 
 // MessageCompletionRequest represents the valid parameters and value options for the request.
@@ -109,6 +118,12 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 
 	if request.MaxTokens != nil {
 		body.GenerationConfig.MaxOutputTokens = uint(*request.MaxTokens) //nolint:gosec
+	}
+
+	if c.config.ThinkingBudget != 0 {
+		body.GenerationConfig.ThinkingConfig = &ThinkingConfig{
+			ThinkingBudget: c.config.ThinkingBudget,
+		}
 	}
 
 	req, err := c.newRequest(ctx, http.MethodPost, c.config.BaseURL, withBody(body))
@@ -188,7 +203,8 @@ type Stream struct {
 
 // CallTools implements stream.Stream.
 func (s *Stream) CallTools() []proto.ToolCallStatus {
-	panic("unimplemented")
+	// No tool calls in Gemini/Google API yet.
+	return nil
 }
 
 // Err implements stream.Stream.
@@ -196,7 +212,8 @@ func (s *Stream) Err() error { return s.err }
 
 // Messages implements stream.Stream.
 func (s *Stream) Messages() []proto.Message {
-	panic("unimplemented")
+	// Gemini does not support returning streamed messages after the fact.
+	return nil
 }
 
 // Next implements stream.Stream.
@@ -221,6 +238,10 @@ func (s *Stream) Current() (proto.Chunk, error) {
 	for {
 		rawLine, readErr := s.reader.ReadBytes('\n')
 		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				s.isFinished = true
+				return proto.Chunk{}, stream.ErrNoContent // signals end of stream, not a real error
+			}
 			return proto.Chunk{}, fmt.Errorf("googleStreamReader.processLines: %w", readErr)
 		}
 
