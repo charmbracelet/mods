@@ -795,10 +795,9 @@ func askInfo() error {
 		}
 	}
 
-	// wrapping is done by the caller
-	//nolint:wrapcheck
-	return huh.NewForm(
-		huh.NewGroup(
+	groups := make([]*huh.Group, 0, 2)
+	if config.AskModel {
+		groups = append(groups, huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("Choose the API:").
 				Options(apis...).
@@ -811,21 +810,22 @@ func askInfo() error {
 					return opts[config.API]
 				}, &config.API).
 				Value(&config.Model),
-		).WithHideFunc(func() bool {
-			return !config.AskModel
-		}),
-		huh.NewGroup(
+		))
+	}
+
+	if config.Prefix == "" {
+		groups = append(groups, huh.NewGroup(
 			huh.NewText().
 				TitleFunc(func() string {
 					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
 				}, &config.Model).
 				Value(&config.Prefix),
-		).WithHideFunc(func() bool {
-			return config.Prefix != ""
-		}),
-	).
-		WithTheme(themeFrom(config.Theme)).
-		Run()
+		))
+	}
+
+	// wrapping is done by the caller
+	//nolint:wrapcheck
+	return huh.NewForm(groups...).WithTheme(themeFrom(config.Theme)).Run()
 }
 
 //nolint:mnd
