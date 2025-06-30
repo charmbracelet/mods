@@ -778,12 +778,24 @@ func isNoArgs() bool {
 }
 
 func askInfo() error {
+	var foundModel bool
 	apis := make([]huh.Option[string], 0, len(config.APIs))
 	opts := map[string][]huh.Option[string]{}
 	for _, api := range config.APIs {
 		apis = append(apis, huh.NewOption(api.Name, api.Name))
-		for model := range api.Models {
-			opts[api.Name] = append(opts[api.Name], huh.NewOption(model, model))
+		for name, model := range api.Models {
+			opts[api.Name] = append(opts[api.Name], huh.NewOption(name, name))
+
+			// checks if the this is the model we intend to use if not using
+			// `--ask-model`:
+			if !config.AskModel &&
+				(config.API == "" || config.API == api.Name) &&
+				(config.Model == name || slices.Contains(model.Aliases, config.Model)) {
+				// if it is, adjusts api and model so its cheaper later on.
+				config.API = api.Name
+				config.Model = name
+				foundModel = true
+			}
 		}
 	}
 
@@ -792,6 +804,7 @@ func askInfo() error {
 		if err == nil && found != nil && found.Model != nil && found.API != nil {
 			config.Model = *found.Model
 			config.API = *found.API
+			foundModel = true
 		}
 	}
 
@@ -812,12 +825,18 @@ func askInfo() error {
 				}, &config.API).
 				Value(&config.Model),
 		).WithHideFunc(func() bool {
-			return !config.AskModel
+			// AskModel is true if the user is passing a flag to ask;
+			// FoundModel is true if a model is found for whatever config the
+			// user has (either --api/--model or default-api and
+			// default-model in settings).
+			// So, it'll only hide this if the user didn't run with
+			// `--ask-model` AND the configuration yields a valid model.
+			return !config.AskModel && foundModel
 		}),
 		huh.NewGroup(
 			huh.NewText().
 				TitleFunc(func() string {
-					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
+					return fmt.Sprintf("Enter a prompt for %s/%s:", config.API, config.Model)
 				}, &config.Model).
 				Value(&config.Prefix),
 		).WithHideFunc(func() bool {
