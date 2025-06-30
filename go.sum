@@ -154,8 +154,8 @@ github.com/muesli/termenv v0.16.0 h1:S5AlUN9dENB57rsbnkPyfdGuWIlkmzJjbFf0Tf5FWUc
 github.com/muesli/termenv v0.16.0/go.mod h1:ZRfOIKPFDYQoDFF4Olj7/QJbW60Ol/kL1pU3VfY/Cnk=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/ollama/ollama v0.9.2 h1:NEzeLb0gwz1XRyQUCPb30zqDyO/bze+Hiq9NUuYEUy4=
-github.com/ollama/ollama v0.9.2/go.mod h1:+5wt6UPgPmzYhnpLJ/rObxJJyEXURZ/SKKCMQsff8bA=
+github.com/ollama/ollama v0.9.3 h1:LipCesw/hc2zbPLPmu5pnUp/L/P2FwQQ3JmceEEJbgc=
+github.com/ollama/ollama v0.9.3/go.mod h1:zLwx3iZ3AI4Rc/egsrx3u1w4RU2MHQ/Ylxse48jvyt4=
 github.com/openai/openai-go v1.6.0 h1:KGjDS5sDrO27vykzO50BYknuabzVxuFuwAB8DjrmexI=
 github.com/openai/openai-go v1.6.0/go.mod h1:g461MYGXEXBVdV5SaR/5tNzNbSfwTBBefwc+LlDCK0Y=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c h1:+mdjkGKdHQG3305AYmdv1U2eRNDiU2ErMBj1gwrq8eQ=
