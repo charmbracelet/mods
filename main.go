@@ -786,7 +786,7 @@ func askInfo() error {
 		for name, model := range api.Models {
 			opts[api.Name] = append(opts[api.Name], huh.NewOption(name, name))
 
-			// checks if the this is the model we intend to use if not using
+			// checks if this is the model we intend to use if not using
 			// `--ask-model`:
 			if !config.AskModel &&
 				(config.API == "" || config.API == api.Name) &&
