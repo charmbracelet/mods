@@ -3,12 +3,15 @@ package anthropic
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/bedrock"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
+	awsCfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/charmbracelet/mods/internal/proto"
 	"github.com/charmbracelet/mods/internal/stream"
 )
@@ -75,18 +78,28 @@ func DefaultConfig(authToken string) Config {
 }
 
 // New anthropic client with the given configuration.
-func New(config Config) *Client {
-	opts := []option.RequestOption{
-		option.WithAPIKey(config.AuthToken),
-		option.WithHTTPClient(config.HTTPClient),
-	}
-	if config.BaseURL != "" {
-		opts = append(opts, option.WithBaseURL(strings.TrimSuffix(config.BaseURL, "/v1")))
+func New(config Config) (*Client, error) {
+	var opts []option.RequestOption
+	if config.AuthToken == "AwsBedrock" {
+		awsCfg, err := awsCfg.LoadDefaultConfig(context.TODO())
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config: %w", err)
+		}
+
+		opts = append(opts, bedrock.WithConfig(awsCfg))
+	} else {
+		opts = []option.RequestOption{
+			option.WithAPIKey(config.AuthToken),
+			option.WithHTTPClient(config.HTTPClient),
+		}
+		if config.BaseURL != "" {
+			opts = append(opts, option.WithBaseURL(strings.TrimSuffix(config.BaseURL, "/v1")))
+		}
 	}
 	client := anthropic.NewClient(opts...)
 	return &Client{
 		Client: &client,
-	}
+	}, nil
 }
 
 // Stream represents a stream for chat completion.
@@ -149,7 +162,16 @@ func (s *Stream) Current() (proto.Chunk, error) {
 }
 
 // Err implements stream.Stream.
-func (s *Stream) Err() error { return s.stream.Err() } //nolint:wrapcheck
+func (s *Stream) Err() error {
+	err := s.stream.Err()
+
+	// EOF is not an error for streams - it indicates normal completion
+	if err != nil && err.Error() == "EOF" {
+		return nil
+	}
+
+	return err //nolint:wrapcheck
+}
 
 // Messages implements stream.Stream.
 func (s *Stream) Messages() []proto.Message { return s.messages }
