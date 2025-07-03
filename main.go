@@ -346,7 +346,7 @@ func main() {
 	// XXX: this must come after creating the config.
 	initFlags()
 
-	if !isCompletionCmd(os.Args) && !isManCmd(os.Args) {
+	if !isCompletionCmd(os.Args) && !isManCmd(os.Args) && !isVersionOrHelpCmd(os.Args) {
 		db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
 		if err != nil {
 			handleError(modsError{err, "Could not open database."})
@@ -887,6 +887,19 @@ func isCompletionCmd(args []string) bool {
 			"--help": nil,
 		}[args[3]]
 		return ok
+	}
+	return false
+}
+
+//nolint:mnd
+func isVersionOrHelpCmd(args []string) bool {
+	if len(args) <= 1 {
+		return false
+	}
+	for _, arg := range args[1:] {
+		if arg == "--version" || arg == "-v" || arg == "--help" || arg == "-h" {
+			return true
+		}
 	}
 	return false
 }
