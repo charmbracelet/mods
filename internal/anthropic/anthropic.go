@@ -113,7 +113,7 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 				s.toolCall,
 			)
 			resp := anthropic.NewUserMessage(
-				anthropic.NewToolResultBlock(
+				newToolResultBlock(
 					call.ID,
 					msg.Content,
 					status.Err != nil,
