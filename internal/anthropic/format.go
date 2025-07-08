@@ -35,7 +35,7 @@ func fromProtoMessages(input []proto.Message) (system []anthropic.TextBlockParam
 			system = append(system, *anthropic.NewTextBlock(msg.Content).OfText)
 		case proto.RoleTool:
 			for _, call := range msg.ToolCalls {
-				block := anthropic.NewToolResultBlock(call.ID, msg.Content, call.IsError)
+				block := newToolResultBlock(call.ID, msg.Content, call.IsError)
 				//	tool is not a role in anthropic, must be a user message.
 				messages = append(messages, anthropic.NewUserMessage(block))
 				break
@@ -92,4 +92,17 @@ func toProtoMessage(in anthropic.MessageParam) proto.Message {
 	}
 
 	return msg
+}
+
+// anthropic v1.5 removed this method, copied it back here so we don't need to
+// refactor too much.
+func newToolResultBlock(toolUseID string, content string, isError bool) anthropic.ContentBlockParamUnion {
+	toolBlock := anthropic.ToolResultBlockParam{
+		ToolUseID: toolUseID,
+		Content: []anthropic.ToolResultBlockParamContentUnion{
+			{OfText: &anthropic.TextBlockParam{Text: content}},
+		},
+		IsError: anthropic.Bool(isError),
+	}
+	return anthropic.ContentBlockParamUnion{OfToolResult: &toolBlock}
 }
