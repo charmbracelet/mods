@@ -68,8 +68,17 @@ func mcpTools(ctx context.Context) (map[string][]mcp.Tool, error) {
 	for sname, server := range enabledMCPs() {
 		wg.Go(func() error {
 			serverTools, err := mcpToolsFor(ctx, sname, server)
-			if err := listErr(sname, err); err != nil {
-				return err
+			if errors.Is(err, context.DeadlineExceeded) {
+				return modsError{
+					err:    fmt.Errorf("timeout while listing tools for %q - make sure the configuration is correct", sname),
+					reason: "Could not list tools",
+				}
+			}
+			if err != nil {
+				return modsError{
+					err:    err,
+					reason: "Could not list tools",
+				}
 			}
 			mu.Lock()
 			result[sname] = append(result[sname], serverTools...)
@@ -81,22 +90,6 @@ func mcpTools(ctx context.Context) (map[string][]mcp.Tool, error) {
 		return nil, err
 	}
 	return result, nil
-}
-
-func listErr(sname string, err error) error {
-	if errors.Is(err, context.DeadlineExceeded) {
-		return modsError{
-			err:    fmt.Errorf("timeout while listing tools for %q - make sure the configuration is correct", sname),
-			reason: "Could not list tools",
-		}
-	}
-	if err != nil {
-		return modsError{
-			err:    err,
-			reason: "Could not list tools",
-		}
-	}
-	return nil
 }
 
 func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mcp.Tool, error) {
