@@ -5,23 +5,31 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"iter"
+	"maps"
 	"os"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
+	"golang.org/x/sync/errgroup"
 )
 
-func enabledMCPs() map[string]MCPServerConfig {
-	result := map[string]MCPServerConfig{}
-	for k, v := range config.MCPServers {
-		if !isMCPEnabled(k) {
-			continue
+func enabledMCPs() iter.Seq2[string, MCPServerConfig] {
+	return func(yield func(string, MCPServerConfig) bool) {
+		names := slices.Collect(maps.Keys(config.MCPServers))
+		slices.Sort(names)
+		for _, name := range names {
+			if !isMCPEnabled(name) {
+				continue
+			}
+			if !yield(name, config.MCPServers[name]) {
+				return
+			}
 		}
-		result[k] = v
 	}
-	return result
 }
 
 func isMCPEnabled(name string) bool {
@@ -40,11 +48,11 @@ func mcpList() {
 }
 
 func mcpListTools(ctx context.Context) error {
-	for sname, server := range enabledMCPs() {
-		tools, err := mcpToolsFor(ctx, sname, server)
-		if err != nil {
-			return err
-		}
+	servers, err := mcpTools(ctx)
+	if err != nil {
+		return err
+	}
+	for sname, tools := range servers {
 		for _, tool := range tools {
 			fmt.Print(stdoutStyles().Timeago.Render(sname + " > "))
 			fmt.Println(tool.Name)
@@ -54,15 +62,41 @@ func mcpListTools(ctx context.Context) error {
 }
 
 func mcpTools(ctx context.Context) (map[string][]mcp.Tool, error) {
+	var mu sync.Mutex
+	var wg errgroup.Group
 	result := map[string][]mcp.Tool{}
 	for sname, server := range enabledMCPs() {
-		serverTools, err := mcpToolsFor(ctx, sname, server)
-		if err != nil {
-			return nil, err
-		}
-		result[sname] = append(result[sname], serverTools...)
+		wg.Go(func() error {
+			serverTools, err := mcpToolsFor(ctx, sname, server)
+			if err := listErr(sname, err); err != nil {
+				return err
+			}
+			mu.Lock()
+			result[sname] = append(result[sname], serverTools...)
+			mu.Unlock()
+			return nil
+		})
+	}
+	if err := wg.Wait(); err != nil {
+		return nil, err
 	}
 	return result, nil
+}
+
+func listErr(sname string, err error) error {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return modsError{
+			err:    fmt.Errorf("timeout while listing tools for %q - make sure the configuration is correct", sname),
+			reason: "Could not list tools",
+		}
+	}
+	if err != nil {
+		return modsError{
+			err:    err,
+			reason: "Could not list tools",
+		}
+	}
+	return nil
 }
 
 func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mcp.Tool, error) {
@@ -90,9 +124,12 @@ func toolCall(ctx context.Context, name string, data []byte) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("mcp: invalid tool name: %q", name)
 	}
-	server, ok := enabledMCPs()[sname]
+	server, ok := config.MCPServers[sname]
 	if !ok {
 		return "", fmt.Errorf("mcp: invalid server name: %q", sname)
+	}
+	if !isMCPEnabled(sname) {
+		return "", fmt.Errorf("mcp: server is disabled: %q", sname)
 	}
 	client, err := client.NewStdioMCPClient(
 		server.Command,
