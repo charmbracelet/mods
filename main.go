@@ -140,13 +140,13 @@ var (
 						fmt.Println(filepath.Dir(config.SettingsPath))
 						return nil
 					case "cache":
-						fmt.Println(filepath.Dir(config.CachePath))
+						fmt.Println(config.CachePath)
 						return nil
 					}
 				}
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
 				//nolint:mnd
-				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
+				fmt.Printf("%*sCache: %s\n", 8, " ", config.CachePath)
 				return nil
 			}
 
