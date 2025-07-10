@@ -140,13 +140,13 @@ var (
 						fmt.Println(filepath.Dir(config.SettingsPath))
 						return nil
 					case "cache":
-						fmt.Println(filepath.Dir(config.CachePath))
+						fmt.Println(config.CachePath)
 						return nil
 					}
 				}
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
 				//nolint:mnd
-				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
+				fmt.Printf("%*sCache: %s\n", 8, " ", config.CachePath)
 				return nil
 			}
 
@@ -347,12 +347,7 @@ func main() {
 	initFlags()
 
 	if !isCompletionCmd(os.Args) && !isManCmd(os.Args) && !isVersionOrHelpCmd(os.Args) {
-		ds := filepath.Join(config.CachePath, "conversations", "mods.db")
-		if err := os.MkdirAll(filepath.Dir(ds), 0o700); err != nil {
-			handleError(modsError{err, "Could not open database."})
-			os.Exit(1)
-		}
-		db, err = openDB(ds)
+		db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
 		if err != nil {
 			handleError(modsError{err, "Could not open database."})
 			os.Exit(1)
