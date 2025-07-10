@@ -63,7 +63,7 @@ type Mods struct {
 	glamOutput    string
 	glamHeight    int
 	messages      []proto.Message
-	cancelRequest context.CancelFunc
+	cancelRequest []context.CancelFunc
 	anim          tea.Model
 	width         int
 	height        int
@@ -74,9 +74,17 @@ type Mods struct {
 
 	content      []string
 	contentMutex *sync.Mutex
+
+	ctx context.Context
 }
 
-func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *cache.Conversations) *Mods {
+func newMods(
+	ctx context.Context,
+	r *lipgloss.Renderer,
+	cfg *Config,
+	db *convoDB,
+	cache *cache.Conversations,
+) *Mods {
 	gr, _ := glamour.NewTermRenderer(
 		glamour.WithEnvironmentConfig(),
 		glamour.WithWordWrap(cfg.WordWrap),
@@ -93,6 +101,7 @@ func newMods(r *lipgloss.Renderer, cfg *Config, db *convoDB, cache *cache.Conver
 		db:           db,
 		cache:        cache,
 		Config:       cfg,
+		ctx:          ctx,
 	}
 }
 
@@ -249,8 +258,8 @@ func (m *Mods) View() string {
 }
 
 func (m *Mods) quit() tea.Msg {
-	if m.cancelRequest != nil {
-		m.cancelRequest()
+	for _, cancel := range m.cancelRequest {
+		cancel()
 	}
 	return tea.Quit()
 }
@@ -397,13 +406,12 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			cfg.MaxTokens = 0
 		}
 
-		// 1min should be enough - user might not have mcp downloaded yet...
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		m.cancelRequest = cancel
+		ctx, cancel := context.WithTimeout(m.ctx, config.MCPTimeout)
+		m.cancelRequest = append(m.cancelRequest, cancel)
 
 		tools, err := mcpTools(ctx)
 		if err != nil {
-			return modsError{err, "Could not setup MCP"}
+			return err
 		}
 
 		if err := m.setupStreamContext(content, mod); err != nil {
@@ -421,8 +429,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			Stop:        cfg.Stop,
 			Tools:       tools,
 			ToolCaller: func(name string, data []byte) (string, error) {
-				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-				m.cancelRequest = cancel
+				ctx, cancel := context.WithTimeout(m.ctx, config.MCPTimeout)
+				m.cancelRequest = append(m.cancelRequest, cancel)
 				return toolCall(ctx, name, data)
 			},
 		}
@@ -450,7 +458,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			return modsError{err, "Could not setup client"}
 		}
 
-		stream := client.Request(ctx, request)
+		stream := client.Request(m.ctx, request)
 		return m.receiveCompletionStreamCmd(completionOutput{
 			stream: stream,
 			errh: func(err error) tea.Msg {

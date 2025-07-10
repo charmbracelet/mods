@@ -20,6 +20,8 @@ mcp-servers:
   #     - "-e"
   #     - GITHUB_PERSONAL_ACCESS_TOKEN
   #     - "ghcr.io/github/github-mcp-server"
+# {{ index .Help "mcp-timeout" }}
+mcp-timeout: 15s
 # {{ index .Help "roles" }}
 roles:
   "default": []

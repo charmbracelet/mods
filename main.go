@@ -12,7 +12,6 @@ import (
 	"runtime/pprof"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/atotto/clipboard"
 	timeago "github.com/caarlos0/timea.go"
@@ -121,7 +120,7 @@ var (
 			if err != nil {
 				return modsError{err, "Couldn't start Bubble Tea program."}
 			}
-			mods := newMods(stderrRenderer(), &config, db, cache)
+			mods := newMods(cmd.Context(), stderrRenderer(), &config, db, cache)
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
 			if err != nil {
@@ -206,7 +205,7 @@ var (
 			}
 
 			if config.MCPListTools {
-				ctx, cancel := context.WithTimeout(cmd.Context(), time.Minute)
+				ctx, cancel := context.WithTimeout(cmd.Context(), config.MCPTimeout)
 				defer cancel()
 				return mcpListTools(ctx)
 			}
@@ -313,6 +312,10 @@ func initFlags() {
 
 	if config.Format && config.FormatAs != "" && config.FormatText[config.FormatAs] == "" {
 		config.FormatText[config.FormatAs] = defaultConfig().FormatText[config.FormatAs]
+	}
+
+	if config.MCPTimeout == 0 {
+		config.MCPTimeout = defaultConfig().MCPTimeout
 	}
 
 	rootCmd.MarkFlagsMutuallyExclusive(
@@ -443,12 +446,12 @@ func handleError(err error) {
 
 	format := "\n%s\n\n"
 
-	var args []interface{}
+	var args []any
 	var ferr flagParseError
 	var merr modsError
 	if errors.As(err, &ferr) {
 		format += "%s\n\n"
-		args = []interface{}{
+		args = []any{
 			fmt.Sprintf(
 				"Check out %s %s",
 				stderrStyles().InlineCode.Render("mods -h"),
@@ -460,7 +463,7 @@ func handleError(err error) {
 			),
 		}
 	} else if errors.As(err, &merr) {
-		args = []interface{}{
+		args = []any{
 			stderrStyles().ErrPadding.Render(stderrStyles().ErrorHeader.String(), merr.reason),
 		}
 
@@ -470,7 +473,7 @@ func handleError(err error) {
 			args = append(args, stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())))
 		}
 	} else {
-		args = []interface{}{
+		args = []any{
 			stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())),
 		}
 	}
