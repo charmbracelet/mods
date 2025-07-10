@@ -415,9 +415,9 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			API:         mod.API,
 			Model:       mod.Name,
 			User:        cfg.User,
-			Temperature: &cfg.Temperature,
-			TopP:        &cfg.TopP,
-			TopK:        &cfg.TopK,
+			Temperature: ptrOrNil(cfg.Temperature),
+			TopP:        ptrOrNil(cfg.TopP),
+			TopK:        ptrOrNil(cfg.TopK),
 			Stop:        cfg.Stop,
 			Tools:       tools,
 			ToolCaller: func(name string, data []byte) (string, error) {
@@ -751,4 +751,13 @@ func (m *Mods) resolveModel(cfg *Config) (API, Model, error) {
 			m.Styles.InlineCode.Render("mods --settings"),
 		),
 	}
+}
+
+type number interface{ int64 | float64 }
+
+func ptrOrNil[T number](t T) *T {
+	if t < 0 {
+		return nil
+	}
+	return &t
 }
