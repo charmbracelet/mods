@@ -87,7 +87,7 @@ func mcpTools(ctx context.Context) (map[string][]mcp.Tool, error) {
 		})
 	}
 	if err := wg.Wait(); err != nil {
-		return nil, err
+		return nil, err //nolint:wrapcheck
 	}
 	return result, nil
 }
