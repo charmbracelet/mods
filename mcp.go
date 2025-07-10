@@ -70,7 +70,7 @@ func mcpTools(ctx context.Context) (map[string][]mcp.Tool, error) {
 			serverTools, err := mcpToolsFor(ctx, sname, server)
 			if errors.Is(err, context.DeadlineExceeded) {
 				return modsError{
-					err:    fmt.Errorf("Timeout while listing tools for %q - make sure the configuration is correct. If your server requires a docker container, make sure it's running", sname),
+					err:    fmt.Errorf("timeout while listing tools for %q - make sure the configuration is correct. If your server requires a docker container, make sure it's running", sname),
 					reason: "Could not list tools",
 				}
 			}
