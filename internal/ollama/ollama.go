@@ -79,6 +79,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 		s.err = nil
 		s.respCh = make(chan api.ChatResponse)
 		go func() {
+			defer close(s.respCh)
 			if err := c.Chat(ctx, &s.request, s.fn); err != nil {
 				s.err = err
 			}
@@ -124,27 +125,24 @@ func (s *Stream) CallTools() []proto.ToolCallStatus {
 
 // Close implements stream.Stream.
 func (s *Stream) Close() error {
-	close(s.respCh)
 	s.done = true
 	return nil
 }
 
 // Current implements stream.Stream.
 func (s *Stream) Current() (proto.Chunk, error) {
-	select {
-	case resp := <-s.respCh:
-		chunk := proto.Chunk{
-			Content: resp.Message.Content,
-		}
-		s.message.Content += resp.Message.Content
-		s.message.ToolCalls = append(s.message.ToolCalls, resp.Message.ToolCalls...)
-		if resp.Done {
-			s.done = true
-		}
-		return chunk, nil
-	default:
+	resp, ok := <-s.respCh
+	if !ok {
+		s.done = true
 		return proto.Chunk{}, stream.ErrNoContent
 	}
+
+	chunk := proto.Chunk{
+		Content: resp.Message.Content,
+	}
+	s.message.Content += resp.Message.Content
+	s.message.ToolCalls = append(s.message.ToolCalls, resp.Message.ToolCalls...)
+	return chunk, nil
 }
 
 // Err implements stream.Stream.
@@ -159,11 +157,15 @@ func (s *Stream) Next() bool {
 		return false
 	}
 	if s.done {
-		s.done = false
-		s.factory()
 		s.messages = append(s.messages, toProtoMessage(s.message))
 		s.request.Messages = append(s.request.Messages, s.message)
 		s.message = api.Message{}
+
+		if len(s.message.ToolCalls) > 0 {
+			s.factory()
+			return true
+		}
+		return false
 	}
 	return true
 }
