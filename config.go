@@ -201,6 +201,8 @@ type MCPServerConfig struct {
 	Command string   `yaml:"command"`
 	Env     []string `yaml:"env"`
 	Args    []string `yaml:"args"`
+	URL     string   `yaml:"url"`
+	SSE     bool     `yaml:"sse"`
 }
 
 func ensureConfig() (Config, error) {
