@@ -71,7 +71,7 @@ var help = map[string]string{
 	"show-last":         "Show the last saved conversation",
 	"editor":            "Edit the prompt in your $EDITOR; only taken into account if no other args and if STDIN is a TTY",
 	"mcp-servers":       "MCP Servers configurations",
-	"mcp-disable":       "Disable specific MCP servers",
+	"mcp-enable":        "Enable specific MCP servers (MCPs are disabled by default)",
 	"mcp-list":          "List all available MCP servers",
 	"mcp-list-tools":    "List all available tools from enabled MCP servers",
 	"mcp-timeout":       "Timeout for MCP server calls, defaults to 15 seconds",
@@ -189,7 +189,7 @@ type Config struct {
 	MCPServers   map[string]MCPServerConfig `yaml:"mcp-servers"`
 	MCPList      bool
 	MCPListTools bool
-	MCPDisable   []string
+	MCPEnable    []string
 	MCPTimeout   time.Duration `yaml:"mcp-timeout" env:"MCP_TIMEOUT"`
 
 	openEditor                                         bool

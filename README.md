@@ -165,9 +165,9 @@ Check the [`./features.md`](./features.md) for more details.
 
 #### MCP
 
+- `--mcp-enable`: Enable specific MCP servers (MCPs are disabled by default)
 - `--mcp-list`: List all available MCP servers
 - `--mcp-list-tools`: List all available tools from enabled MCP servers
-- `--mcp-disable`: Disable specific MCP servers
 
 #### Advanced
 
