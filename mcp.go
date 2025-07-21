@@ -96,19 +96,22 @@ func mcpTools(ctx context.Context) (map[string][]mcp.Tool, error) {
 func initMcpClient(ctx context.Context, server MCPServerConfig) (*client.Client, error) {
 	var cli *client.Client
 	var err error
-	if server.URL != "" {
-		if server.SSE {
-			cli, err = client.NewSSEMCPClient(server.URL)
-		} else {
-			cli, err = client.NewStreamableHttpClient(server.URL)
-		}
-	} else {
+
+	switch server.Type {
+	case "", "stdio":
 		cli, err = client.NewStdioMCPClient(
 			server.Command,
 			append(os.Environ(), server.Env...),
 			server.Args...,
 		)
+	case "sse":
+		cli, err = client.NewSSEMCPClient(server.URL)
+	case "http":
+		cli, err = client.NewStreamableHttpClient(server.URL)
+	default:
+		return nil, fmt.Errorf("unsupported MCP server type: %q, supported types are: stdio, sse, http", server.Type)
 	}
+
 	if err != nil {
 		return nil, err
 	}

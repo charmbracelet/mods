@@ -198,11 +198,11 @@ type Config struct {
 
 // MCPServerConfig holds configuration for an MCP server.
 type MCPServerConfig struct {
+	Type    string   `yaml:"type"`
 	Command string   `yaml:"command"`
 	Env     []string `yaml:"env"`
 	Args    []string `yaml:"args"`
 	URL     string   `yaml:"url"`
-	SSE     bool     `yaml:"sse"`
 }
 
 func ensureConfig() (Config, error) {
