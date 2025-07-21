@@ -142,6 +142,11 @@ func (s *Stream) Current() (proto.Chunk, error) {
 	}
 	s.message.Content += resp.Message.Content
 	s.message.ToolCalls = append(s.message.ToolCalls, resp.Message.ToolCalls...)
+
+	if resp.Done {
+		s.done = true
+	}
+
 	return chunk, nil
 }
 
@@ -159,12 +164,10 @@ func (s *Stream) Next() bool {
 	if s.done {
 		s.messages = append(s.messages, toProtoMessage(s.message))
 		s.request.Messages = append(s.request.Messages, s.message)
-		s.message = api.Message{}
 
-		if len(s.message.ToolCalls) > 0 {
-			s.factory()
-			return true
-		}
+		s.done = false
+		s.message = api.Message{}
+		s.factory()
 		return false
 	}
 	return true
