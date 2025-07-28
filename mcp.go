@@ -117,12 +117,12 @@ func initMcpClient(ctx context.Context, server MCPServerConfig) (*client.Client,
 	}
 
 	if err := cli.Start(ctx); err != nil {
-		cli.Close() //nolint:errcheck
+		cli.Close() //nolint:errcheck,gosec
 		return nil, fmt.Errorf("failed to start MCP client: %w", err)
 	}
 
 	if _, err := cli.Initialize(ctx, mcp.InitializeRequest{}); err != nil {
-		cli.Close() //nolint:errcheck
+		cli.Close() //nolint:errcheck,gosec
 		return nil, fmt.Errorf("failed to initialize MCP client: %w", err)
 	}
 
