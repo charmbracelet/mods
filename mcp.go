@@ -92,19 +92,50 @@ func mcpTools(ctx context.Context) (map[string][]mcp.Tool, error) {
 	return result, nil
 }
 
+// initMcpClient creates and initializes an MCP client.
+func initMcpClient(ctx context.Context, server MCPServerConfig) (*client.Client, error) {
+	var cli *client.Client
+	var err error
+
+	switch server.Type {
+	case "", "stdio":
+		cli, err = client.NewStdioMCPClient(
+			server.Command,
+			append(os.Environ(), server.Env...),
+			server.Args...,
+		)
+	case "sse":
+		cli, err = client.NewSSEMCPClient(server.URL)
+	case "http":
+		cli, err = client.NewStreamableHttpClient(server.URL)
+	default:
+		return nil, fmt.Errorf("unsupported MCP server type: %q, supported types are: stdio, sse, http", server.Type)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MCP client: %w", err)
+	}
+
+	if err := cli.Start(ctx); err != nil {
+		cli.Close() //nolint:errcheck,gosec
+		return nil, fmt.Errorf("failed to start MCP client: %w", err)
+	}
+
+	if _, err := cli.Initialize(ctx, mcp.InitializeRequest{}); err != nil {
+		cli.Close() //nolint:errcheck,gosec
+		return nil, fmt.Errorf("failed to initialize MCP client: %w", err)
+	}
+
+	return cli, nil
+}
+
 func mcpToolsFor(ctx context.Context, name string, server MCPServerConfig) ([]mcp.Tool, error) {
-	cli, err := client.NewStdioMCPClient(
-		server.Command,
-		append(os.Environ(), server.Env...),
-		server.Args...,
-	)
+	cli, err := initMcpClient(ctx, server)
 	if err != nil {
 		return nil, fmt.Errorf("could not setup %s: %w", name, err)
 	}
 	defer cli.Close() //nolint:errcheck
-	if _, err := cli.Initialize(ctx, mcp.InitializeRequest{}); err != nil {
-		return nil, fmt.Errorf("could not setup %s: %w", name, err)
-	}
+
 	tools, err := cli.ListTools(ctx, mcp.ListToolsRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("could not setup %s: %w", name, err)
@@ -124,20 +155,11 @@ func toolCall(ctx context.Context, name string, data []byte) (string, error) {
 	if !isMCPEnabled(sname) {
 		return "", fmt.Errorf("mcp: server is disabled: %q", sname)
 	}
-	client, err := client.NewStdioMCPClient(
-		server.Command,
-		append(os.Environ(), server.Env...),
-		server.Args...,
-	)
+	client, err := initMcpClient(ctx, server)
 	if err != nil {
 		return "", fmt.Errorf("mcp: %w", err)
 	}
 	defer client.Close() //nolint:errcheck
-
-	// Initialize the client
-	if _, err = client.Initialize(ctx, mcp.InitializeRequest{}); err != nil {
-		return "", fmt.Errorf("mcp: %w", err)
-	}
 
 	var args map[string]any
 	if len(data) > 0 {
