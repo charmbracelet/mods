@@ -33,8 +33,13 @@ func enabledMCPs() iter.Seq2[string, MCPServerConfig] {
 }
 
 func isMCPEnabled(name string) bool {
-	return !slices.Contains(config.MCPDisable, "*") &&
-		!slices.Contains(config.MCPDisable, name)
+	// If MCPEnable is empty, no MCPs are enabled (disabled by default)
+	if len(config.MCPEnable) == 0 {
+		return false
+	}
+
+	// Check if this specific server is enabled
+	return slices.Contains(config.MCPEnable, name) || slices.Contains(config.MCPEnable, "*")
 }
 
 func mcpList() {
@@ -42,6 +47,8 @@ func mcpList() {
 		s := name
 		if isMCPEnabled(name) {
 			s += stdoutStyles().Timeago.Render(" (enabled)")
+		} else {
+			s += stdoutStyles().Comment.Render(" (disabled)")
 		}
 		fmt.Println(s)
 	}
