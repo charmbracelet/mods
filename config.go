@@ -50,10 +50,10 @@ var help = map[string]string{
 	"no-limit":          "Turn off the client-side limit on the size of the input into the model",
 	"word-wrap":         "Wrap formatted output at specific width (default is 80)",
 	"max-tokens":        "Maximum number of tokens in response",
-	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0",
+	"temp":              "Temperature (randomness) of results, from 0.0 to 2.0, -1.0 to disable",
 	"stop":              "Up to 4 sequences where the API will stop generating further tokens",
-	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0",
-	"topk":              "TopK, only sample from the top K options for each subsequent token",
+	"topp":              "TopP, an alternative to temperature that narrows response, from 0.0 to 1.0, -1.0 to disable",
+	"topk":              "TopK, only sample from the top K options for each subsequent token, -1 to disable",
 	"fanciness":         "Your desired level of fanciness",
 	"status-text":       "Text to show while generating",
 	"settings":          "Open settings in your $EDITOR",
@@ -74,15 +74,17 @@ var help = map[string]string{
 	"mcp-disable":       "Disable specific MCP servers",
 	"mcp-list":          "List all available MCP servers",
 	"mcp-list-tools":    "List all available tools from enabled MCP servers",
+	"mcp-timeout":       "Timeout for MCP server calls, defaults to 15 seconds",
 }
 
 // Model represents the LLM model used in the API call.
 type Model struct {
-	Name     string
-	API      string
-	MaxChars int64    `yaml:"max-input-chars"`
-	Aliases  []string `yaml:"aliases"`
-	Fallback string   `yaml:"fallback"`
+	Name           string
+	API            string
+	MaxChars       int64    `yaml:"max-input-chars"`
+	Aliases        []string `yaml:"aliases"`
+	Fallback       string   `yaml:"fallback"`
+	ThinkingBudget int      `yaml:"thinking-budget,omitempty"`
 }
 
 // API represents an API endpoint and its models.
@@ -117,7 +119,7 @@ func (apis *APIs) UnmarshalYAML(node *yaml.Node) error {
 type FormatText map[string]string
 
 // UnmarshalYAML conforms with yaml.Unmarshaler.
-func (ft *FormatText) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (ft *FormatText) UnmarshalYAML(unmarshal func(any) error) error {
 	var text string
 	if err := unmarshal(&text); err != nil {
 		var formats map[string]string
@@ -188,6 +190,7 @@ type Config struct {
 	MCPList      bool
 	MCPListTools bool
 	MCPDisable   []string
+	MCPTimeout   time.Duration `yaml:"mcp-timeout" env:"MCP_TIMEOUT"`
 
 	openEditor                                         bool
 	cacheReadFromID, cacheWriteToID, cacheWriteToTitle string
@@ -195,9 +198,11 @@ type Config struct {
 
 // MCPServerConfig holds configuration for an MCP server.
 type MCPServerConfig struct {
+	Type    string   `yaml:"type"`
 	Command string   `yaml:"command"`
 	Env     []string `yaml:"env"`
 	Args    []string `yaml:"args"`
+	URL     string   `yaml:"url"`
 }
 
 func ensureConfig() (Config, error) {
@@ -232,7 +237,10 @@ func ensureConfig() (Config, error) {
 		c.CachePath = filepath.Join(xdg.DataHome, "mods")
 	}
 
-	if err := os.MkdirAll(c.CachePath, 0o700); err != nil { //nolint:mnd
+	if err := os.MkdirAll(
+		filepath.Join(c.CachePath, "conversations"),
+		0o700,
+	); err != nil { //nolint:mnd
 		return c, modsError{err, "Could not create cache directory."}
 	}
 
@@ -281,6 +289,7 @@ func defaultConfig() Config {
 			"markdown": defaultMarkdownFormatText,
 			"json":     defaultJSONFormatText,
 		},
+		MCPTimeout: 15 * time.Second,
 	}
 }
 

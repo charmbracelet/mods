@@ -12,7 +12,6 @@ import (
 	"runtime/pprof"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/atotto/clipboard"
 	timeago "github.com/caarlos0/timea.go"
@@ -121,7 +120,7 @@ var (
 			if err != nil {
 				return modsError{err, "Couldn't start Bubble Tea program."}
 			}
-			mods := newMods(stderrRenderer(), &config, db, cache)
+			mods := newMods(cmd.Context(), stderrRenderer(), &config, db, cache)
 			p := tea.NewProgram(mods, opts...)
 			m, err := p.Run()
 			if err != nil {
@@ -140,13 +139,13 @@ var (
 						fmt.Println(filepath.Dir(config.SettingsPath))
 						return nil
 					case "cache":
-						fmt.Println(filepath.Dir(config.CachePath))
+						fmt.Println(config.CachePath)
 						return nil
 					}
 				}
 				fmt.Printf("Configuration: %s\n", filepath.Dir(config.SettingsPath))
 				//nolint:mnd
-				fmt.Printf("%*sCache: %s\n", 8, " ", filepath.Dir(config.CachePath))
+				fmt.Printf("%*sCache: %s\n", 8, " ", config.CachePath)
 				return nil
 			}
 
@@ -206,7 +205,7 @@ var (
 			}
 
 			if config.MCPListTools {
-				ctx, cancel := context.WithTimeout(cmd.Context(), time.Minute)
+				ctx, cancel := context.WithTimeout(cmd.Context(), config.MCPTimeout)
 				defer cancel()
 				return mcpListTools(ctx)
 			}
@@ -315,6 +314,10 @@ func initFlags() {
 		config.FormatText[config.FormatAs] = defaultConfig().FormatText[config.FormatAs]
 	}
 
+	if config.MCPTimeout == 0 {
+		config.MCPTimeout = defaultConfig().MCPTimeout
+	}
+
 	rootCmd.MarkFlagsMutuallyExclusive(
 		"settings",
 		"show",
@@ -346,7 +349,7 @@ func main() {
 	// XXX: this must come after creating the config.
 	initFlags()
 
-	if !isCompletionCmd(os.Args) && !isManCmd(os.Args) {
+	if !isCompletionCmd(os.Args) && !isManCmd(os.Args) && !isVersionOrHelpCmd(os.Args) {
 		db, err = openDB(filepath.Join(config.CachePath, "conversations", "mods.db"))
 		if err != nil {
 			handleError(modsError{err, "Could not open database."})
@@ -443,12 +446,12 @@ func handleError(err error) {
 
 	format := "\n%s\n\n"
 
-	var args []interface{}
+	var args []any
 	var ferr flagParseError
 	var merr modsError
 	if errors.As(err, &ferr) {
 		format += "%s\n\n"
-		args = []interface{}{
+		args = []any{
 			fmt.Sprintf(
 				"Check out %s %s",
 				stderrStyles().InlineCode.Render("mods -h"),
@@ -460,7 +463,7 @@ func handleError(err error) {
 			),
 		}
 	} else if errors.As(err, &merr) {
-		args = []interface{}{
+		args = []any{
 			stderrStyles().ErrPadding.Render(stderrStyles().ErrorHeader.String(), merr.reason),
 		}
 
@@ -470,7 +473,7 @@ func handleError(err error) {
 			args = append(args, stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())))
 		}
 	} else {
-		args = []interface{}{
+		args = []any{
 			stderrStyles().ErrPadding.Render(stderrStyles().ErrorDetails.Render(err.Error())),
 		}
 	}
@@ -778,12 +781,24 @@ func isNoArgs() bool {
 }
 
 func askInfo() error {
+	var foundModel bool
 	apis := make([]huh.Option[string], 0, len(config.APIs))
 	opts := map[string][]huh.Option[string]{}
 	for _, api := range config.APIs {
 		apis = append(apis, huh.NewOption(api.Name, api.Name))
-		for model := range api.Models {
-			opts[api.Name] = append(opts[api.Name], huh.NewOption(model, model))
+		for name, model := range api.Models {
+			opts[api.Name] = append(opts[api.Name], huh.NewOption(name, name))
+
+			// checks if this is the model we intend to use if not using
+			// `--ask-model`:
+			if !config.AskModel &&
+				(config.API == "" || config.API == api.Name) &&
+				(config.Model == name || slices.Contains(model.Aliases, config.Model)) {
+				// if it is, adjusts api and model so its cheaper later on.
+				config.API = api.Name
+				config.Model = name
+				foundModel = true
+			}
 		}
 	}
 
@@ -792,6 +807,7 @@ func askInfo() error {
 		if err == nil && found != nil && found.Model != nil && found.API != nil {
 			config.Model = *found.Model
 			config.API = *found.API
+			foundModel = true
 		}
 	}
 
@@ -812,12 +828,18 @@ func askInfo() error {
 				}, &config.API).
 				Value(&config.Model),
 		).WithHideFunc(func() bool {
-			return !config.AskModel
+			// AskModel is true if the user is passing a flag to ask;
+			// FoundModel is true if a model is found for whatever config the
+			// user has (either --api/--model or default-api and
+			// default-model in settings).
+			// So, it'll only hide this if the user didn't run with
+			// `--ask-model` AND the configuration yields a valid model.
+			return !config.AskModel && foundModel
 		}),
 		huh.NewGroup(
 			huh.NewText().
 				TitleFunc(func() string {
-					return fmt.Sprintf("Enter a prompt for %s:", config.Model)
+					return fmt.Sprintf("Enter a prompt for %s/%s:", config.API, config.Model)
 				}, &config.Model).
 				Value(&config.Prefix),
 		).WithHideFunc(func() bool {
@@ -868,6 +890,19 @@ func isCompletionCmd(args []string) bool {
 			"--help": nil,
 		}[args[3]]
 		return ok
+	}
+	return false
+}
+
+//nolint:mnd
+func isVersionOrHelpCmd(args []string) bool {
+	if len(args) <= 1 {
+		return false
+	}
+	for _, arg := range args[1:] {
+		if arg == "--version" || arg == "-v" || arg == "--help" || arg == "-h" {
+			return true
+		}
 	}
 	return false
 }
