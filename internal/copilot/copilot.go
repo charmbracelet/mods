@@ -40,6 +40,7 @@ type AccessToken struct {
 	} `json:"error_details,omitempty"`
 }
 
+// DeviceCodeResponse represents the response from GitHub's device code endpoint.
 type DeviceCodeResponse struct {
 	DeviceCode      string `json:"device_code"`
 	UserCode        string `json:"user_code"`
@@ -48,6 +49,7 @@ type DeviceCodeResponse struct {
 	Interval        int    `json:"interval"`
 }
 
+// DeviceTokenResponse represents the response from GitHub's token endpoint.
 type DeviceTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
@@ -55,27 +57,32 @@ type DeviceTokenResponse struct {
 	Error       string `json:"error,omitempty"`
 }
 
+// FailedRequestResponse represents an error response from GitHub's API.
 type FailedRequestResponse struct {
 	DocumentationURL string `json:"documentation_url"`
 	Message          string `json:"message"`
 }
 
+// OAuthTokenWrapper wraps OAuth token data in GitHub Copilot's format.
 type OAuthTokenWrapper struct {
 	User        string `json:"user"`
 	OAuthToken  string `json:"oauth_token"`
 	GithubAppID string `json:"githubAppId"`
 }
 
+// OAuthToken represents the OAuth token structure used by GitHub Copilot.
 type OAuthToken struct {
 	GithubWrapper OAuthTokenWrapper `json:"github.com:Iv1.b507a08c87ecfe98"`
 }
 
+// Client represents a GitHub Copilot API client.
 type Client struct {
 	client      *http.Client
 	cache       string
 	AccessToken *AccessToken
 }
 
+// New creates a new GitHub Copilot client with the specified cache directory.
 func New(cacheDir string) *Client {
 	return &Client{
 		client: &http.Client{},
@@ -83,6 +90,7 @@ func New(cacheDir string) *Client {
 	}
 }
 
+// Do executes an HTTP request with Copilot authentication headers.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Editor-Version", copilotEditorVersion)
@@ -110,7 +118,8 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	return httpResp, nil
 }
 
-func Login(client *http.Client, configPath string) (string, error) {
+// Login performs OAuth authentication flow and returns the access token.
+func Login(client *http.Client, _ string) (string, error) {
 	oauthConfig := oauth.Config{
 		Name:            "copilot",
 		DeviceCodeURL:   copilotAuthDeviceCodeURL,
@@ -124,7 +133,7 @@ func Login(client *http.Client, configPath string) (string, error) {
 	oauthClient := oauth.New(oauthConfig)
 	token, err := oauthClient.GetToken()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get OAuth token: %w", err)
 	}
 
 	return token.AccessToken, nil
