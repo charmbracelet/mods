@@ -7,19 +7,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/mods/internal/cache"
+	"github.com/charmbracelet/mods/internal/oauth"
 )
 
 const (
-	copilotChatAuthURL   = "https://api.github.com/copilot_internal/v2/token"
-	copilotEditorVersion = "vscode/1.95.3"
-	copilotUserAgent     = "curl/7.81.0" // Necessay to bypass the user-agent check
+	copilotAuthDeviceCodeURL = "https://github.com/login/device/code"
+	copilotAuthTokenURL      = "https://github.com/login/oauth/access_token" // #nosec G101
+	copilotChatAuthURL       = "https://api.github.com/copilot_internal/v2/token"
+	copilotEditorVersion     = "vscode/1.95.3"
+	copilotUserAgent         = "curl/7.81.0" // Necessary to bypass the user-agent check
+	copilotClientID          = "Iv1.b507a08c87ecfe98"
 )
 
 // AccessToken response from GitHub Copilot's token endpoint.
@@ -40,14 +40,49 @@ type AccessToken struct {
 	} `json:"error_details,omitempty"`
 }
 
-// Client copilot client.
+// DeviceCodeResponse represents the response from GitHub's device code endpoint.
+type DeviceCodeResponse struct {
+	DeviceCode      string `json:"device_code"`
+	UserCode        string `json:"user_code"`
+	VerificationURI string `json:"verification_uri"`
+	ExpiresIn       int    `json:"expires_in"`
+	Interval        int    `json:"interval"`
+}
+
+// DeviceTokenResponse represents the response from GitHub's token endpoint.
+type DeviceTokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	Scope       string `json:"scope"`
+	Error       string `json:"error,omitempty"`
+}
+
+// FailedRequestResponse represents an error response from GitHub's API.
+type FailedRequestResponse struct {
+	DocumentationURL string `json:"documentation_url"`
+	Message          string `json:"message"`
+}
+
+// OAuthTokenWrapper wraps OAuth token data in GitHub Copilot's format.
+type OAuthTokenWrapper struct {
+	User        string `json:"user"`
+	OAuthToken  string `json:"oauth_token"`
+	GithubAppID string `json:"githubAppId"`
+}
+
+// OAuthToken represents the OAuth token structure used by GitHub Copilot.
+type OAuthToken struct {
+	GithubWrapper OAuthTokenWrapper `json:"github.com:Iv1.b507a08c87ecfe98"`
+}
+
+// Client represents a GitHub Copilot API client.
 type Client struct {
 	client      *http.Client
 	cache       string
 	AccessToken *AccessToken
 }
 
-// New new copilot client.
+// New creates a new GitHub Copilot client with the specified cache directory.
 func New(cacheDir string) *Client {
 	return &Client{
 		client: &http.Client{},
@@ -55,7 +90,7 @@ func New(cacheDir string) *Client {
 	}
 }
 
-// Do does the request.
+// Do executes an HTTP request with Copilot authentication headers.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Editor-Version", copilotEditorVersion)
@@ -83,53 +118,25 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	return httpResp, nil
 }
 
-func getCopilotRefreshToken() (string, error) {
-	configPath := filepath.Join(os.Getenv("HOME"), ".config/github-copilot")
-	if runtime.GOOS == "windows" {
-		configPath = filepath.Join(os.Getenv("LOCALAPPDATA"), "github-copilot")
+// Login performs OAuth authentication flow and returns the access token.
+func Login(client *http.Client, _ string) (string, error) {
+	oauthConfig := oauth.Config{
+		Name:            "copilot",
+		DeviceCodeURL:   copilotAuthDeviceCodeURL,
+		TokenURL:        copilotAuthTokenURL,
+		ClientID:        copilotClientID,
+		Scopes:          []string{"copilot"},
+		HTTPClient:      client,
+		TokenSerializer: NewCopilotTokenSerializer("copilot"),
 	}
 
-	// Check both possible config file locations
-	configFiles := []string{
-		filepath.Join(configPath, "hosts.json"),
-		filepath.Join(configPath, "apps.json"),
-	}
-
-	// Try to get token from config files
-	for _, path := range configFiles {
-		token, err := extractCopilotTokenFromFile(path)
-		if err == nil && token != "" {
-			return token, nil
-		}
-	}
-
-	return "", fmt.Errorf("no token found in %s", strings.Join(configFiles, ", "))
-}
-
-func extractCopilotTokenFromFile(path string) (string, error) {
-	bytes, err := os.ReadFile(path)
+	oauthClient := oauth.New(oauthConfig)
+	token, err := oauthClient.GetToken()
 	if err != nil {
-		return "", fmt.Errorf("failed to read Copilot configuration file at %s: %w", path, err)
+		return "", fmt.Errorf("failed to get OAuth token: %w", err)
 	}
 
-	var config map[string]json.RawMessage
-	if err := json.Unmarshal(bytes, &config); err != nil {
-		return "", fmt.Errorf("failed to parse Copilot configuration file at %s: %w", path, err)
-	}
-
-	for key, value := range config {
-		if key == "github.com" || strings.HasPrefix(key, "github.com:") {
-			var tokenData map[string]string
-			if err := json.Unmarshal(value, &tokenData); err != nil {
-				continue
-			}
-			if token, exists := tokenData["oauth_token"]; exists {
-				return token, nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("no token found in %s", path)
+	return token.AccessToken, nil
 }
 
 // Auth authenticates the user and retrieves an access token.
@@ -145,9 +152,22 @@ func (c *Client) Auth() (AccessToken, error) {
 		}
 	}
 
-	refreshToken, err := getCopilotRefreshToken()
+	oauthConfig := oauth.Config{
+		Name:            "copilot",
+		DeviceCodeURL:   copilotAuthDeviceCodeURL,
+		TokenURL:        copilotAuthTokenURL,
+		ClientID:        copilotClientID,
+		Scopes:          []string{"copilot"},
+		HTTPClient:      c.client,
+		UserAgent:       copilotUserAgent,
+		CachePath:       c.cache,
+		TokenSerializer: NewCopilotTokenSerializer("copilot"),
+	}
+
+	oauthClient := oauth.New(oauthConfig)
+	oauthToken, err := oauthClient.GetToken()
 	if err != nil {
-		return AccessToken{}, fmt.Errorf("failed to get refresh token: %w", err)
+		return AccessToken{}, fmt.Errorf("failed to get oAuth token: %w", err)
 	}
 
 	tokenReq, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, copilotChatAuthURL, nil)
@@ -155,7 +175,7 @@ func (c *Client) Auth() (AccessToken, error) {
 		return AccessToken{}, fmt.Errorf("failed to create token request: %w", err)
 	}
 
-	tokenReq.Header.Set("Authorization", "token "+refreshToken)
+	tokenReq.Header.Set("Authorization", "token "+oauthToken.AccessToken)
 	tokenReq.Header.Set("Accept", "application/json")
 	tokenReq.Header.Set("Editor-Version", copilotEditorVersion)
 	tokenReq.Header.Set("User-Agent", copilotUserAgent)
