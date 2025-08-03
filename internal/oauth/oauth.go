@@ -143,7 +143,7 @@ func (c *Client) Auth() (Token, error) {
 		Audience:   c.config.Audience,
 		HTTPClient: c.httpClient,
 		DisplayCode: func(code, url string) error {
-			fmt.Fprintf(os.Stdout, "\nCopy code %s and visit %s to authenticate\n\n", code, url)
+			_, _ = fmt.Fprintf(os.Stdout, "\nCopy code %s and visit %s to authenticate\n\n", code, url)
 			return nil
 		},
 	}
@@ -166,17 +166,7 @@ func (c *Client) Auth() (Token, error) {
 
 	// Save access token to config file
 	if token.AccessToken != "" {
-		if c.config.TokenSerializer != nil {
-			if saveErr := c.saveTokenWithSerializer(token, configPath); saveErr != nil {
-				// Log error but don't fail the auth process
-				fmt.Fprintf(os.Stderr, "Warning: failed to save token: %v\n", saveErr)
-			}
-		} else {
-			if saveErr := SaveToken(c.config.Name, token, configPath); saveErr != nil {
-				// Log error but don't fail the auth process
-				fmt.Fprintf(os.Stderr, "Warning: failed to save token: %v\n", saveErr)
-			}
-		}
+		c.saveTokenToFile(token, configPath)
 	}
 
 	// Cache the token if cache client is available
@@ -226,6 +216,20 @@ func (c *Client) SetToken(token Token) {
 	c.token = &token
 }
 
+func (c *Client) saveTokenToFile(token Token, configPath string) {
+	var saveErr error
+	if c.config.TokenSerializer != nil {
+		saveErr = c.saveTokenWithSerializer(token, configPath)
+	} else {
+		saveErr = SaveToken(c.config.Name, token, configPath)
+	}
+
+	if saveErr != nil {
+		// Log error but don't fail the auth process
+		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to save token: %v\n", saveErr)
+	}
+}
+
 func (c *Client) saveTokenWithSerializer(token Token, configPath string) error {
 	data, err := c.config.TokenSerializer.Serialize(token)
 	if err != nil {
@@ -249,7 +253,9 @@ func (c *Client) saveTokenWithSerializer(token Token, configPath string) error {
 func (c *Client) ClearToken() error {
 	c.token = nil
 	if c.cacheClient != nil {
-		return c.cacheClient.Delete(c.config.Name)
+		if err := c.cacheClient.Delete(c.config.Name); err != nil {
+			return fmt.Errorf("failed to delete token from cache: %w", err)
+		}
 	}
 	return nil
 }
