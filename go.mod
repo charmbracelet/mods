@@ -19,6 +19,7 @@ require (
 	github.com/charmbracelet/x/exp/golden v0.0.0-20241011142426-46044092ad91
 	github.com/charmbracelet/x/exp/ordered v0.1.0
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240722160745-212f7b056ed0
+	github.com/cli/oauth v1.2.0
 	github.com/cohere-ai/cohere-go/v2 v2.14.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.2.0
@@ -52,6 +53,8 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/exp/slice v0.0.0-20250327172914-2fdc97757edf // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
+	github.com/cli/browser v1.0.0 // indirect
+	github.com/cli/safeexec v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
