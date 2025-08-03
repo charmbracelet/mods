@@ -1,3 +1,4 @@
+// Package copilot provides token serialization for GitHub Copilot OAuth tokens.
 package copilot
 
 import (
@@ -9,17 +10,20 @@ import (
 	"github.com/charmbracelet/mods/internal/oauth"
 )
 
-type CopilotTokenSerializer struct {
+// TokenSerializer handles serialization of GitHub Copilot OAuth tokens.
+type TokenSerializer struct {
 	providerName string
 }
 
-func NewCopilotTokenSerializer(providerName string) *CopilotTokenSerializer {
-	return &CopilotTokenSerializer{
+// NewCopilotTokenSerializer creates a new token serializer for the given provider.
+func NewCopilotTokenSerializer(providerName string) *TokenSerializer {
+	return &TokenSerializer{
 		providerName: providerName,
 	}
 }
 
-func (c *CopilotTokenSerializer) Serialize(token oauth.Token) ([]byte, error) {
+// Serialize converts an OAuth token to GitHub Copilot's JSON format.
+func (c *TokenSerializer) Serialize(token oauth.Token) ([]byte, error) {
 	oAuthToken := OAuthToken{
 		GithubWrapper: OAuthTokenWrapper{
 			User:        "",
@@ -36,7 +40,8 @@ func (c *CopilotTokenSerializer) Serialize(token oauth.Token) ([]byte, error) {
 	return data, nil
 }
 
-func (c *CopilotTokenSerializer) Deserialize(data []byte) (oauth.Token, error) {
+// Deserialize converts GitHub Copilot's JSON format back to an OAuth token.
+func (c *TokenSerializer) Deserialize(data []byte) (oauth.Token, error) {
 	var oAuthToken OAuthToken
 
 	if err := json.Unmarshal(data, &oAuthToken); err != nil {
@@ -50,8 +55,8 @@ func (c *CopilotTokenSerializer) Deserialize(data []byte) (oauth.Token, error) {
 	return token, nil
 }
 
-// GetTokenPath returns the path where GitHub Copilot tokens are stored
-func (c *CopilotTokenSerializer) GetTokenPath() string {
+// GetTokenPath returns the path where GitHub Copilot tokens are stored.
+func (c *TokenSerializer) GetTokenPath() string {
 	configPath := filepath.Join(xdg.ConfigHome, "github-copilot")
 	return filepath.Join(configPath, "apps.json")
 }
