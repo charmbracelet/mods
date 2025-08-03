@@ -118,17 +118,20 @@ func (c *Client) Auth() (Token, error) {
 
 	configPath := c.getTokenPath()
 	existingToken, err := c.loadToken(configPath)
-	if err == nil && existingToken.AccessToken != "" {
-		if existingToken.ExpiresAt == 0 || existingToken.ExpiresAt > time.Now().Unix() {
-			if c.cacheClient != nil && existingToken.ExpiresAt > 0 {
-				if err := c.cacheClient.Write(c.config.Name, existingToken.ExpiresAt, func(w io.Writer) error {
-					return json.NewEncoder(w).Encode(existingToken)
-				}); err != nil {
-					return Token{}, fmt.Errorf("failed to cache token: %w", err)
-				}
+
+	tokenExists := err == nil && existingToken.AccessToken != ""
+	tokenNotExpired := existingToken.ExpiresAt == 0 || existingToken.ExpiresAt > time.Now().Unix()
+
+	if tokenExists && tokenNotExpired {
+		// Token exists and is valid, cache it and return
+		if c.cacheClient != nil && existingToken.ExpiresAt > 0 {
+			if cacheErr := c.cacheClient.Write(c.config.Name, existingToken.ExpiresAt, func(w io.Writer) error {
+				return json.NewEncoder(w).Encode(existingToken)
+			}); cacheErr != nil {
+				return Token{}, fmt.Errorf("failed to cache token: %w", cacheErr)
 			}
-			return existingToken, nil
 		}
+		return existingToken, nil
 	}
 	flow := &oauth.Flow{
 		Host: &oauth.Host{
