@@ -1,3 +1,4 @@
+// Package oauth provides token formatting and storage utilities for OAuth authentication.
 package oauth
 
 import (
@@ -9,10 +10,12 @@ import (
 	"github.com/adrg/xdg"
 )
 
+// TokenFile represents the structure of the OAuth token configuration file.
 type TokenFile struct {
 	OAuthTokens map[string]TokenWrapper `json:"oauth_tokens,omitempty"`
 }
 
+// TokenWrapper wraps token data with additional metadata for storage.
 type TokenWrapper struct {
 	Token    string            `json:"token"`
 	User     string            `json:"user,omitempty"`
@@ -20,6 +23,7 @@ type TokenWrapper struct {
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
+// SaveToken saves an OAuth token to the specified configuration file.
 func SaveToken(providerName string, token Token, configPath string) error {
 	tokenFile := TokenFile{
 		OAuthTokens: make(map[string]TokenWrapper),
@@ -60,6 +64,7 @@ func SaveToken(providerName string, token Token, configPath string) error {
 	return nil
 }
 
+// SaveRefreshToken saves a refresh token to the specified configuration file.
 func SaveRefreshToken(providerName string, refreshToken string, configPath string) error {
 	tokenFile := TokenFile{
 		OAuthTokens: make(map[string]TokenWrapper),
@@ -97,6 +102,7 @@ func SaveRefreshToken(providerName string, refreshToken string, configPath strin
 	return nil
 }
 
+// LoadToken loads an OAuth token from the specified configuration file.
 func LoadToken(providerName string, configPath string) (Token, error) {
 	var tokenFile TokenFile
 
@@ -122,6 +128,7 @@ func LoadToken(providerName string, configPath string) (Token, error) {
 	return token, nil
 }
 
+// GetDefaultConfigPath returns the default path for OAuth token storage.
 func GetDefaultConfigPath() string {
 	configPath := filepath.Join(xdg.ConfigHome, "mods")
 	return filepath.Join(configPath, "oauth_tokens.json")

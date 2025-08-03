@@ -13,6 +13,7 @@ import (
 	"github.com/cli/oauth"
 )
 
+// Config holds OAuth configuration settings.
 type Config struct {
 	Name            string
 	DeviceCodeURL   string
@@ -26,6 +27,7 @@ type Config struct {
 	TokenSerializer TokenSerializer
 }
 
+// Token represents an OAuth access token with metadata.
 type Token struct {
 	AccessToken string            `json:"access_token"`
 	TokenType   string            `json:"token_type,omitempty"`
@@ -36,12 +38,14 @@ type Token struct {
 	Metadata    map[string]string `json:"metadata,omitempty"`
 }
 
+// TokenSerializer defines the interface for token serialization.
 type TokenSerializer interface {
 	Serialize(token Token) ([]byte, error)
 	Deserialize(data []byte) (Token, error)
 	GetTokenPath() string
 }
 
+// Client represents an OAuth client for device flow authentication.
 type Client struct {
 	config      Config
 	httpClient  *http.Client
@@ -49,6 +53,7 @@ type Client struct {
 	token       *Token
 }
 
+// New creates a new OAuth client with the given configuration.
 func New(config Config) *Client {
 	httpClient := &http.Client{}
 	if config.HTTPClient != nil {
@@ -70,6 +75,7 @@ func New(config Config) *Client {
 	return client
 }
 
+// Do executes an HTTP request with OAuth authentication.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if c.config.UserAgent != "" {
 		req.Header.Set("User-Agent", c.config.UserAgent)
@@ -98,6 +104,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
+// Auth performs OAuth device flow authentication and returns a token.
 func (c *Client) Auth() (Token, error) {
 	if c.cacheClient != nil {
 		var token Token
@@ -206,10 +213,12 @@ func (c *Client) loadToken(configPath string) (Token, error) {
 	return LoadToken(c.config.Name, configPath)
 }
 
+// GetToken retrieves a valid OAuth token, performing authentication if necessary.
 func (c *Client) GetToken() (Token, error) {
 	return c.Auth()
 }
 
+// SetToken sets the current token for the client.
 func (c *Client) SetToken(token Token) {
 	c.token = &token
 }
