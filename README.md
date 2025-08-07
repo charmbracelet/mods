@@ -41,6 +41,9 @@ yay -S mods
 
 # Nix
 nix-shell -p mods
+
+# Conda-forge
+pixi global install mods
 ```
 
 <details>
