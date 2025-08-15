@@ -636,7 +636,19 @@ func (m *Mods) readFromCache() tea.Cmd {
 			return modsError{err, "There was an error loading the conversation."}
 		}
 
-		m.appendToOutput(proto.Conversation(messages).String())
+		content := proto.Conversation(messages).String()
+
+		// In raw mode, directly print the content instead of using glamour
+		if m.Config.Raw {
+			fmt.Print(content)
+			return completionOutput{
+				errh: func(err error) tea.Msg {
+					return modsError{err: err}
+				},
+			}
+		}
+
+		m.appendToOutput(content)
 		return completionOutput{
 			errh: func(err error) tea.Msg {
 				return modsError{err: err}
