@@ -32,7 +32,7 @@ func processImageFiles(imagePaths []string) ([]proto.ImageContent, error) {
 		return nil, fmt.Errorf("too many images: maximum 10 images allowed, got %d", len(imagePaths))
 	}
 
-	var images = make([]proto.ImageContent, 0, len(imagePaths))
+	images := make([]proto.ImageContent, 0, len(imagePaths))
 	for _, path := range imagePaths {
 		image, err := readImageFile(path)
 		if err != nil {
@@ -95,7 +95,7 @@ func readImageFile(path string) (*proto.ImageContent, error) {
 
 // Return a comma-separated list of supported formats.
 func getSupportedFormats() string {
-	var formats = make([]string, 0, len(supportedImageFormats))
+	formats := make([]string, 0, len(supportedImageFormats))
 	for ext := range supportedImageFormats {
 		formats = append(formats, ext)
 	}
