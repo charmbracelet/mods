@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	_ stream.Client = &Client{}
-	apisWithJSONResponseFormat = map[string]bool{
+	_                          stream.Client = &Client{}
+	apisWithJSONResponseFormat               = map[string]bool{
 		"openai":  true,
 		"copilot": true,
 	}
