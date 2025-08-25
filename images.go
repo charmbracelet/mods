@@ -77,7 +77,7 @@ func readImageFile(path string) (*proto.ImageContent, error) {
 	}
 	defer func() {
         if cerr := file.Close(); cerr != nil {
-            fmt.Errorf("could not close file: %v", cerr)
+            fmt.Fprintf(os.Stderr, "could not close file: %v\n", cerr)
         }
     }()
 
