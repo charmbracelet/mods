@@ -42,6 +42,12 @@ func fromProtoMessage(input proto.Message) api.Message {
 		Content: input.Content,
 		Role:    input.Role,
 	}
+
+	// Handle images
+	for _, img := range input.Images {
+		m.Images = append(m.Images, api.ImageData(img.Data))
+	}
+
 	for _, call := range input.ToolCalls {
 		var args api.ToolCallFunctionArguments
 		_ = json.Unmarshal(call.Function.Arguments, &args)
@@ -62,6 +68,16 @@ func toProtoMessage(in api.Message) proto.Message {
 		Role:    in.Role,
 		Content: in.Content,
 	}
+
+	// Handle images
+	for _, imgData := range in.Images {
+		msg.Images = append(msg.Images, proto.ImageContent{
+			Data:     []byte(imgData),
+			MimeType: "image/jpeg", // Ollama doesn't provide MIME type, assume JPEG
+			Filename: "",           // Ollama doesn't provide filename
+		})
+	}
+
 	for _, call := range in.ToolCalls {
 		msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
 			ID: strconv.Itoa(call.Function.Index),
