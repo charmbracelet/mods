@@ -27,7 +27,7 @@ require (
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0
 	github.com/muesli/termenv v0.16.0
-	github.com/ollama/ollama v0.11.4
+	github.com/ollama/ollama v0.11.6
 	github.com/openai/openai-go v1.12.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
