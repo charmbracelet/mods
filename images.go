@@ -75,7 +75,11 @@ func readImageFile(path string) (*proto.ImageContent, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+        if cerr := file.Close(); cerr != nil {
+            fmt.Errorf("could not close file: %v", cerr)
+        }
+    }()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
