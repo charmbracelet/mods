@@ -11,7 +11,7 @@ import (
 	"github.com/charmbracelet/mods/internal/proto"
 )
 
-// supportedImageFormats maps file extensions to MIME types
+// Map file extensions to MIME types.
 var supportedImageFormats = map[string]string{
 	".jpg":  "image/jpeg",
 	".jpeg": "image/jpeg",
@@ -20,10 +20,10 @@ var supportedImageFormats = map[string]string{
 	".webp": "image/webp",
 }
 
-// maxImageSize sets the maximum allowed image file size (5MB)
+// Set the maximum allowed image file size (5 MB).
 const maxImageSize = 5 * 1024 * 1024
 
-// processImageFiles reads and validates image files from paths
+// Read and validate image files from paths.
 func processImageFiles(imagePaths []string) ([]proto.ImageContent, error) {
 	if len(imagePaths) == 0 {
 		return nil, nil
@@ -45,7 +45,7 @@ func processImageFiles(imagePaths []string) ([]proto.ImageContent, error) {
 	return images, nil
 }
 
-// readImageFile reads and validates a single image file
+// Read and validate a single image file.
 func readImageFile(path string) (*proto.ImageContent, error) {
 	// Check if file exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -90,7 +90,7 @@ func readImageFile(path string) (*proto.ImageContent, error) {
 	}, nil
 }
 
-// getSupportedFormats returns a comma-separated list of supported formats
+// Return a comma-separated list of supported formats.
 func getSupportedFormats() string {
 	var formats []string
 	for ext := range supportedImageFormats {
