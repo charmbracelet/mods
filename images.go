@@ -98,19 +98,3 @@ func getSupportedFormats() string {
 	}
 	return strings.Join(formats, ", ")
 }
-
-// createDataURI creates a data URI for base64 encoded image data
-func createDataURI(image proto.ImageContent) string {
-	base64Data := base64.StdEncoding.EncodeToString(image.Data)
-	return fmt.Sprintf("data:%s;base64,%s", image.MimeType, base64Data)
-}
-
-// hasImages checks if any message contains images
-func hasImages(messages []proto.Message) bool {
-	for _, msg := range messages {
-		if len(msg.Images) > 0 {
-			return true
-		}
-	}
-	return false
-}
