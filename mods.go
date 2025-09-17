@@ -353,6 +353,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			}
 			if mod.API == "azure-ad" {
 				ccfg.APIType = "azure-ad"
+				ccfg.Version = api.Version
 			}
 			if api.User != "" {
 				cfg.User = api.User
