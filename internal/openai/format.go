@@ -1,6 +1,7 @@
 package openai
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/charmbracelet/mods/internal/proto"
@@ -46,7 +47,29 @@ func fromProtoMessages(input []proto.Message) []openai.ChatCompletionMessagePara
 				break
 			}
 		case proto.RoleUser:
-			messages = append(messages, openai.UserMessage(msg.Content))
+			if len(msg.Images) > 0 {
+				// Create content array with text and images
+				var content []openai.ChatCompletionContentPartUnionParam
+
+				// Add text content if present
+				if msg.Content != "" {
+					content = append(content, openai.TextContentPart(msg.Content))
+				}
+
+				// Add image content
+				for _, img := range msg.Images {
+					base64Data := base64.StdEncoding.EncodeToString(img.Data)
+					dataURI := fmt.Sprintf("data:%s;base64,%s", img.MimeType, base64Data)
+
+					content = append(content, openai.ImageContentPart(openai.ChatCompletionContentPartImageImageURLParam{
+						URL: dataURI,
+					}))
+				}
+
+				messages = append(messages, openai.UserMessage(content))
+			} else {
+				messages = append(messages, openai.UserMessage(msg.Content))
+			}
 		case proto.RoleAssistant:
 			m := openai.AssistantMessage(msg.Content)
 			for _, tool := range msg.ToolCalls {
