@@ -22,12 +22,12 @@ require (
 	github.com/cohere-ai/cohere-go/v2 v2.15.3
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.3.0
-	github.com/mark3labs/mcp-go v0.40.0
+	github.com/mark3labs/mcp-go v0.41.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0
 	github.com/muesli/termenv v0.16.0
-	github.com/ollama/ollama v0.12.0
+	github.com/ollama/ollama v0.12.3
 	github.com/openai/openai-go v1.12.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
