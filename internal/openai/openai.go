@@ -93,6 +93,19 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 		}
 	}
 
+	// Check if streaming is disabled
+	useStreaming := request.Stream == nil || *request.Stream
+	if !useStreaming {
+		// Non-streaming mode: use regular Chat Completion API
+		resp, err := c.Chat.Completions.New(ctx, body)
+		return &NonStreamingWrapper{
+			response: resp,
+			err:      err,
+			messages: request.Messages,
+		}
+	}
+
+	// Streaming mode (default)
 	s := &Stream{
 		stream:   c.Chat.Completions.NewStreaming(ctx, body),
 		request:  body,
@@ -179,4 +192,63 @@ func (s *Stream) Next() bool {
 	}
 
 	return false
+}
+
+// NonStreamingWrapper wraps a single ChatCompletion response to implement stream.Stream.
+type NonStreamingWrapper struct {
+	response *openai.ChatCompletion
+	err      error
+	messages []proto.Message
+	consumed bool
+}
+
+// Next implements stream.Stream.
+func (w *NonStreamingWrapper) Next() bool {
+	if w.consumed {
+		return false
+	}
+	w.consumed = true
+	return w.err == nil && w.response != nil
+}
+
+// Current implements stream.Stream.
+func (w *NonStreamingWrapper) Current() (proto.Chunk, error) {
+	if w.err != nil {
+		return proto.Chunk{}, w.err //nolint:wrapcheck
+	}
+	if w.response == nil || len(w.response.Choices) == 0 {
+		return proto.Chunk{}, stream.ErrNoContent
+	}
+
+	// Return the complete message content as a single chunk
+	content := w.response.Choices[0].Message.Content
+
+	// Add the response to messages
+	if !w.consumed {
+		msg := w.response.Choices[0].Message.ToParam()
+		w.messages = append(w.messages, toProtoMessage(msg))
+	}
+
+	return proto.Chunk{Content: content}, nil
+}
+
+// Close implements stream.Stream.
+func (w *NonStreamingWrapper) Close() error {
+	return nil
+}
+
+// Err implements stream.Stream.
+func (w *NonStreamingWrapper) Err() error {
+	return w.err //nolint:wrapcheck
+}
+
+// Messages implements stream.Stream.
+func (w *NonStreamingWrapper) Messages() []proto.Message {
+	return w.messages
+}
+
+// CallTools implements stream.Stream.
+func (w *NonStreamingWrapper) CallTools() []proto.ToolCallStatus {
+	// Non-streaming mode doesn't support tool calls yet
+	return nil
 }
