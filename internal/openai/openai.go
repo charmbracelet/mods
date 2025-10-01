@@ -214,7 +214,7 @@ func (w *NonStreamingWrapper) Next() bool {
 // Current implements stream.Stream.
 func (w *NonStreamingWrapper) Current() (proto.Chunk, error) {
 	if w.err != nil {
-		return proto.Chunk{}, w.err //nolint:wrapcheck
+		return proto.Chunk{}, w.err
 	}
 	if w.response == nil || len(w.response.Choices) == 0 {
 		return proto.Chunk{}, stream.ErrNoContent
@@ -239,7 +239,7 @@ func (w *NonStreamingWrapper) Close() error {
 
 // Err implements stream.Stream.
 func (w *NonStreamingWrapper) Err() error {
-	return w.err //nolint:wrapcheck
+	return w.err
 }
 
 // Messages implements stream.Stream.
