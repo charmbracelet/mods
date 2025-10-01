@@ -75,17 +75,27 @@ apis:
     api-key-env: OPENAI_API_KEY
     # api-key-cmd: rbw get -f OPENAI_API_KEY chat.openai.com
     models: # https://platform.openai.com/docs/models
-      gpt-4.5-preview: #128k https://platform.openai.com/docs/models/gpt-4.5-preview
-        aliases: ["gpt-4.5", "gpt4.5"]
-        max-input-chars: 392000
-        fallback: gpt-4
-      gpt-4.5-preview-2025-02-27:
-        max-input-chars: 392000
-        fallback: gpt-4
       gpt-4o-mini:
         aliases: ["4o-mini"]
         max-input-chars: 392000
         fallback: gpt-4o
+      # GPT-5 Series (Current Flagship)
+      gpt-5:
+        aliases: ["5", "gpt5", "gpt-5-thinking", "gpt5-thinking"]
+        max-input-chars: 794000
+        fallback: gpt-4o
+      gpt-5-mini:
+        aliases: ["5mini", "gpt5mini"]
+        max-input-chars: 400000
+        fallback: gpt-5
+      gpt-5-nano:
+        aliases: ["5nano", "gpt5nano"]
+        max-input-chars: 200000
+        fallback: gpt-5-mini
+      gpt-5-codex:
+        aliases: ["5codex", "gpt5codex", "codex"]
+        max-input-chars: 400000
+        fallback: gpt-5
       gpt-4o:
         aliases: ["4o"]
         max-input-chars: 392000
@@ -127,9 +137,19 @@ apis:
       o1-mini:
         aliases: ["o1-mini"]
         max-input-chars: 128000
+      # O3 Series (Advanced Reasoning Models)
+      o3:
+        aliases: ["o3"]
+        max-input-chars: 794000
+        fallback: o3-mini
+      o3-pro:
+        aliases: ["o3-pro", "o3pro"]
+        max-input-chars: 794000
+        fallback: o3
       o3-mini:
         aliases: ["o3m", "o3-mini"]
         max-input-chars: 200000
+        fallback: o1-mini
   copilot:
     base-url: https://api.githubcopilot.com
     models:
