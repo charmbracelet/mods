@@ -437,6 +437,10 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		if cfg.MaxTokens > 0 {
 			request.MaxTokens = &cfg.MaxTokens
 		}
+		if cfg.NoStream {
+			noStream := false
+			request.Stream = &noStream
+		}
 
 		var client stream.Client
 		switch mod.API {
