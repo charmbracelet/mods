@@ -188,20 +188,16 @@ apis:
       claude-sonnet-4-20250514:
         aliases: ["claude-sonnet-4", "sonnet-4"]
         max-input-chars: 680000
+      claude-opus-4-1-20250805:
+        aliases: ["claude-opus-4.1", "opus-4.1", "opus-4-1", "opus"]
+        max-input-chars: 680000
       claude-3-7-sonnet-latest:
         aliases: ["claude3.7-sonnet", "claude-3-7-sonnet", "sonnet-3.7"]
         max-input-chars: 680000
       claude-3-7-sonnet-20250219:
         max-input-chars: 680000
-      claude-3-5-sonnet-latest:
-        aliases: ["claude3.5-sonnet", "claude-3-5-sonnet", "sonnet-3.5"]
-        max-input-chars: 680000
-      claude-3-5-sonnet-20241022:
-        max-input-chars: 680000
-      claude-3-5-sonnet-20240620:
-        max-input-chars: 680000
-      claude-3-opus-20240229:
-        aliases: ["claude3-opus", "opus"]
+      claude-3-5-haiku-20241022:
+        aliases: ["claude3.5-haiku", "haiku"]
         max-input-chars: 680000
   cohere:
     base-url: https://api.cohere.com/v1
