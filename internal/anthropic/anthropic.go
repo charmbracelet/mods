@@ -37,11 +37,11 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 		body.MaxTokens = 4096
 	}
 
+	// Claude 4.5 doesn't allow both temperature and top_p. We prioritize
+	// temperature over top_p when both are present
 	if request.Temperature != nil {
 		body.Temperature = anthropic.Float(*request.Temperature)
-	}
-
-	if request.TopP != nil {
+	} else if request.TopP != nil {
 		body.TopP = anthropic.Float(*request.TopP)
 	}
 
