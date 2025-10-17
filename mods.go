@@ -149,6 +149,7 @@ func (m *Mods) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.Config.Dirs ||
 			len(m.Config.Delete) > 0 ||
+			len(m.Config.Rename) > 0 ||
 			m.Config.DeleteOlderThan != 0 ||
 			m.Config.ShowHelp ||
 			m.Config.List ||

@@ -210,7 +210,12 @@ var (
 				return mcpListTools(ctx)
 			}
 
+			if len(config.Rename) > 0 {
+				return renameConversations()
+			}
+
 			if len(config.Delete) > 0 {
+				fmt.Fprintln(os.Stdout, config.Delete)
 				return deleteConversations()
 			}
 
@@ -260,6 +265,9 @@ func initFlags() {
 	flags.StringVarP(&config.Title, "title", "t", config.Title, stdoutStyles().FlagDesc.Render(help["title"]))
 	flags.StringArrayVarP(&config.Delete, "delete", "d", config.Delete, stdoutStyles().FlagDesc.Render(help["delete"]))
 	flags.Var(newDurationFlag(config.DeleteOlderThan, &config.DeleteOlderThan), "delete-older-than", stdoutStyles().FlagDesc.Render(help["delete-older-than"]))
+
+	flags.StringArrayVarP(&config.Rename, "rename", "1", config.Rename, stdoutStyles().FlagDesc.Render(help["rename"]))
+
 	flags.StringVarP(&config.Show, "show", "s", config.Show, stdoutStyles().FlagDesc.Render(help["show"]))
 	flags.BoolVarP(&config.ShowLast, "show-last", "S", false, stdoutStyles().FlagDesc.Render(help["show-last"]))
 	flags.BoolVarP(&config.Quiet, "quiet", "q", config.Quiet, stdoutStyles().FlagDesc.Render(help["quiet"]))
@@ -292,7 +300,7 @@ func initFlags() {
 	flags.BoolVar(&memprofile, "memprofile", false, "Write memory profiles to CWD")
 	_ = flags.MarkHidden("memprofile")
 
-	for _, name := range []string{"show", "delete", "continue"} {
+	for _, name := range []string{"show", "delete", "continue", "rename"} {
 		_ = rootCmd.RegisterFlagCompletionFunc(name, func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			results, _ := db.Completions(toComplete)
 			return results, cobra.ShellCompDirectiveDefault
@@ -324,6 +332,7 @@ func initFlags() {
 		"show-last",
 		"delete",
 		"delete-older-than",
+		"rename",
 		"list",
 		"continue",
 		"continue-last",
@@ -611,6 +620,45 @@ func deleteConversation(convo *Conversation) error {
 	return nil
 }
 
+func renameConversations() error {
+	for _, del := range config.Rename {
+		convo, err := db.Find(del)
+		if err != nil {
+			return modsError{err, "Couldn't find conversation to delete."}
+		}
+		if err := renameConversation(convo); err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+func renameConversation(convo *Conversation) error {
+	if isInputTTY() && isOutputTTY() {
+		var newTitle string
+
+		form := huh.NewInput().
+			Title("New Conversation Title: ").
+			Prompt("").
+			Value(&newTitle)
+
+		err := form.Run()
+		if err != nil {
+			return modsError{err, "Couldn't run forms."}
+		}
+
+		convo.Title = newTitle
+		err = db.Save(convo.ID, convo.Title, *convo.API, *convo.Model)
+		if err != nil {
+			return modsError{err, "Couldn't update."}
+		}
+
+		fmt.Fprintln(os.Stdout, "Conversation renamed:", convo.ID[:sha1minLen])
+	}
+	return nil
+}
+
 func listConversations(raw bool) error {
 	conversations, err := db.List()
 	if err != nil {
@@ -692,7 +740,7 @@ func selectFromList(conversations []Conversation) {
 	fmt.Println(stdoutStyles().Comment.Render(
 		"You can use this conversation ID with the following commands:",
 	))
-	suggestions := []string{"show", "continue", "delete"}
+	suggestions := []string{"show", "continue", "delete", "rename"}
 	for _, flag := range suggestions {
 		fmt.Printf(
 			"  %-44s %s\n",
@@ -769,6 +817,7 @@ func isNoArgs() bool {
 		config.Show == "" &&
 		!config.ShowLast &&
 		len(config.Delete) == 0 &&
+		len(config.Rename) == 0 &&
 		config.DeleteOlderThan == 0 &&
 		!config.ShowHelp &&
 		!config.List &&
