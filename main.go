@@ -215,7 +215,6 @@ var (
 			}
 
 			if len(config.Delete) > 0 {
-				fmt.Fprintln(os.Stdout, config.Delete)
 				return deleteConversations()
 			}
 
