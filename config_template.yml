@@ -240,22 +240,21 @@ apis:
     models: # https://docs.perplexity.ai/getting-started/models
       # search models
       sonar:
-        aliases: ["sonar"]
         max-input-chars: 127072
       sonar-pro:
-        aliases: ["sonar-pro"]
         max-input-chars: 127072
+        fallback: sonar
       # reasoning models
       sonar-reasoning:
-        aliases: ["sonar-reasoning"]
         max-input-chars: 127072
+        fallback: sonar
       sonar-reasoning-pro:
-        aliases: ["sonar-reasoning-pro"]
         max-input-chars: 127072
+        fallback: sonar
       # research models
       sonar-deep-research:
-        aliases: ["sonar-deep-research"]
         max-input-chars: 127072
+        fallback: sonar
 
   groq:
     base-url: https://api.groq.com/openai/v1
