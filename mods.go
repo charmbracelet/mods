@@ -28,7 +28,6 @@ import (
 	"github.com/charmbracelet/mods/internal/anthropic"
 	"github.com/charmbracelet/mods/internal/cache"
 	"github.com/charmbracelet/mods/internal/cohere"
-	"github.com/charmbracelet/mods/internal/copilot"
 	"github.com/charmbracelet/mods/internal/google"
 	"github.com/charmbracelet/mods/internal/ollama"
 	"github.com/charmbracelet/mods/internal/openai"
@@ -357,20 +356,6 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.User != "" {
 				cfg.User = api.User
 			}
-		case "copilot":
-			cli := copilot.New(config.CachePath)
-			token, err := cli.Auth()
-			if err != nil {
-				return modsError{err, "Copilot authentication failed"}
-			}
-
-			ccfg = openai.Config{
-				AuthToken: token.Token,
-				BaseURL:   api.BaseURL,
-			}
-			ccfg.HTTPClient = cli
-			ccfg.BaseURL = ordered.First(api.BaseURL, token.Endpoints.API)
-
 		default:
 			key, err := m.ensureKey(api, "OPENAI_API_KEY", "https://platform.openai.com/account/api-keys")
 			if err != nil {
