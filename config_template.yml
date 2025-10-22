@@ -178,18 +178,15 @@ apis:
         max-input-chars: 128000
   google:
     models: # https://ai.google.dev/gemini-api/docs/models/gemini
-      gemini-1.5-pro-latest:
-        aliases: ["gmp", "gemini", "gemini-1.5-pro"]
+      gemini-2.5-pro:
+        aliases: ["gemini", "gemini-2.5-pro"]
         max-input-chars: 392000
-      gemini-1.5-flash-latest:
-        aliases: ["gmf", "flash", "gemini-1.5-flash"]
+      gemini-2.5-flash:
+        aliases: ["flash", "gemini-2.5-flash"]
         max-input-chars: 392000
-      gemini-2.0-flash-001:
-        aliases: ["gm2f", "flash-2", "gemini-2-flash"]
-        max-input-chars: 4194304
-      gemini-2.0-flash-lite:
-        aliases: ["gm2fl", "flash-2-lite", "gemini-2-flash-lite"]
-        max-input-chars: 4194304
+      gemini-flash-lite-latest:
+        aliases: ["flash-lite", "gemini-flash-lite"]
+        max-input-chars: 392000
 
   ollama:
     base-url: http://localhost:11434
