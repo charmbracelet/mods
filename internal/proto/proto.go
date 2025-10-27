@@ -75,6 +75,7 @@ type Request struct {
 	Stop           []string
 	MaxTokens      *int64
 	ResponseFormat *string
+	Stream         *bool
 	ToolCaller     func(name string, data []byte) (string, error)
 }
 
