@@ -22,7 +22,7 @@ require (
 	github.com/cohere-ai/cohere-go/v2 v2.15.3
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.3.0
-	github.com/mark3labs/mcp-go v0.41.1
+	github.com/mark3labs/mcp-go v0.42.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0
