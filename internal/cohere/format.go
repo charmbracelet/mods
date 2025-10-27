@@ -6,6 +6,13 @@ import (
 )
 
 func fromProtoMessages(input []proto.Message) (history []*cohere.Message, message string) {
+	// Check for images and error if present (not supported yet)
+	for _, msg := range input {
+		if len(msg.Images) > 0 {
+			panic("image input is not supported for Cohere API - use OpenAI API for vision capabilities")
+		}
+	}
+
 	var messages []*cohere.Message //nolint:prealloc
 	for _, msg := range input {
 		messages = append(messages, &cohere.Message{
