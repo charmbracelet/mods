@@ -242,7 +242,7 @@ func (c *convoDB) Completions(in string) ([]string, error) {
 		  conversations
 		WHERE
 		  title glob ?
-	`), in, sha1short, sha1short, in+"*", sha1short, in+"*"); err != nil {
+	`), in, convIdShort, convIdShort, in+"*", convIdShort, in+"*"); err != nil {
 		return result, fmt.Errorf("Completions: %w", err)
 	}
 	return result, nil
@@ -252,7 +252,7 @@ func (c *convoDB) Find(in string) (*Conversation, error) {
 	var conversations []Conversation
 	var err error
 
-	if len(in) < sha1minLen {
+	if len(in) < convIdMinLen {
 		err = c.findByExactTitle(&conversations, in)
 	} else {
 		err = c.findByIDOrTitle(&conversations, in)
