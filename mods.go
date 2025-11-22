@@ -566,7 +566,7 @@ func (m *Mods) findCacheOpsDetails() tea.Cmd {
 			writeID = newConversationID()
 		}
 
-		if !sha1reg.MatchString(writeID) {
+		if !convIdReg.MatchString(writeID) {
 			convo, err := m.db.Find(writeID)
 			if err != nil {
 				// its a new conversation with a title
