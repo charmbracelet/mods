@@ -70,6 +70,14 @@ sudo yum install mods
 
 </details>
 
+### FreeBSD
+
+Install [from ports](https://www.freshports.org/sysutils/mods/):
+```sh
+cd /usr/ports/sysutils/mods
+make install
+```
+
 Or, download it:
 
 - [Packages][releases] are available in Debian and RPM formats
