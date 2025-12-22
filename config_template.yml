@@ -67,8 +67,25 @@ max-input-chars: 12250
 # max-tokens: 100
 # {{ index .Help "max-completion-tokens" }}
 max-completion-tokens: 100
+# {{ index .Help "claude-code-continue" }}
+# claude-code-continue: false
+# {{ index .Help "claude-code-resume" }}
+# claude-code-resume:
 # {{ index .Help "apis" }}
 apis:
+  # Claude Code CLI integration (requires 'claude' CLI installed)
+  # Set MODS_CLAUDE_CODE_SKIP_PERMISSIONS=true to skip permission prompts
+  claude-code:
+    models:
+      claude-code:
+        aliases: ["cc", "code"]
+        max-input-chars: 680000
+      opus:
+        aliases: ["claude-opus", "opus-4"]
+        max-input-chars: 680000
+      sonnet:
+        aliases: ["claude-sonnet", "sonnet-4"]
+        max-input-chars: 680000
   openai:
     base-url: https://api.openai.com/v1
     api-key:

@@ -281,6 +281,8 @@ func initFlags() {
 	flags.BoolVar(&config.Dirs, "dirs", false, stdoutStyles().FlagDesc.Render(help["dirs"]))
 	flags.StringVarP(&config.Role, "role", "R", config.Role, stdoutStyles().FlagDesc.Render(help["role"]))
 	flags.BoolVar(&config.ListRoles, "list-roles", config.ListRoles, stdoutStyles().FlagDesc.Render(help["list-roles"]))
+	flags.BoolVar(&config.ClaudeCodeContinue, "claude-code-continue", config.ClaudeCodeContinue, stdoutStyles().FlagDesc.Render(help["claude-code-continue"]))
+	flags.StringVar(&config.ClaudeCodeResume, "claude-code-resume", config.ClaudeCodeResume, stdoutStyles().FlagDesc.Render(help["claude-code-resume"]))
 	flags.StringVar(&config.Theme, "theme", "charm", stdoutStyles().FlagDesc.Render(help["theme"]))
 	flags.BoolVarP(&config.openEditor, "editor", "e", false, stdoutStyles().FlagDesc.Render(help["editor"]))
 	flags.BoolVar(&config.MCPList, "mcp-list", false, stdoutStyles().FlagDesc.Render(help["mcp-list"]))

@@ -27,6 +27,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/mods/internal/anthropic"
 	"github.com/charmbracelet/mods/internal/cache"
+	"github.com/charmbracelet/mods/internal/claudecode"
 	"github.com/charmbracelet/mods/internal/cohere"
 	"github.com/charmbracelet/mods/internal/google"
 	"github.com/charmbracelet/mods/internal/ollama"
@@ -286,6 +287,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var cccfg cohere.Config
 		var occfg ollama.Config
 		var gccfg google.Config
+		var clccfg claudecode.Config
 
 		cfg := m.Config
 		api, mod, err := m.resolveModel(cfg)
@@ -316,6 +318,17 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				occfg.BaseURL = api.BaseURL
 			}
+		case "claude-code":
+			clccfg = claudecode.DefaultConfig()
+			// Check for skip-permissions setting via environment or config
+			if os.Getenv("MODS_CLAUDE_CODE_SKIP_PERMISSIONS") == "true" {
+				clccfg.SkipPermissions = true
+			}
+			if cfg.NoCache {
+				clccfg.NoSessionPersist = true
+			}
+			clccfg.ContinueLatest = cfg.ClaudeCodeContinue
+			clccfg.ResumeID = cfg.ClaudeCodeResume
 		case "anthropic":
 			key, err := m.ensureKey(api, "ANTHROPIC_API_KEY", "https://console.anthropic.com/settings/keys")
 			if err != nil {
@@ -433,6 +446,8 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			client = cohere.New(cccfg)
 		case "ollama":
 			client, err = ollama.New(occfg)
+		case "claude-code":
+			client = claudecode.New(clccfg)
 		default:
 			client = openai.New(ccfg)
 			if cfg.Format && config.FormatAs == "json" {

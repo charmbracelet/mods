@@ -241,6 +241,27 @@ Mods supports using Gemini models from Google.
 Set the `GOOGLE_API_KEY` enviroment variable. If you don't have one yet,
 you can get it from the [Google AI Studio](https://aistudio.google.com/apikey).
 
+### Claude Code
+
+Mods can use the [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+CLI as a backend, which is useful for users with a Claude Pro/Max subscription.
+
+```bash
+mods --api claude-code -m cc "explain this code"
+mods --api claude-code -m opus "summarize" < README.md
+ls | mods --api claude-code -m sonnet "organize these files"
+```
+
+Available models: `claude-code` (alias: `cc`), `opus`, `sonnet`.
+
+Session options:
+
+- `--claude-code-continue`: resume the most recent Claude Code session
+- `--claude-code-resume <uuid>`: resume a specific session (run `claude --resume` to list)
+- `--no-cache`: also passes `--no-session-persistence` to Claude Code
+
+For scripted/non-interactive use, set `MODS_CLAUDE_CODE_SKIP_PERMISSIONS=true`.
+
 ## Contributing
 
 See [contributing][contribute].
