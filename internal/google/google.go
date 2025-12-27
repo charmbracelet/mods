@@ -16,6 +16,8 @@ import (
 	"github.com/openai/openai-go"
 )
 
+var gemini_global_messages = []proto.Message{{proto.RoleUser, "Default Gemini Message", []proto.ToolCall{}}}
+
 var _ stream.Client = &Client{}
 
 const emptyMessagesLimit uint = 300
@@ -105,6 +107,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 			MaxOutputTokens:  4096,
 		},
 	}
+	gemini_global_messages = append(gemini_global_messages, request.Messages...)
 
 	if request.Temperature != nil {
 		body.GenerationConfig.Temperature = *request.Temperature
@@ -213,7 +216,7 @@ func (s *Stream) Err() error { return s.err }
 // Messages implements stream.Stream.
 func (s *Stream) Messages() []proto.Message {
 	// Gemini does not support returning streamed messages after the fact.
-	return nil
+	return gemini_global_messages
 }
 
 // Next implements stream.Stream.
