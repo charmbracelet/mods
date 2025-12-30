@@ -152,6 +152,7 @@ apis:
         fallback: o1-mini
   anthropic:
     base-url: https://api.anthropic.com/v1
+    # AWS Bedrock Anthropic models can be used by setting api-key to "AwsBedrock", AWS client need to be properly set.
     api-key:
     api-key-env: ANTHROPIC_API_KEY
     models: # https://docs.anthropic.com/en/docs/about-claude/models
