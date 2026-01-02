@@ -30,6 +30,15 @@ type Config struct {
 		Do(*http.Request) (*http.Response, error)
 	}
 	APIType string
+	Version string
+}
+
+// getVersion returns the API version to be used for azure-ad.
+func (c Config) getVersion() string {
+	if c.Version != "" {
+		return c.Version
+	}
+	return "v1"
 }
 
 // DefaultConfig returns the default configuration for the OpenAI API client.
@@ -50,7 +59,7 @@ func New(config Config) *Client {
 	if config.APIType == "azure-ad" {
 		opts = append(opts, azure.WithAPIKey(config.AuthToken))
 		if config.BaseURL != "" {
-			opts = append(opts, azure.WithEndpoint(config.BaseURL, "v1"))
+			opts = append(opts, azure.WithEndpoint(config.BaseURL, config.getVersion()))
 		}
 	} else {
 		opts = append(opts, option.WithAPIKey(config.AuthToken))
