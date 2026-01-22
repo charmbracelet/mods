@@ -1,3 +1,15 @@
+> [!NOTE]
+>  # Mods is sunset in favor of Crush
+>
+> On January 22, 2026 we sunset Mods and archived this repository. We will focus
+> our efforts on [Crush](https://charm.land/crush), which has a non-interactive
+> mode (`crush run`) that we plan to make even more capable than Mods.
+>
+> Mods source code will continue to be available and you can still use the
+> latest release if you wish.
+>
+> Thank you for all your support!
+
 # Mods
 
 <p>
