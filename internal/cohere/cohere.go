@@ -58,11 +58,10 @@ func New(config Config) *Client {
 // Request implements stream.Client.
 func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stream {
 	s := &Stream{}
-	history, message := fromProtoMessages(request.Messages)
-	body := &cohere.ChatStreamRequest{
-		Model:         cohere.String(request.Model),
-		Message:       message,
-		ChatHistory:   history,
+	messages := fromProtoMessages(request.Messages)
+	body := &cohere.V2ChatStreamRequest{
+		Model:         request.Model,
+		Messages:      messages,
 		Temperature:   request.Temperature,
 		P:             request.TopP,
 		StopSequences: request.Stop,
@@ -74,21 +73,23 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 
 	s.request = body
 	s.done = false
-	s.message = &cohere.Message{
-		Role:    "CHATBOT",
-		Chatbot: &cohere.ChatMessage{},
+	s.message = &cohere.ChatMessageV2{
+		Role: "assistant",
+		Assistant: &cohere.AssistantMessage{
+			Content: &cohere.AssistantMessageV2Content{},
+		},
 	}
-	s.stream, s.err = c.ChatStream(ctx, s.request)
+	s.stream, s.err = c.V2.ChatStream(ctx, s.request)
 	return s
 }
 
 // Stream is a cohere stream.
 type Stream struct {
-	stream  *core.Stream[cohere.StreamedChatResponse]
-	request *cohere.ChatStreamRequest
+	stream  *core.Stream[cohere.V2ChatStreamResponse]
+	request *cohere.V2ChatStreamRequest
 	err     error
 	done    bool
-	message *cohere.Message
+	message *cohere.ChatMessageV2
 }
 
 // CallTools implements stream.Stream.
@@ -111,11 +112,10 @@ func (s *Stream) Current() (proto.Chunk, error) {
 		}
 		return proto.Chunk{}, fmt.Errorf("cohere: %w", err)
 	}
-	switch resp.EventType {
-	case "text-generation":
-		s.message.Chatbot.Message += resp.TextGeneration.Text
+	if text := resp.GetContentDelta().GetDelta().GetMessage().GetContent().GetText(); text != nil {
+		s.message.Assistant.Content.String += *text
 		return proto.Chunk{
-			Content: resp.TextGeneration.Text,
+			Content: *text,
 		}, nil
 	}
 	return proto.Chunk{}, stream.ErrNoContent
@@ -126,12 +126,7 @@ func (s *Stream) Err() error { return s.err }
 
 // Messages implements stream.Stream.
 func (s *Stream) Messages() []proto.Message {
-	return toProtoMessages(append(s.request.ChatHistory, &cohere.Message{
-		Role: "USER",
-		User: &cohere.ChatMessage{
-			Message: s.request.Message,
-		},
-	}, s.message))
+	return toProtoMessages(append(s.request.Messages, s.message))
 }
 
 // Next implements stream.Stream.
