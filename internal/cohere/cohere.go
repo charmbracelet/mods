@@ -180,7 +180,7 @@ func (s *Stream) Current() (proto.Chunk, error) {
 			*s.message.Assistant.ToolPlan += *toolPlan
 		}
 	case "tool-call-delta":
-		if toolCalls := resp.GetToolCallStart().GetDelta().GetMessage().GetToolCalls(); toolCalls != nil {
+		if toolCalls := resp.GetToolCallDelta().GetDelta().GetMessage().GetToolCalls(); toolCalls != nil {
 			toolCall := s.message.Assistant.ToolCalls[len(s.message.Assistant.ToolCalls)-1]
 			if toolCall.Function.Arguments == nil {
 				toolCall.Function.Arguments = cohere.String("")
@@ -189,8 +189,8 @@ func (s *Stream) Current() (proto.Chunk, error) {
 		}
 	case "tool-call-end":
 		toolCall := s.message.Assistant.ToolCalls[len(s.message.Assistant.ToolCalls)-1]
-		if toolCall.Function.Arguments == nil || *toolCall.Function.Arguments == "" {
-			toolCall.Function.Arguments = cohere.String("{}")
+		if *toolCall.Function.Arguments == "" {
+			*toolCall.Function.Arguments = "{}"
 		}
 	}
 	return proto.Chunk{}, stream.ErrNoContent
