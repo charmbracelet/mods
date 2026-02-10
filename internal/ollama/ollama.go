@@ -64,7 +64,7 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 		body.Options["stop"] = request.Stop[0]
 	}
 	if request.MaxTokens != nil {
-		body.Options["num_ctx"] = *request.MaxTokens
+		body.Options["num_predict"] = *request.MaxTokens
 	}
 	if request.Temperature != nil {
 		body.Options["temperature"] = *request.Temperature
@@ -159,6 +159,10 @@ func (s *Stream) Next() bool {
 		return false
 	}
 	if s.done {
+		// Only restart if there are tool calls to process
+		if len(s.message.ToolCalls) == 0 {
+			return false
+		}
 		s.done = false
 		s.factory()
 		s.messages = append(s.messages, toProtoMessage(s.message))
