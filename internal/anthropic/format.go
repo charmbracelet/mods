@@ -28,6 +28,13 @@ func fromMCPTools(mcps map[string][]mcp.Tool) []anthropic.ToolUnionParam {
 }
 
 func fromProtoMessages(input []proto.Message) (system []anthropic.TextBlockParam, messages []anthropic.MessageParam) {
+	// Check for images and error if present (not supported yet)
+	for _, msg := range input {
+		if len(msg.Images) > 0 {
+			panic("image input is not supported for Anthropic API yet - use OpenAI API for vision capabilities")
+		}
+	}
+
 	for _, msg := range input {
 		switch msg.Role {
 		case proto.RoleSystem:
