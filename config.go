@@ -66,6 +66,7 @@ var help = map[string]string{
 	"list":              "Lists saved conversations",
 	"delete":            "Deletes one or more saved conversations with the given titles or IDs",
 	"delete-older-than": "Deletes all saved conversations older than the specified duration; valid values are " + strings.EnglishJoin(duration.ValidUnits(), true),
+	"rename":            "Renames saved conversations.",
 	"show":              "Show a saved conversation with the given title or ID",
 	"theme":             "Theme to use in the forms; valid choices are charm, catppuccin, dracula, and base16",
 	"show-last":         "Show the last saved conversation",
@@ -184,6 +185,7 @@ type Config struct {
 	ListRoles           bool
 	Delete              []string
 	DeleteOlderThan     time.Duration
+	Rename              []string
 	User                string
 
 	MCPServers   map[string]MCPServerConfig `yaml:"mcp-servers"`
