@@ -1,3 +1,22 @@
+> [!NOTE]
+>
+> # Sunsetting Mods
+>
+> On March 9, 2026 we will sunset Mods and archive this repository to focus our
+> efforts on [Crush](https://charm.land/crush).
+>
+> Much of the functionality in Mods can be found in Crush’s non-interactive
+> mode, `crush run`. We plan on continuing to invest into Crush’s
+> non-interactive mode, so if there are features in Mods does that you’d like
+> to see in Crush, [let us know](https://github.com/charmbracelet/crush/discussions).
+>
+> Mods will remain be open source and publicly available. If you love this
+> project and would like to maintain a fork, please do.
+>
+> Thanks for supporting this project and chat us up in
+> [Slack](https://charm.land/slack) or [Discord](https://charm.sh/chat) if
+> you have any questions.
+
 # Mods
 
 <p>
@@ -73,6 +92,7 @@ sudo yum install mods
 ### FreeBSD
 
 Install [from ports](https://www.freshports.org/sysutils/mods/):
+
 ```sh
 cd /usr/ports/sysutils/mods
 make install
