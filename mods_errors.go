@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 func (m *Mods) handleRequestError(err error, mod Model, content string) tea.Msg {

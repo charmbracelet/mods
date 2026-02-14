@@ -13,7 +13,7 @@ import (
 
 	"github.com/charmbracelet/mods/internal/proto"
 	"github.com/charmbracelet/mods/internal/stream"
-	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/v3"
 )
 
 var _ stream.Client = &Client{}
