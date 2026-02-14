@@ -5,15 +5,15 @@ import (
 
 	"github.com/charmbracelet/mods/internal/proto"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/shared/constant"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 )
 
-func fromMCPTools(mcps map[string][]mcp.Tool) []openai.ChatCompletionToolParam {
-	var tools []openai.ChatCompletionToolParam
+func fromMCPTools(mcps map[string][]mcp.Tool) []openai.ChatCompletionToolUnionParam {
+	var tools []openai.ChatCompletionToolUnionParam
 	for name, serverTools := range mcps {
 		for _, tool := range serverTools {
-			params := map[string]any{
+			params := shared.FunctionParameters{
 				"type":       "object",
 				"properties": tool.InputSchema.Properties,
 			}
@@ -21,14 +21,11 @@ func fromMCPTools(mcps map[string][]mcp.Tool) []openai.ChatCompletionToolParam {
 				params["required"] = tool.InputSchema.Required
 			}
 
-			tools = append(tools, openai.ChatCompletionToolParam{
-				Type: constant.Function("function"),
-				Function: openai.FunctionDefinitionParam{
-					Name:        fmt.Sprintf("%s_%s", name, tool.Name),
-					Description: openai.String(tool.Description),
-					Parameters:  params,
-				},
-			})
+			tools = append(tools, openai.ChatCompletionFunctionTool(shared.FunctionDefinitionParam{
+				Name:        fmt.Sprintf("%s_%s", name, tool.Name),
+				Description: openai.String(tool.Description),
+				Parameters:  params,
+			}))
 		}
 	}
 	return tools
@@ -50,11 +47,13 @@ func fromProtoMessages(input []proto.Message) []openai.ChatCompletionMessagePara
 		case proto.RoleAssistant:
 			m := openai.AssistantMessage(msg.Content)
 			for _, tool := range msg.ToolCalls {
-				m.OfAssistant.ToolCalls = append(m.OfAssistant.ToolCalls, openai.ChatCompletionMessageToolCallParam{
-					ID: tool.ID,
-					Function: openai.ChatCompletionMessageToolCallFunctionParam{
-						Arguments: string(tool.Function.Arguments),
-						Name:      tool.Function.Name,
+				m.OfAssistant.ToolCalls = append(m.OfAssistant.ToolCalls, openai.ChatCompletionMessageToolCallUnionParam{
+					OfFunction: &openai.ChatCompletionMessageFunctionToolCallParam{
+						ID: tool.ID,
+						Function: openai.ChatCompletionMessageFunctionToolCallFunctionParam{
+							Arguments: string(tool.Function.Arguments),
+							Name:      tool.Function.Name,
+						},
 					},
 				})
 			}
@@ -84,13 +83,15 @@ func toProtoMessage(in openai.ChatCompletionMessageParamUnion) proto.Message {
 	}
 	if msg.Role == proto.RoleAssistant {
 		for _, call := range in.OfAssistant.ToolCalls {
-			msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
-				ID: call.ID,
-				Function: proto.Function{
-					Name:      call.Function.Name,
-					Arguments: []byte(call.Function.Arguments),
-				},
-			})
+			if call.OfFunction != nil {
+				msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
+					ID: call.OfFunction.ID,
+					Function: proto.Function{
+						Name:      call.OfFunction.Function.Name,
+						Arguments: []byte(call.OfFunction.Function.Arguments),
+					},
+				})
+			}
 		}
 	}
 	return msg

@@ -29,6 +29,7 @@ require (
 	github.com/muesli/termenv v0.16.0
 	github.com/ollama/ollama v0.15.6
 	github.com/openai/openai-go v1.12.0
+	github.com/openai/openai-go/v3 v3.22.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1

@@ -8,11 +8,11 @@ import (
 
 	"github.com/charmbracelet/mods/internal/proto"
 	"github.com/charmbracelet/mods/internal/stream"
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/azure"
-	"github.com/openai/openai-go/option"
-	"github.com/openai/openai-go/packages/ssestream"
-	"github.com/openai/openai-go/shared"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/azure"
+	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/packages/ssestream"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 var _ stream.Client = &Client{}
@@ -29,7 +29,8 @@ type Config struct {
 	HTTPClient interface {
 		Do(*http.Request) (*http.Response, error)
 	}
-	APIType string
+	APIType    string
+	APIVersion string
 }
 
 // DefaultConfig returns the default configuration for the OpenAI API client.
@@ -47,10 +48,10 @@ func New(config Config) *Client {
 		opts = append(opts, option.WithHTTPClient(config.HTTPClient))
 	}
 
-	if config.APIType == "azure-ad" {
+	if config.APIType == "azure" {
 		opts = append(opts, azure.WithAPIKey(config.AuthToken))
 		if config.BaseURL != "" {
-			opts = append(opts, azure.WithEndpoint(config.BaseURL, "v1"))
+			opts = append(opts, azure.WithEndpoint(config.BaseURL, config.APIVersion))
 		}
 	} else {
 		opts = append(opts, option.WithAPIKey(config.AuthToken))
@@ -67,7 +68,7 @@ func New(config Config) *Client {
 // Request makes a new request and returns a stream.
 func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stream {
 	body := openai.ChatCompletionNewParams{
-		Model:    request.Model,
+		Model:    shared.ChatModel(request.Model),
 		User:     openai.String(request.User),
 		Messages: fromProtoMessages(request.Messages),
 		Tools:    fromMCPTools(request.Tools),
@@ -80,8 +81,10 @@ func (c *Client) Request(ctx context.Context, request proto.Request) stream.Stre
 		if request.TopP != nil {
 			body.TopP = openai.Float(*request.TopP)
 		}
-		body.Stop = openai.ChatCompletionNewParamsStopUnion{
-			OfStringArray: request.Stop,
+		if len(request.Stop) > 0 {
+			body.Stop = openai.ChatCompletionNewParamsStopUnion{
+				OfStringArray: request.Stop,
+			}
 		}
 		if request.MaxTokens != nil {
 			body.MaxTokens = openai.Int(*request.MaxTokens)

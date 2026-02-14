@@ -368,7 +368,8 @@ apis:
   azure:
     # Set to 'azure-ad' to use Active Directory
     # Azure OpenAI setup: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource
-    base-url: https://YOUR_RESOURCE_NAME.openai.azure.com
+    base-url: https://<...>.cognitiveservices.azure.com/deployments/<...>
+    version: 2025-01-01-preview
     api-key:
     api-key-env: AZURE_OPENAI_KEY
     models:
