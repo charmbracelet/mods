@@ -426,7 +426,7 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 		var client stream.Client
 		switch mod.API {
 		case "anthropic":
-			client = anthropic.New(accfg)
+			client, err = anthropic.New(accfg)
 		case "google":
 			client = google.New(gccfg)
 		case "cohere":
