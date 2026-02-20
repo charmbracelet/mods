@@ -224,9 +224,6 @@ apis:
     api-key-env: GROQ_API_KEY
     models: # https://console.groq.com/docs/models
       # Production models
-      gemma2-9b-it:
-        aliases: ["gemma2", "gemma"]
-        max-input-chars: 24500 # 8,192
       llama-3.3-70b-versatile:
         aliases: ["llama3.3", "llama3.3-70b", "llama3.3-versatile"]
         max-input-chars: 392000 # 128K
@@ -235,62 +232,44 @@ apis:
         aliases: ["llama3.1-8b", "llama3.1-instant"]
         max-input-chars: 392000 # 128K
         max-completion-tokens: 24500 # 8,192
-      llama-guard-3-8b:
-        aliases: ["llama-guard"]
-        max-input-chars: 24500 # 8,192
-      llama3-70b-8192:
-        aliases: ["llama3", "llama3-70b"]
-        max-input-chars: 24500 # 8,192
-        fallback: llama3-8b-8192
-      llama3-8b-8192:
-        aliases: ["llama3-8b"]
-        max-input-chars: 24500 # 8,192
-      mixtral-8x7b-32768:
-        aliases: ["mixtral"]
-        max-input-chars: 98000 # 32,768
+      meta-llama/llama-guard-4-12b:
+        aliases: ["llama4-guard"]
+        max-input-chars: 680 # 512
+      openai/gpt-oss-120b:
+        aliases: ["gpt-oss", "gpt-oss-120b"]
+        max-input-chars: 392000 # 128K
+      openai/gpt-oss-20b:
+        aliases: ["gpt-oss-20b"]
+        max-input-chars: 392000 # 128K
+      # Production Systems
+      groq/compound:
+        aliases: ["groq", "compound"]
+        max-input-chars: 392000 # 128K
+      groq/compound-mini:
+        aliases: ["groq-mini", "compound-mini"]
+        max-input-chars: 392000 # 128K
+      # Preview models
       meta-llama/llama-4-scout-17b-16e-instruct:
         aliases: ["llama4-scout"]
         max-input-chars: 392000 # 128K
       meta-llama/llama-4-maverick-17b-128e-instruct:
         aliases: ["llama4", "llama4-maverick"]
         max-input-chars: 392000 # 128K
-      # Preview models
-      mistral-saba-24b:
-        aliases: ["saba", "mistral-saba", "saba-24b"]
-        max-input-chars: 98000 # 32K
-      qwen-2.5-coder-32b:
-        aliases: ["qwen-coder", "qwen2.5-coder", "qwen-2.5-coder"]
+      meta-llama/llama-prompt-guard-2-22m:
+        aliases: ["llama4-prompt-guard-22m"]
+        max-input-chars: 680 # 512
+      meta-llama/llama-prompt-guard-2-86m:
+        aliases: ["llama4-prompt-guard-86m"]
+        max-input-chars: 680 # 512
+      moonshotai/kimi-k2-instruct-0905:
+        aliases: ["kimi", "kimi-k2-0905"]
+        max-input-chars: 784000 # 256k
+      openai/gpt-oss-safeguard-20b:
+        aliases: ["gpt-oss-safeguard-20b"]
         max-input-chars: 392000 # 128K
-      deepseek-r1-distill-qwen-32b:
-        aliases: ["deepseek-r1", "r1-qwen", "deepseek-qwen"]
+      qwen/qwen3-32b:
+        aliases: ["qwen", "qwen3", "qwen3-32b"]
         max-input-chars: 392000 # 128K
-        max-completion-tokens: 49152 # 16,384
-      deepseek-r1-distill-llama-70b-specdec:
-        aliases: ["deepseek-r1-specdec", "r1-llama-specdec"]
-        max-input-chars: 392000 # 128K
-        max-completion-tokens: 49152 # 16,384
-      deepseek-r1-distill-llama-70b:
-        aliases: ["deepseek-r1-llama", "r1-llama"]
-        max-input-chars: 392000 # 128K
-      llama-3.3-70b-specdec:
-        aliases: ["llama3.3-specdec"]
-        max-input-chars: 24500 # 8,192
-      llama-3.2-1b-preview:
-        aliases: ["llama3.2-1b"]
-        max-input-chars: 392000 # 128K
-        max-completion-tokens: 24500 # 8,192
-      llama-3.2-3b-preview:
-        aliases: ["llama3.2-3b"]
-        max-input-chars: 392000 # 128K
-        max-completion-tokens: 24500 # 8,192
-      llama-3.2-11b-vision-preview:
-        aliases: ["llama3.2-vision", "llama3.2-11b-vision"]
-        max-input-chars: 392000 # 128K
-        max-completion-tokens: 24500 # 8,192
-      llama-3.2-90b-vision-preview:
-        aliases: ["llama3.2-90b-vision"]
-        max-input-chars: 392000 # 128K
-        max-completion-tokens: 24500 # 8,192
 
   cerebras:
     base-url: https://api.cerebras.ai/v1
