@@ -44,6 +44,7 @@ var help = map[string]string{
 	"prompt-args":       "Include the prompt from the arguments in the response",
 	"raw":               "Render output as raw text when connected to a TTY",
 	"quiet":             "Quiet mode (hide the spinner while loading and stderr messages for success)",
+	"no-stream":         "Disable streaming of responses (useful for reasoning models without streaming support)",
 	"help":              "Show help and exit",
 	"version":           "Show version and exit",
 	"max-retries":       "Maximum number of times to retry API calls",
@@ -145,6 +146,7 @@ type Config struct {
 	FormatAs            string     `yaml:"format-as" env:"FORMAT_AS"`
 	Raw                 bool       `yaml:"raw" env:"RAW"`
 	Quiet               bool       `yaml:"quiet" env:"QUIET"`
+	NoStream            bool       `yaml:"no-stream" env:"NO_STREAM"`
 	MaxTokens           int64      `yaml:"max-tokens" env:"MAX_TOKENS"`
 	MaxCompletionTokens int64      `yaml:"max-completion-tokens" env:"MAX_COMPLETION_TOKENS"`
 	MaxInputChars       int64      `yaml:"max-input-chars" env:"MAX_INPUT_CHARS"`
