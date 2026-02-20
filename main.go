@@ -219,12 +219,23 @@ var (
 			}
 
 			// raw mode already prints the output, no need to print it again
-			if isOutputTTY() && !config.Raw {
-				switch {
-				case mods.glamOutput != "":
-					fmt.Print(mods.glamOutput)
-				case mods.Output != "":
-					fmt.Print(mods.Output)
+			// When stdout is a TTY, we render to stderr during run and mirror the
+			// final output to stdout here. When stdout is not a TTY, streaming
+			// already prints to stdout except for --show/--show-last which do not
+			// stream; in that case, print the captured output here.
+			if !config.Raw {
+				if isOutputTTY() {
+					switch {
+					case mods.glamOutput != "":
+						fmt.Print(mods.glamOutput)
+					case mods.Output != "":
+						fmt.Print(mods.Output)
+					}
+				} else if config.Show != "" || config.ShowLast {
+					// Non-TTY: ensure --show/--show-last prints when redirected/piped
+					if mods.Output != "" {
+						fmt.Print(mods.Output)
+					}
 				}
 			}
 
