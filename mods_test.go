@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/charmbracelet/mods/internal/cache"
 	"github.com/stretchr/testify/require"
 )
 
@@ -219,4 +220,33 @@ func TestCutPrompt(t *testing.T) {
 			require.Equal(t, tc.expected, cutPrompt(tc.msg, tc.prompt))
 		})
 	}
+}
+
+func TestReadFromCacheRawMode(t *testing.T) {
+	newMods := func(t *testing.T) *Mods {
+		db := testDB(t)
+		cache, err := cache.NewConversations(t.TempDir())
+		require.NoError(t, err)
+		return &Mods{
+			db:     db,
+			cache:  cache,
+			Config: &Config{},
+		}
+	}
+
+	t.Run("raw mode should not panic", func(t *testing.T) {
+		mods := newMods(t)
+		mods.Config.Raw = true
+		mods.Config.cacheReadFromID = "test-id"
+
+		// This test verifies that the function doesn't panic when called
+		// with raw mode enabled. Since there's no data in the cache,
+		// it will return a modsError, which is expected behavior.
+
+		msg := mods.readFromCache()()
+		// Should return either completionOutput (if cache has data) or modsError (if cache is empty)
+		_, isCompletionOutput := msg.(completionOutput)
+		_, isModsError := msg.(modsError)
+		require.True(t, isCompletionOutput || isModsError, "should return completionOutput or modsError")
+	})
 }
