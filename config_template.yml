@@ -530,3 +530,26 @@ apis:
         max-input-chars: 392000
       microsoft/Phi-4-reasoning:
         max-input-chars: 392000
+  # OpenRouter
+  # https://openrouter.ai/docs/api-reference/overview
+  openrouter:
+    base-url: https://openrouter.ai/api/v1
+    api-key:
+    api-key-env: OPENROUTER_API_KEY
+    models: # https://openrouter.ai/models
+      "openrouter/auto": # Chooses from a subset of models, after pre-evaluation by Not Diamond
+        aliases: ["auto"]
+        max-input-chars: 666000
+      "qwen/qwen3-235b-a22b-thinking-2507":
+        aliases: ["qwen3"]
+        max-input-chars: 86000
+      # Add ':nitro' to let OpenRouter select the provider with the best throughput,
+      # e.g. Cerebras with 440 tps, but $0.60/$2.90 in/out per 1M tokens.
+      "qwen/qwen3-235b-a22b-thinking-2507:nitro":
+        aliases: ["nitro", "qwen3-nitro"]
+        max-input-chars: 86000
+      # Add ':floor' to let OpenRouter select the provider with the lowest price,
+      # e.g. SiliconFlow with $0.13/$0.60 in/out per 1M tokens, but only 17 tps.
+      "qwen/qwen3-235b-a22b-thinking-2507:floor":
+        aliases: ["floor", "qwen3-floor"]
+        max-input-chars: 86000
