@@ -34,7 +34,7 @@ var (
 )
 
 func buildVersion() {
-	if len(CommitSHA) >= sha1short {
+	if len(CommitSHA) >= convIdShort {
 		vt := rootCmd.VersionTemplate()
 		rootCmd.SetVersionTemplate(vt[:len(vt)-1] + " (" + CommitSHA[0:7] + ")\n")
 	}
@@ -572,7 +572,7 @@ func deleteConversationOlderThan() error {
 		}
 
 		if !config.Quiet {
-			fmt.Fprintln(os.Stderr, "Conversation deleted:", c.ID[:sha1minLen])
+			fmt.Fprintln(os.Stderr, "Conversation deleted:", c.ID[:convIdMinLen])
 		}
 	}
 
@@ -606,7 +606,7 @@ func deleteConversation(convo *Conversation) error {
 	}
 
 	if !config.Quiet {
-		fmt.Fprintln(os.Stderr, "Conversation deleted:", convo.ID[:sha1minLen])
+		fmt.Fprintln(os.Stderr, "Conversation deleted:", convo.ID[:convIdMinLen])
 	}
 	return nil
 }
@@ -656,7 +656,7 @@ func makeOptions(conversations []Conversation) []huh.Option[string] {
 	opts := make([]huh.Option[string], 0, len(conversations))
 	for _, c := range conversations {
 		timea := stdoutStyles().Timeago.Render(timeago.Of(c.UpdatedAt))
-		left := stdoutStyles().SHA1.Render(c.ID[:sha1short])
+		left := stdoutStyles().Id.Render(c.ID[:convIdShort])
 		right := stdoutStyles().ConversationList.Render(c.Title, timea)
 		if c.Model != nil {
 			right += stdoutStyles().Comment.Render(*c.Model)
@@ -707,7 +707,7 @@ func printList(conversations []Conversation) {
 		_, _ = fmt.Fprintf(
 			os.Stdout,
 			"%s\t%s\t%s\n",
-			stdoutStyles().SHA1.Render(conversation.ID[:sha1short]),
+			stdoutStyles().Id.Render(conversation.ID[:convIdShort]),
 			conversation.Title,
 			stdoutStyles().Timeago.Render(timeago.Of(conversation.UpdatedAt)),
 		)
@@ -727,11 +727,11 @@ func saveConversation(mods *Mods) error {
 		return nil
 	}
 
-	// if message is a sha1, use the last prompt instead.
+	// if message is a conversaion id, use the last prompt instead.
 	id := config.cacheWriteToID
 	title := strings.TrimSpace(config.cacheWriteToTitle)
 
-	if sha1reg.MatchString(title) || title == "" {
+	if convIdReg.MatchString(title) || title == "" {
 		title = firstLine(lastPrompt(mods.messages))
 	}
 
@@ -757,7 +757,7 @@ func saveConversation(mods *Mods) error {
 		fmt.Fprintln(
 			os.Stderr,
 			"\nConversation saved:",
-			stderrStyles().InlineCode.Render(config.cacheWriteToID[:sha1short]),
+			stderrStyles().InlineCode.Render(config.cacheWriteToID[:convIdShort]),
 			stderrStyles().Comment.Render(title),
 		)
 	}
