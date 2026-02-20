@@ -207,16 +207,24 @@ apis:
     base-url: https://api.perplexity.ai
     api-key:
     api-key-env: PERPLEXITY_API_KEY
-    models: # https://docs.perplexity.ai/guides/model-cards
-      llama-3.1-sonar-small-128k-online:
-        aliases: ["llam31-small"]
+    models: # https://docs.perplexity.ai/getting-started/models
+      # search models
+      sonar:
         max-input-chars: 127072
-      llama-3.1-sonar-large-128k-online:
-        aliases: ["llam31-large"]
+      sonar-pro:
         max-input-chars: 127072
-      llama-3.1-sonar-huge-128k-online:
-        aliases: ["llam31-huge"]
+        fallback: sonar
+      # reasoning models
+      sonar-reasoning:
         max-input-chars: 127072
+        fallback: sonar
+      sonar-reasoning-pro:
+        max-input-chars: 127072
+        fallback: sonar
+      # research models
+      sonar-deep-research:
+        max-input-chars: 127072
+        fallback: sonar
 
   groq:
     base-url: https://api.groq.com/openai/v1
