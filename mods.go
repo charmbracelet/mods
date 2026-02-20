@@ -341,17 +341,16 @@ func (m *Mods) startCompletionCmd(content string) tea.Cmd {
 			if api.BaseURL != "" {
 				ccfg.BaseURL = api.BaseURL
 			}
-		case "azure", "azure-ad": //nolint:goconst
+		case "azure": //nolint:goconst
 			key, err := m.ensureKey(api, "AZURE_OPENAI_KEY", "https://aka.ms/oai/access")
 			if err != nil {
 				return modsError{err, "Azure authentication failed"}
 			}
 			ccfg = openai.Config{
-				AuthToken: key,
-				BaseURL:   api.BaseURL,
-			}
-			if mod.API == "azure-ad" {
-				ccfg.APIType = "azure-ad"
+				AuthToken:  key,
+				BaseURL:    api.BaseURL,
+				APIVersion: api.Version,
+				APIType:    mod.API,
 			}
 			if api.User != "" {
 				cfg.User = api.User
