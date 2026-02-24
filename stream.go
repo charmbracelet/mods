@@ -61,9 +61,19 @@ func (m *Mods) setupStreamContext(content string, mod Model) error {
 		}
 	}
 
+	// Process image files if provided
+	images, err := processImageFiles(cfg.Images)
+	if err != nil {
+		return modsError{
+			err:    err,
+			reason: "Could not process image files",
+		}
+	}
+
 	m.messages = append(m.messages, proto.Message{
 		Role:    proto.RoleUser,
 		Content: content,
+		Images:  images,
 	})
 
 	return nil

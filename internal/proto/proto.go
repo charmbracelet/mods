@@ -42,10 +42,18 @@ func (c ToolCallStatus) String() string {
 	return sb.String()
 }
 
+// ImageContent represents an image attachment in a message.
+type ImageContent struct {
+	Data     []byte // base64 encoded image data
+	MimeType string // image/jpeg, image/png, etc.
+	Filename string // original filename for reference
+}
+
 // Message is a message in the conversation.
 type Message struct {
 	Role      string
 	Content   string
+	Images    []ImageContent
 	ToolCalls []ToolCall
 }
 
