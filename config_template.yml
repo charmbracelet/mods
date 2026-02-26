@@ -170,11 +170,21 @@ apis:
         aliases: ["claude3.5-haiku", "haiku"]
         max-input-chars: 680000
   cohere:
-    base-url: https://api.cohere.com/v1
+    base-url: https://api.cohere.com
     models:
-      command-r-plus:
+      command-a-03-2025:
+        max-input-chars: 256000
+      command-a-translate-08-2025:
+        max-input-chars: 8000
+      command-r7b-12-2024:
         max-input-chars: 128000
-      command-r:
+      command-r-plus-08-2024:
+        max-input-chars: 128000
+      command-r-08-2024:
+        max-input-chars: 128000
+      command-r-plus-04-2024:
+        max-input-chars: 128000
+      command-r-03-2024:
         max-input-chars: 128000
   google:
     models: # https://ai.google.dev/gemini-api/docs/models/gemini

@@ -1,60 +1,159 @@
 package cohere
 
 import (
+	"fmt"
+	"slices"
+
 	"github.com/charmbracelet/mods/internal/proto"
 	cohere "github.com/cohere-ai/cohere-go/v2"
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
-func fromProtoMessages(input []proto.Message) (history []*cohere.Message, message string) {
-	var messages []*cohere.Message //nolint:prealloc
-	for _, msg := range input {
-		messages = append(messages, &cohere.Message{
-			Role: fromProtoRole(msg.Role),
-			Chatbot: &cohere.ChatMessage{
-				Message: msg.Content,
-			},
-		})
+func fromMCPTools(mcps map[string][]mcp.Tool) []*cohere.ToolV2 {
+	var tools []*cohere.ToolV2
+	for name, serverTools := range mcps {
+		tools = slices.Grow(tools, len(serverTools))
+		for _, tool := range serverTools {
+			params := map[string]any{
+				"type":       "object",
+				"properties": tool.InputSchema.Properties,
+			}
+			if len(tool.InputSchema.Required) > 0 {
+				params["required"] = tool.InputSchema.Required
+			}
+
+			tools = append(tools, &cohere.ToolV2{
+				Function: &cohere.ToolV2Function{
+					Name:        fmt.Sprintf("%s_%s", name, tool.Name),
+					Description: &tool.Description,
+					Parameters:  params,
+				},
+			})
+		}
 	}
-	if len(messages) > 1 {
-		history = messages[:len(messages)-1]
-	}
-	message = messages[len(messages)-1].User.Message
-	return history, message
+	return tools
 }
 
-func toProtoMessages(input []*cohere.Message) []proto.Message {
-	var messages []proto.Message
+func fromProtoMessages(input []proto.Message) cohere.ChatMessages {
+	messages := make(cohere.ChatMessages, 0, len(input))
 	for _, in := range input {
 		switch in.Role {
-		case "USER":
-			messages = append(messages, proto.Message{
-				Role:    proto.RoleUser,
-				Content: in.User.Message,
+		case proto.RoleSystem:
+			messages = append(messages, &cohere.ChatMessageV2{
+				Role: "system",
+				System: &cohere.SystemMessageV2{
+					Content: &cohere.SystemMessageV2Content{
+						String: in.Content,
+					},
+				},
 			})
-		case "SYSTEM":
-			messages = append(messages, proto.Message{
-				Role:    proto.RoleSystem,
-				Content: in.System.Message,
+		case proto.RoleAssistant:
+			msg := &cohere.ChatMessageV2{
+				Role:      "assistant",
+				Assistant: &cohere.AssistantMessage{},
+			}
+			if len(in.ToolCalls) > 0 {
+				for _, call := range in.ToolCalls {
+					args := string(call.Function.Arguments)
+					if args == "" {
+						args = "{}"
+					}
+					msg.Assistant.ToolCalls = append(msg.Assistant.ToolCalls, &cohere.ToolCallV2{
+						Id: call.ID,
+						Function: &cohere.ToolCallV2Function{
+							Name:      &call.Function.Name,
+							Arguments: &args,
+						},
+					})
+				}
+			} else {
+				msg.Assistant.Content = &cohere.AssistantMessageV2Content{
+					String: in.Content,
+				}
+			}
+			messages = append(messages, msg)
+		case proto.RoleTool:
+			if len(in.ToolCalls) > 0 {
+				messages = append(messages, &cohere.ChatMessageV2{
+					Role: "tool",
+					Tool: &cohere.ToolMessageV2{
+						Content: &cohere.ToolMessageV2Content{
+							ToolContentList: []*cohere.ToolContent{
+								{
+									Type: "document",
+									Document: &cohere.DocumentContent{
+										Document: &cohere.Document{
+											Data: map[string]any{"data": in.Content},
+											Id:   cohere.String("0"),
+										},
+									},
+								},
+							},
+						},
+						ToolCallId: in.ToolCalls[0].ID,
+					},
+				})
+			}
+		default:
+			messages = append(messages, &cohere.ChatMessageV2{
+				Role: "user",
+				User: &cohere.UserMessageV2{
+					Content: &cohere.UserMessageV2Content{
+						String: in.Content,
+					},
+				},
 			})
-		case "CHATBOT":
-			messages = append(messages, proto.Message{
-				Role:    proto.RoleAssistant,
-				Content: in.Chatbot.Message,
-			})
-		case "TOOL":
-			// not supported yet
 		}
 	}
 	return messages
 }
 
-func fromProtoRole(role string) string {
-	switch role {
-	case proto.RoleSystem:
-		return "SYSTEM"
-	case proto.RoleAssistant:
-		return "CHATBOT"
-	default:
-		return "USER"
+func toProtoMessage(in *cohere.ChatMessageV2) proto.Message {
+	switch in.Role {
+	case "user":
+		return proto.Message{
+			Role:    proto.RoleUser,
+			Content: in.User.Content.String,
+		}
+	case "system":
+		return proto.Message{
+			Role:    proto.RoleSystem,
+			Content: in.System.Content.String,
+		}
+	case "assistant":
+		msg := proto.Message{
+			Role:    proto.RoleAssistant,
+			Content: in.Assistant.GetContent().GetString(),
+		}
+		if len(in.Assistant.ToolCalls) > 0 {
+			msg.ToolCalls = make([]proto.ToolCall, 0, len(in.Assistant.ToolCalls))
+			for _, call := range in.Assistant.ToolCalls {
+				var name string
+				if namePtr := call.GetFunction().GetName(); namePtr != nil {
+					name = *namePtr
+				}
+				var args []byte
+				if argsPtr := call.GetFunction().GetArguments(); argsPtr != nil {
+					args = []byte(*argsPtr)
+				}
+				msg.ToolCalls = append(msg.ToolCalls, proto.ToolCall{
+					ID: call.Id,
+					Function: proto.Function{
+						Name:      name,
+						Arguments: args,
+					},
+				})
+			}
+		}
+		return msg
+	case "tool":
+		return proto.Message{
+			Role:    proto.RoleTool,
+			Content: in.Tool.Content.String,
+			ToolCalls: []proto.ToolCall{{
+				ID: in.Tool.ToolCallId,
+			}},
+		}
 	}
+	return proto.Message{}
 }
