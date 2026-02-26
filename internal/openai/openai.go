@@ -29,7 +29,8 @@ type Config struct {
 	HTTPClient interface {
 		Do(*http.Request) (*http.Response, error)
 	}
-	APIType string
+	APIType    string
+	APIVersion string
 }
 
 // DefaultConfig returns the default configuration for the OpenAI API client.
@@ -47,10 +48,10 @@ func New(config Config) *Client {
 		opts = append(opts, option.WithHTTPClient(config.HTTPClient))
 	}
 
-	if config.APIType == "azure-ad" {
+	if config.APIType == "azure" {
 		opts = append(opts, azure.WithAPIKey(config.AuthToken))
 		if config.BaseURL != "" {
-			opts = append(opts, azure.WithEndpoint(config.BaseURL, "v1"))
+			opts = append(opts, azure.WithEndpoint(config.BaseURL, config.APIVersion))
 		}
 	} else {
 		opts = append(opts, option.WithAPIKey(config.AuthToken))
