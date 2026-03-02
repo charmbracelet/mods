@@ -368,9 +368,10 @@ apis:
   azure:
     # Set to 'azure-ad' to use Active Directory
     # Azure OpenAI setup: https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource
-    base-url: https://YOUR_RESOURCE_NAME.openai.azure.com
+    base-url: https://YOUR_RESOURCE_NAME.cognitiveservices.azure.com
     api-key:
     api-key-env: AZURE_OPENAI_KEY
+    version:
     models:
       gpt-4:
         aliases: ["az4"]
