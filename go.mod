@@ -1,6 +1,6 @@
 module github.com/charmbracelet/mods
 
-go 1.24.2
+go 1.25.0
 
 require (
 	github.com/adrg/xdg v0.5.3
@@ -22,17 +22,17 @@ require (
 	github.com/cohere-ai/cohere-go/v2 v2.16.2
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lucasb-eyer/go-colorful v1.3.0
-	github.com/mark3labs/mcp-go v0.44.1
+	github.com/mark3labs/mcp-go v0.45.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0
 	github.com/muesli/termenv v0.16.0
-	github.com/ollama/ollama v0.17.5
+	github.com/ollama/ollama v0.17.7
 	github.com/openai/openai-go v1.12.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.46.1
 )
