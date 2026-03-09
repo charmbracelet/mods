@@ -2,7 +2,7 @@
 >
 > # Sunsetting Mods
 >
-> On March 9, 2026 we will sunset Mods and archive this repository to focus our
+> On March 9, 2026 we sunset Mods and archive this repository to focus our
 > efforts on [Crush](https://charm.land/crush).
 >
 > Much of the functionality in Mods can be found in Crush’s non-interactive
