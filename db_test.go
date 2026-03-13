@@ -158,8 +158,8 @@ func TestConvoDB(t *testing.T) {
 		results, err := db.Completions("f")
 		require.NoError(t, err)
 		require.Equal(t, []string{
-			fmt.Sprintf("%s\t%s", testid1[:sha1short], title1),
-			fmt.Sprintf("%s\t%s", title2, testid2[:sha1short]),
+			fmt.Sprintf("%s\t%s", testid1[:convIdShort], title1),
+			fmt.Sprintf("%s\t%s", title2, testid2[:convIdShort]),
 		}, results)
 
 		results, err = db.Completions(testid1[:8])
